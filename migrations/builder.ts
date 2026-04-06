@@ -1,8 +1,18 @@
 import { getDrizzle } from "../src/init";
-import type { SqliteNapiAdapter, PreparedQuery } from "../src/core/driver";
 
 export type SQLValue = string | number | null | undefined;
 export type Row = { [key: string]: SQLValue };
+
+export interface QueryResult {
+	lastInsertRowid: number | bigint;
+	changes?: number;
+}
+
+export interface PreparedQuery<T = Row> {
+	all(params?: SQLValue[]): T[];
+	get(params?: SQLValue[]): T | undefined;
+	run(params?: SQLValue[]): QueryResult;
+}
 
 export interface DB {
 	query<T = Row>(sql: string): PreparedQuery<T>;

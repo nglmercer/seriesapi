@@ -1,5 +1,6 @@
-import { api,type Genres } from "./api-service";
+import { api, type Genres } from "./api-service";
 import { h } from "../utils/dom";
+import { ui } from "../utils/ui";
 
 export class AdminGenresView extends HTMLElement {
   private genres: Genres[] = [];
@@ -17,39 +18,39 @@ export class AdminGenresView extends HTMLElement {
   }
 
   private async handleAdd() {
-    const name = prompt("Genre Name:");
+    const name = await ui.prompt("Genre Name:");
     if (name) {
       const res = await api.createGenre(name);
       if (res.ok) {
         await this.fetchGenres();
         this.render();
       } else {
-        alert("Error creating genre");
+        await ui.alert("Error creating genre");
       }
     }
   }
 
   private async handleEdit(id: string | number, oldName: string) {
-    const newName = prompt("New Name:", oldName);
+    const newName = await ui.prompt("New Name:", oldName);
     if (newName && newName !== oldName) {
       const res = await api.updateGenre(id, newName);
       if (res.ok) {
         await this.fetchGenres();
         this.render();
       } else {
-        alert("Error updating genre");
+        await ui.alert("Error updating genre");
       }
     }
   }
 
   private async handleDelete(id: string | number) {
-    if (confirm("Are you sure you want to delete this genre?")) {
+    if (await ui.confirm("Are you sure you want to delete this genre?")) {
       const res = await api.deleteGenre(id);
       if (res.ok) {
         await this.fetchGenres();
         this.render();
       } else {
-        alert("Error deleting genre");
+        await ui.alert("Error deleting genre");
       }
     }
   }

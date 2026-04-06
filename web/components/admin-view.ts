@@ -1,5 +1,6 @@
-import { api,type MediaItem } from "./api-service";
+import { api, type MediaItem } from "./api-service";
 import { h } from "../utils/dom";
+import { ui } from "../utils/ui";
 import "./admin-media-form";
 import "./admin-genres-view";
 import "./admin-content-manager";
@@ -46,7 +47,7 @@ export class AdminView extends HTMLElement {
   }
 
   private async handleDeleteMedia(id: number) {
-    if (confirm("Delete this media forever?")) {
+    if (await ui.confirm("Delete this media forever?")) {
       await api.deleteMedia(id);
       await this.fetchMedia();
       this.render();

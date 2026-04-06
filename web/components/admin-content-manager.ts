@@ -1,5 +1,6 @@
-import { api,type MediaItem,type EpisodeItem } from "./api-service";
+import { api, type MediaItem, type EpisodeItem } from "./api-service";
 import { h } from "../utils/dom";
+import { ui } from "../utils/ui";
 
 export class AdminContentManager extends HTMLElement {
   private mediaId: number | null = null;
@@ -36,7 +37,7 @@ export class AdminContentManager extends HTMLElement {
   }
 
   private async handleEditSeason(season: any) {
-      const newTitle = prompt("Season Title:", season.name || "");
+      const newTitle = await ui.prompt("Season Title:", season.name || "");
       if (newTitle !== null) {
           await api.updateSeason(season.id, { name: newTitle });
           await this.fetchData();
@@ -44,7 +45,7 @@ export class AdminContentManager extends HTMLElement {
   }
 
   private async handleEditEpisode(ep: EpisodeItem) {
-      const newTitle = prompt("Episode Title:", ep.title || "");
+      const newTitle = await ui.prompt("Episode Title:", ep.title || "");
       if (newTitle !== null) {
           await api.updateEpisode(ep.id, { title: newTitle });
           if(this.selectedSeasonId) await this.fetchEpisodes(this.selectedSeasonId);
@@ -52,7 +53,7 @@ export class AdminContentManager extends HTMLElement {
   }
 
   private async handleDeleteEpisode(id: number) {
-      if(confirm("Delete episode?")) {
+      if(await ui.confirm("Delete episode?")) {
           await api.deleteEpisode(id);
           if(this.selectedSeasonId) await this.fetchEpisodes(this.selectedSeasonId);
       }
@@ -60,9 +61,9 @@ export class AdminContentManager extends HTMLElement {
 
   private async handleAddSeason() {
       if (!this.mediaId) return;
-      const num = prompt("Season Number:", (this.seasons.length + 1).toString());
+      const num = await ui.prompt("Season Number:", (this.seasons.length + 1).toString());
       if (!num) return;
-      const title = prompt("Season Title (Optional):", "");
+      const title = await ui.prompt("Season Title (Optional):", "");
       
       const res = await api.createSeason({
           mediaId: this.mediaId,
@@ -77,9 +78,9 @@ export class AdminContentManager extends HTMLElement {
 
   private async handleAddEpisode() {
       if (!this.mediaId || !this.selectedSeasonId) return;
-      const num = prompt("Episode Number:", (this.episodes.length + 1).toString());
+      const num = await ui.prompt("Episode Number:", (this.episodes.length + 1).toString());
       if (!num) return;
-      const title = prompt("Episode Title:", "");
+      const title = await ui.prompt("Episode Title:", "");
       
       const res = await api.createEpisode({
           mediaId: this.mediaId,

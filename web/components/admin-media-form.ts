@@ -1,5 +1,6 @@
-import { api,type MediaItem,type Genres } from "./api-service";
+import { api, type MediaItem, type Genres } from "./api-service";
 import { h } from "../utils/dom";
+import { ui } from "../utils/ui";
 
 export class AdminMediaForm extends HTMLElement {
   private media: Partial<MediaItem> | null = null;
@@ -57,7 +58,7 @@ export class AdminMediaForm extends HTMLElement {
       this.dispatchEvent(new CustomEvent("saved", { bubbles: true }));
       this.remove();
     } catch (err) {
-      alert("Error saving media");
+      await ui.alert("Error saving media");
     }
   }
 
