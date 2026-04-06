@@ -314,7 +314,7 @@ export function handleMediaCredits(req: Request, db: Database, mediaId: number):
 
     const cast = db
       .query(
-        `SELECT p.id, p.name, c.role_name, c.order AS billing_order,
+        `SELECT p.id, p.name, c.role_name, c."order" AS billing_order,
                 c.is_recurring, c.episode_count,
                 (SELECT url FROM images
                  WHERE entity_type='person' AND entity_id=p.id
@@ -322,7 +322,7 @@ export function handleMediaCredits(req: Request, db: Database, mediaId: number):
          FROM credits c
          JOIN people p ON p.id = c.person_id
          WHERE c.media_id = ? AND c.credit_type = 'cast'
-         ORDER BY c.order ASC`,
+         ORDER BY c."order" ASC`,
       )
       .all([mediaId]);
 

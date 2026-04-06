@@ -33,7 +33,7 @@ const MAX_BODY = 2000;
 
 function hashIP(req: Request): string {
   const forwarded = req.headers.get("x-forwarded-for");
-  const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
+  const ip = forwarded ? forwarded.split(",")[0]!.trim() : "unknown";
   return createHash("sha256").update(ip).digest("hex");
 }
 

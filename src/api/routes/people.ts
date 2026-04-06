@@ -94,7 +94,7 @@ export function handlePersonCredits(req: Request, db: Database, personId: number
     const rows = db
       .query(
         `SELECT
-          c.credit_type, c.role_name, c.department, c.job, c.order AS billing_order,
+          c.credit_type, c.role_name, c.department, c.job, c."order" AS billing_order,
           m.id AS media_id, m.slug, ct.slug AS content_type,
           COALESCE(mt.title, m.original_title) AS title,
           m.score, m.release_date,

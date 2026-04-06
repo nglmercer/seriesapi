@@ -78,14 +78,14 @@ export function handleCollectionDetail(req: Request, db: Database, slug: string)
           COALESCE(mt.title, m.original_title) AS title,
           mt.synopsis_short,
           (SELECT url FROM images
-           WHERE entity_type='media' AND entity_id=m.id
-             AND image_type='poster' AND is_primary=1 LIMIT 1) AS poster_url
-         FROM collection_items ci
-         JOIN media m ON m.id = ci.media_id
-         JOIN content_types ct2 ON ct2.id = m.content_type_id
-         LEFT JOIN media_translations mt ON mt.media_id = m.id AND mt.locale = ?
-         WHERE ci.collection_id = ?
-         ORDER BY ci.order ASC`,
+            WHERE entity_type='media' AND entity_id=m.id
+              AND image_type='poster' AND is_primary=1 LIMIT 1) AS poster_url
+          FROM collection_items ci
+          JOIN media m ON m.id = ci.media_id
+          JOIN content_types ct2 ON ct2.id = m.content_type_id
+          LEFT JOIN media_translations mt ON mt.media_id = m.id AND mt.locale = ?
+          WHERE ci.collection_id = ?
+          ORDER BY ci."order" ASC`,
       )
       .all([locale, collection.id]);
 

@@ -339,7 +339,7 @@ export const creditsTable = sqliteTable("credits", {
   role_name: text("role_name"),                 // character name / job title
   department: text("department"),               // "Directing"|"Writing"|"Animation" …
   job: text("job"),                             // "Director"|"Screenplay"|"Character Design"
-  order: default_(integer("order"), 999),       // billing order for cast
+  "order": default_(integer("order"), 999),       // billing order for cast
   is_recurring: default_(boolean("is_recurring"), 0),
   episode_count: integer("episode_count"),
 });
@@ -519,7 +519,7 @@ export const collectionItemsTable = sqliteTable("collection_items", {
   id: primaryKey(integer("id")),
   collection_id: notNull(references(integer("collection_id"), { table: "collections", column: "id" })),
   media_id: notNull(references(integer("media_id"), { table: "media", column: "id" })),
-  order: default_(integer("order"), 0),
+  "order": default_(integer("order"), 0),
 });
 
 // ─────────────────────────────────────────────────────────────

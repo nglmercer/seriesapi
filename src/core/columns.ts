@@ -53,10 +53,12 @@ export abstract class Column {
   }
 
   toSQL(): string {
-    let sql = `${this.name} ${this.getSQLType()}`;
+    const needsQuoting = /^(order|group|limit|offset|where|select|from|as|on|and|or|not|is|in|like|between|having|distinct|all|any|exists|case|when|then|else|end|join|left|right|inner|outer|cross|natural|using|collate|escape|recurse|with|without|row|replaced)$/i.test(this.name);
+    const colName = needsQuoting ? `"${this.name}"` : this.name;
+    let sql = `${colName} ${this.getSQLType()}`;
     
     if (this.primaryKey && this.autoIncrement) {
-      return `${this.name} INTEGER PRIMARY KEY AUTOINCREMENT`;
+      return `${colName} INTEGER PRIMARY KEY AUTOINCREMENT`;
     }
     
     if (this.primaryKey) sql += " PRIMARY KEY";
