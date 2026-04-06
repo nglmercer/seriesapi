@@ -6,18 +6,20 @@ import {api} from "./api-service";
 export class SearchBox extends LitElement {
   static override styles = css`
     :host { display: block; }
-    .search { display: flex; gap: 8px; padding: 12px; }
-    input { flex: 1; background: #1e1e1e; border: none; padding: 12px 16px; border-radius: 8px; color: #fff; font-size: 16px; }
-    input::placeholder { color: #666; }
-    button { background: #007aff; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; }
-    button:hover { background: #0062cc; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .results { background: #1e1e1e; margin: 0 12px; border-radius: 8px; overflow: hidden; }
-    .result { display: flex; gap: 12px; padding: 12px; cursor: pointer; border-bottom: 1px solid #333; }
+    .search { display: flex; gap: 8px; }
+    input { flex: 1; background: #fff; border: 1px solid #a2a9b1; padding: 8px 12px; border-radius: 2px; color: #202122; font-size: 14px; }
+    input:focus { border-color: #36c; outline: none; }
+    input::placeholder { color: #72777d; }
+    button { background: #36c; color: #fff; border: none; padding: 8px 20px; border-radius: 2px; cursor: pointer; font-size: 14px; }
+    button:hover { background: #447ff5; }
+    button:disabled { background: #c8ccd1; cursor: not-allowed; }
+    .results { background: #fff; border: 1px solid #a2a9b1; margin-top: 4px; border-radius: 2px; }
+    .result { display: flex; gap: 12px; padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #eaecf0; }
     .result:last-child { border-bottom: none; }
-    .result:hover { background: #252525; }
-    .result-type { font-size: 10px; text-transform: uppercase; color: #888; }
-    .result-title { color: #fff; font-size: 14px; }
+    .result:hover { background: #eaecf0; }
+    .result-type { font-size: 11px; text-transform: uppercase; color: #72777d; }
+    .result-title { color: #0645ad; font-size: 14px; }
+    .result-title:hover { text-decoration: underline; }
   `;
 
   @state() query = "";
@@ -54,7 +56,7 @@ export class SearchBox extends LitElement {
       <div class="search">
         <input 
           type="text" 
-          placeholder="Search anime, manga, people..." 
+          placeholder="Search for anime, manga, people..." 
           .value=${this.query}
           @input=${this.handleInput}
           @keydown=${this.handleKeydown}

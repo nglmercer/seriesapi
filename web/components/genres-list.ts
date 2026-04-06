@@ -6,10 +6,10 @@ import {api} from "./api-service";
 export class GenresList extends LitElement {
   static override styles = css`
     :host { display: block; }
-    .list { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px; }
-    .tag { background: #1e1e1e; padding: 8px 16px; border-radius: 20px; color: #fff; cursor: pointer; transition: background 0.2s; }
-    .tag:hover { background: #333; }
-    .loading { text-align: center; padding: 40px; color: #888; }
+    .list { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 0; }
+    .tag { background: #f8f9fa; border: 1px solid #a2a9b1; padding: 4px 12px; border-radius: 2px; color: #0645ad; font-size: 13px; cursor: pointer; }
+    .tag:hover { background: #eaf3ff; text-decoration: underline; }
+    .loading { text-align: center; padding: 20px; color: #72777d; font-size: 13px; }
   `;
 
   @state() items: Array<{id: number; slug: string; name: string; count: number}> = [];
@@ -40,7 +40,7 @@ export class GenresList extends LitElement {
       <div class="list">
         ${this.items.map(item => html`
           <div class="tag" @click=${() => this.handleClick(item.slug)}>
-            ${item.name} (${item.count})
+            ${item.name}
           </div>
         `)}
       </div>

@@ -6,19 +6,22 @@ import {api, type MediaItem} from "./api-service";
 export class MediaList extends LitElement {
   static override styles = css`
     :host { display: block; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; padding: 16px; }
-    .card { background: #1e1e1e; border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.2s; }
-    .card:hover { transform: scale(1.02); }
-    .poster { width: 100%; aspect-ratio: 2/3; object-fit: cover; background: #333; }
-    .info { padding: 8px; }
-    .title { font-size: 14px; font-weight: 500; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .meta { font-size: 12px; color: #888; margin-top: 4px; }
-    .loading { text-align: center; padding: 40px; color: #888; }
-    .filter { display: flex; gap: 8px; padding: 12px; background: #252525; }
-    .filter select { background: #333; color: #fff; border: none; padding: 8px 12px; border-radius: 4px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 20px; padding: 16px; }
+    .card { cursor: pointer; text-align: center; }
+    .card-poster { width: 120px; height: 180px; object-fit: cover; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: box-shadow 0.2s; }
+    .card:hover .card-poster { box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+    .card-title { font-size: 13px; color: #0645ad; margin-top: 8px; line-height: 1.3; }
+    .card-title:hover { text-decoration: underline; }
+    .card-meta { font-size: 12px; color: #72777d; margin-top: 4px; }
+    .loading { text-align: center; padding: 40px; color: #72777d; }
+    .filter { display: flex; gap: 8px; padding: 12px; background: #f8f9fa; border: 1px solid #a2a9b1; margin-bottom: 16px; border-radius: 2px; }
+    .filter select { background: #fff; color: #202122; border: 1px solid #a2a9b1; padding: 6px 10px; border-radius: 2px; font-size: 14px; }
     .pagination { display: flex; justify-content: center; gap: 8px; padding: 16px; }
-    .pagination button { background: #333; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
-    .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .pagination button { background: #fff; color: #0645ad; border: 1px solid #a2a9b1; padding: 8px 16px; border-radius: 2px; cursor: pointer; font-size: 14px; }
+    .pagination button:hover { background: #f8f9fa; }
+    .pagination button:disabled { color: #c8ccd1; cursor: not-allowed; }
+    .pagination-info { color: #72777d; font-size: 14px; padding: 8px; }
+    .no-results { text-align: center; padding: 40px; color: #72777d; }
   `;
 
   @property({type: Number}) page = 1;
@@ -88,6 +91,10 @@ export class MediaList extends LitElement {
   override render() {
     if (this.loading) return html`<div class="loading">Loading...</div>`;
 
+    if (this.items.length === 0) {
+      return html`<div class="no-results">No results found</div>`;
+    }
+
     return html`
       <div class="filter">
         <select @change=${this.handleTypeChange}>
@@ -110,17 +117,15 @@ export class MediaList extends LitElement {
       <div class="grid">
         ${this.items.map(item => html`
           <div class="card" @click=${() => this.handleCardClick(item)}>
-            <img class="poster" src=${item.poster || ""} alt=${item.title} loading="lazy" />
-            <div class="info">
-              <div class="title">${item.title}</div>
-              <div class="meta">${item.year} · ${item.type}</div>
-            </div>
+            <img class="card-poster" src=${item.poster || ""} alt=${item.title} loading="lazy" />
+            <div class="card-title">${item.title}</div>
+            <div class="card-meta">${item.year} · ${item.type}</div>
           </div>
         `)}
       </div>
       <div class="pagination">
-        <button ?disabled=${this.page <= 1} @click=${() => this.handlePageChange(-1)}>Prev</button>
-        <span>Page ${this.page} of ${Math.ceil(this.totalItems / this.pageSize)}</span>
+        <button ?disabled=${this.page <= 1} @click=${() => this.handlePageChange(-1)}>Previous</button>
+        <span class="pagination-info">Page ${this.page} of ${Math.max(1, Math.ceil(this.totalItems / this.pageSize))}</span>
         <button ?disabled=${this.page * this.pageSize >= this.totalItems} @click=${() => this.handlePageChange(1)}>Next</button>
       </div>
     `;

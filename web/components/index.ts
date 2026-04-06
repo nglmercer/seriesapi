@@ -4,3 +4,5 @@ export * from "./people-list";
 export * from "./genres-list";
 export * from "./search-box";
 export * from "./media-detail";
+export * from "./wiki-infobox";
+export * from "./empty-state";
