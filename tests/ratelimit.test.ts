@@ -12,6 +12,14 @@ describe("Rate Limiter Middleware", () => {
       expect(limiter.check(req)).toBeUndefined();
     });
 
+    it("should fallback to unknown when x-forwarded-for is missing", () => {
+      const limiter = createRateLimiter({ windowMs: 1000, max: 3 });
+      const req = new Request("http://localhost/api/test"); // No headers
+
+      expect(limiter.check(req)).toBeUndefined();
+      expect(limiter.stats().activeKeys).toBeGreaterThanOrEqual(1);
+    });
+
     it("should allow multiple requests within limit", () => {
       const limiter = createRateLimiter({ windowMs: 1000, max: 2 });
       const req = new Request("http://localhost/api/test", {
