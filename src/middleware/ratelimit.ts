@@ -116,7 +116,11 @@ export function createRateLimiter(opts: RateLimiterOptions = {}): RateLimiter {
           }),
           {
             status: 429,
-            headers: { "Content-Type": "application/json", ...headers },
+            headers: { 
+              "Content-Type": "application/json", 
+              ...headers,
+              ...corsHeaders(req.headers.get("origin"))
+            },
           },
         );
       }
