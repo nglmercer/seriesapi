@@ -8,3 +8,7 @@ export * from "./media-detail";
 export * from "./wiki-infobox";
 export * from "./empty-state";
 export * from "./auth-modal";
+export * from "./admin-view";
+export * from "./admin-media-form";
+export * from "./admin-genres-view";
+export * from "./admin-content-manager";

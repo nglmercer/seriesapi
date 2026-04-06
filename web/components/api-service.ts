@@ -189,6 +189,102 @@ class ApiClient {
       body: JSON.stringify(data),
     });
   }
+
+  // Admin Operations
+  createMedia(data: Partial<MediaItem>): Promise<ApiResponse<MediaItem>> {
+    return this.request("/media", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  updateMedia(id: number, data: Partial<MediaItem>): Promise<ApiResponse<MediaItem>> {
+    return this.request(`/media/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  deleteMedia(id: number): Promise<ApiResponse<void>> {
+    return this.request(`/media/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  createGenre(name: string): Promise<ApiResponse<Genres>> {
+    return this.request("/genres", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    });
+  }
+
+  updateGenre(id: number | string, name: string): Promise<ApiResponse<Genres>> {
+    return this.request(`/genres/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ name }),
+    });
+  }
+
+  deleteGenre(id: number | string): Promise<ApiResponse<void>> {
+    return this.request(`/genres/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  assignGenre(mediaId: number, genreId: number | string): Promise<ApiResponse<void>> {
+    return this.request(`/media/${mediaId}/genres`, {
+      method: "POST",
+      body: JSON.stringify({ genreId }),
+    });
+  }
+
+  unassignGenre(mediaId: number, genreId: number | string): Promise<ApiResponse<void>> {
+    return this.request(`/media/${mediaId}/genres/${genreId}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Season Operations
+  updateSeason(id: number, data: any): Promise<ApiResponse<void>> {
+    return this.request(`/seasons/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  deleteSeason(id: number): Promise<ApiResponse<void>> {
+    return this.request(`/seasons/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  createSeason(data: { mediaId: number; seasonNumber: number; title?: string }): Promise<ApiResponse<void>> {
+    return this.request("/seasons", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Episode Operations
+  updateEpisode(id: number, data: any): Promise<ApiResponse<void>> {
+    return this.request(`/episodes/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  deleteEpisode(id: number): Promise<ApiResponse<void>> {
+    return this.request(`/episodes/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  createEpisode(data: { mediaId: number; seasonId: number; number: number; title?: string; synopsis?: string }): Promise<ApiResponse<void>> {
+    return this.request("/episodes", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 export const api = new ApiClient();
