@@ -6,7 +6,17 @@ export interface ApiResponse<T> {
   meta?: Record<string, unknown>;
   params?: Record<string, unknown>;
 }
-
+export interface Genres {
+  id: number | string,
+  name:string,
+  slug:string
+}
+/*
+id: 47
+name: "Acción"
+​
+slug: "acci-n"
+*/
 export interface MediaItem {
   id: number;
   slug: string;
@@ -25,7 +35,7 @@ export interface MediaItem {
   poster?: string;
   banner?: string;
   rating?: number;
-  genres?: string[];
+  genres?: string[] | Genres;
   synopsis?: string;
   episodes?: number;
   duration?: number;
@@ -80,8 +90,10 @@ class ApiClient {
     return this.request(`/media/${mediaId}/seasons?locale=es`);
   }
 
-  getMediaEpisodes(mediaId: number): Promise<ApiResponse<unknown>> {
-    return this.request(`/media/${mediaId}/episodes?locale=es`);
+  getMediaEpisodes(mediaId: number, season?: number): Promise<ApiResponse<unknown>> {
+    const params = new URLSearchParams({ locale: "es" });
+    if (season !== undefined) params.set("season", String(season));
+    return this.request(`/media/${mediaId}/episodes?${params}`);
   }
 
   getMediaCredits(mediaId: number): Promise<ApiResponse<unknown>> {

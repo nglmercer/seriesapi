@@ -24,7 +24,6 @@ export class WikiInfobox extends LitElement {
 
   override render() {
     if (!this.media) return html``;
-
     return html`
       <div class="infobox">
         <div class="infobox-title">${this.media.title}</div>
@@ -85,11 +84,11 @@ export class WikiInfobox extends LitElement {
             </tr>
           ` : ""}
           
-          ${this.media.genres && this.media.genres.length > 0 ? html`
+          ${this.media.genres && Array.isArray(this.media.genres) && this.media.genres.length > 0 ? html`
             <tr>
               <td class="infobox-label">Genres</td>
               <td class="infobox-value">
-                ${this.media.genres.join(", ")}
+                ${this.media.genres.map((g: unknown) => typeof g === 'string' ? g : (g as {name: string}).name).join(", ")}
               </td>
             </tr>
           ` : ""}

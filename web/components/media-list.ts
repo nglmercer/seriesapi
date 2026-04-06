@@ -1,6 +1,7 @@
 import {LitElement, html, css} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {api, type MediaItem} from "./api-service";
+import {MediaFilters, type MediaFiltersState} from "./media-filters";
 
 @customElement("media-list")
 export class MediaList extends LitElement {
@@ -14,33 +15,25 @@ export class MediaList extends LitElement {
     .card-title:hover { text-decoration: underline; }
     .card-meta { font-size: 12px; color: #72777d; margin-top: 4px; }
     .loading { text-align: center; padding: 40px; color: #72777d; }
-    .filter { display: flex; gap: 8px; padding: 12px; background: #f8f9fa; border: 1px solid #a2a9b1; margin-bottom: 16px; border-radius: 2px; }
-    .filter select { background: #fff; color: #202122; border: 1px solid #a2a9b1; padding: 6px 10px; border-radius: 2px; font-size: 14px; }
     .pagination { display: flex; justify-content: center; gap: 8px; padding: 16px; }
     .pagination button { background: #fff; color: #0645ad; border: 1px solid #a2a9b1; padding: 8px 16px; border-radius: 2px; cursor: pointer; font-size: 14px; }
     .pagination button:hover { background: #f8f9fa; }
     .pagination button:disabled { color: #c8ccd1; cursor: not-allowed; }
     .pagination-info { color: #72777d; font-size: 14px; padding: 8px; }
     .no-results { text-align: center; padding: 40px; color: #72777d; }
-    .error { text-align: center; padding: 20px; color: #d33; background: #fee7e7; border: 1px solid #f8b8b8; border-radius: 2px; margin: 16px; }
   `;
 
   @property({type: Number}) page = 1;
   @property({type: Number}) pageSize = 20;
-  @property({type: String}) typeFilter = "";
-  @property({type: String}) status = "";
-  @property({type: String}) genre = "";
   @state() items: MediaItem[] = [];
   @state() totalItems = 0;
   @state() loading = true;
+  @state() filters: MediaFiltersState = {type: "", status: "", genre: "", yearFrom: "", yearTo: "", scoreFrom: "", sortBy: "popularity"};
 
   constructor() {
     super();
     this.page = 1;
     this.pageSize = 20;
-    this.typeFilter = "";
-    this.status = "";
-    this.genre = "";
     this.items = [];
     this.totalItems = 0;
     this.loading = true;
@@ -53,12 +46,16 @@ export class MediaList extends LitElement {
 
   async load() {
     this.loading = true;
-    const filters: Record<string, string> = {};
-    if (this.typeFilter) filters.type = this.typeFilter;
-    if (this.status) filters.status = this.status;
-    if (this.genre) filters.genre = this.genre;
+    const filters_: Record<string, string> = {};
+    if (this.filters.type) filters_.type = this.filters.type;
+    if (this.filters.status) filters_.status = this.filters.status;
+    if (this.filters.genre) filters_.genre = this.filters.genre;
+    if (this.filters.yearFrom) filters_.year_from = this.filters.yearFrom;
+    if (this.filters.yearTo) filters_.year_to = this.filters.yearTo;
+    if (this.filters.scoreFrom) filters_.score_from = this.filters.scoreFrom;
+    if (this.filters.sortBy) filters_.sort_by = this.filters.sortBy;
 
-    const res = await api.getMedia(this.page, this.pageSize, filters);
+    const res = await api.getMedia(this.page, this.pageSize, filters_);
     if (res.ok) {
       this.items = res.data;
       this.totalItems = (res.meta?.total as number) ?? (res.params?.total as number) ?? 0;
@@ -66,16 +63,8 @@ export class MediaList extends LitElement {
     this.loading = false;
   }
 
-  private handleTypeChange(e: GlobalEventHandlers & Event) {
-    const target = e.target as HTMLSelectElement;
-    this.typeFilter = target.value;
-    this.page = 1;
-    this.load();
-  }
-
-  private handleStatusChange(e: GlobalEventHandlers & Event) {
-    const target = e.target as HTMLSelectElement;
-    this.status = target.value;
+  private handleFiltersChange(e: CustomEvent<MediaFiltersState>) {
+    this.filters = e.detail;
     this.page = 1;
     this.load();
   }
@@ -97,24 +86,7 @@ export class MediaList extends LitElement {
     }
 
     return html`
-      <div class="filter">
-        <select @change=${this.handleTypeChange}>
-          <option value="">Todos los tipos</option>
-          <option value="anime">Anime</option>
-          <option value="manga">Manga</option>
-          <option value="movie">Película</option>
-          <option value="ova">OVA</option>
-          <option value="ona">ONA</option>
-          <option value="special">Especial</option>
-        </select>
-        <select @change=${this.handleStatusChange}>
-          <option value="">Todos los estados</option>
-          <option value="ongoing">En emisión</option>
-          <option value="completed">Finalizado</option>
-          <option value="upcoming">Próximamente</option>
-          <option value="tba">Por anunciarse</option>
-        </select>
-      </div>
+      <media-filters @filters-change=${this.handleFiltersChange}></media-filters>
       <div class="grid">
         ${this.items.map(item => html`
           <div class="card" @click=${() => this.handleCardClick(item)}>

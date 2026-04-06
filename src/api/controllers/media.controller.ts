@@ -22,12 +22,15 @@ export class MediaController {
     const type = url.searchParams.get("type");
     const genre = url.searchParams.get("genre");
     const status = url.searchParams.get("status");
-    const sort = url.searchParams.get("sort") ?? "popularity";
+    const sortBy = url.searchParams.get("sort_by") ?? "popularity";
     const order = url.searchParams.get("order") === "asc" ? "ASC" : "DESC";
     const search = url.searchParams.get("q");
+    const yearFrom = url.searchParams.get("year_from");
+    const yearTo = url.searchParams.get("year_to");
+    const scoreFrom = url.searchParams.get("score_from");
 
     const allowedSorts = new Set(["popularity", "score", "release_date", "title"]);
-    const safeSort = allowedSorts.has(sort) ? sort : "popularity";
+    const safeSort = allowedSorts.has(sortBy) ? sortBy : "popularity";
 
     const conditions: string[] = [];
     const params: unknown[] = [];
@@ -41,6 +44,18 @@ export class MediaController {
     if (search) {
       conditions.push(`(m.original_title LIKE ? OR mt.title LIKE ?)`);
       params.push(`%${search}%`, `%${search}%`);
+    }
+    if (yearFrom) {
+      conditions.push(`m.release_date >= ?`);
+      params.push(`${yearFrom}-01-01`);
+    }
+    if (yearTo) {
+      conditions.push(`m.release_date <= ?`);
+      params.push(`${yearTo}-12-31`);
+    }
+    if (scoreFrom) {
+      conditions.push(`m.score >= ?`);
+      params.push(parseFloat(scoreFrom));
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";

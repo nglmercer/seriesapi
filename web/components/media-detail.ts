@@ -4,6 +4,13 @@ import {api, type MediaItem} from "./api-service";
 import "./wiki-infobox";
 import "./empty-state";
 
+interface SeasonData {
+  id: number;
+  season_number: number;
+  episode_count: number;
+  name: string;
+}
+
 @customElement("media-detail")
 export class MediaDetail extends LitElement {
   static override styles = css`
@@ -22,12 +29,15 @@ export class MediaDetail extends LitElement {
     .season:hover { background: #eaecf0; }
     .season-title { color: #0645ad; }
     .season-episodes { color: #72777d; font-size: 14px; }
+    .season-filter { margin-bottom: 12px; }
+    .season-filter select { background: #fff; color: #202122; border: 1px solid #a2a9b1; padding: 6px 10px; border-radius: 2px; font-size: 14px; }
     .loading { text-align: center; padding: 40px; color: #72777d; }
   `;
 
   @property({type: Number}) mediaId = 0;
   @state() media: MediaItem | null = null;
-  @state() seasons: Array<{id: number; number: number; title: string; episodeCount: number}> = [];
+  @state() allSeasons: SeasonData[] = [];
+  @state() selectedSeason: number | null = null;
   @state() loading = true;
   @state() error = false;
 
@@ -55,14 +65,19 @@ export class MediaDetail extends LitElement {
     } else {
       this.error = true;
     }
-    if (seasonsRes.ok) {
-      this.seasons = seasonsRes.data as Array<{id: number; number: number; title: string; episodeCount: number}>;
+    if (seasonsRes.ok && seasonsRes.data) {
+      this.allSeasons = seasonsRes.data as SeasonData[];
     }
     this.loading = false;
   }
 
   private handleBack() {
     this.dispatchEvent(new CustomEvent("back", {bubbles: true, composed: true}));
+  }
+
+  private handleSeasonChange(e: Event) {
+    const target = e.target as HTMLSelectElement;
+    this.selectedSeason = target.value ? parseInt(target.value, 10) : null;
   }
 
   private handleSeasonClick(seasonId: number) {
@@ -74,6 +89,10 @@ export class MediaDetail extends LitElement {
     if (this.error || !this.media) {
       return html`<empty-state title="Page not found" message="This page does not exist or has been removed."></empty-state>`;
     }
+
+    const uniqueSeasons = this.allSeasons.filter((s, i, arr) => 
+      arr.findIndex(x => x.season_number === s.season_number) === i
+    );
 
     return html`
       <a class="back-link" @click=${this.handleBack}>← Back</a>
@@ -92,14 +111,22 @@ export class MediaDetail extends LitElement {
             </div>
           ` : ""}
 
-          ${this.seasons.length > 0 ? html`
+          ${uniqueSeasons.length > 0 ? html`
             <div class="section">
               <h2 class="section-title">Seasons</h2>
+              <div class="season-filter">
+                <select @change=${this.handleSeasonChange}>
+                  <option value="">Todas las temporadas</option>
+                  ${uniqueSeasons.map(s => html`
+                    <option value=${s.season_number}>${s.name || `Season ${s.season_number}`}</option>
+                  `)}
+                </select>
+              </div>
               <div class="seasons">
-                ${this.seasons.map(s => html`
+                ${uniqueSeasons.filter(s => this.selectedSeason === null || s.season_number === this.selectedSeason).map(s => html`
                   <div class="season" @click=${() => this.handleSeasonClick(s.id)}>
-                    <span class="season-title">${s.title || `Season ${s.number}`}</span>
-                    <span class="season-episodes">${s.episodeCount} episodes</span>
+                    <span class="season-title">${s.name || `Season ${s.season_number}`}</span>
+                    <span class="season-episodes">${s.episode_count} episodes</span>
                   </div>
                 `)}
               </div>
