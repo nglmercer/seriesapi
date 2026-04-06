@@ -56,7 +56,7 @@ class ApiClient {
   }
 
   getMedia(page = 1, pageSize = 20, filters?: Record<string, string>): Promise<ApiResponse<MediaItem[]>> {
-    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), locale: "es" });
     if (filters) {
       Object.entries(filters).forEach(([k, v]) => v && params.set(k, v));
     }
@@ -64,52 +64,52 @@ class ApiClient {
   }
 
   getMediaDetail(id: number): Promise<ApiResponse<MediaItem>> {
-    return this.request(`/media/${id}`);
+    return this.request(`/media/${id}?locale=es`);
   }
 
   getMediaSeasons(mediaId: number): Promise<ApiResponse<unknown>> {
-    return this.request(`/media/${mediaId}/seasons`);
+    return this.request(`/media/${mediaId}/seasons?locale=es`);
   }
 
   getMediaEpisodes(mediaId: number): Promise<ApiResponse<unknown>> {
-    return this.request(`/media/${mediaId}/episodes`);
+    return this.request(`/media/${mediaId}/episodes?locale=es`);
   }
 
   getMediaCredits(mediaId: number): Promise<ApiResponse<unknown>> {
-    return this.request(`/media/${mediaId}/credits`);
+    return this.request(`/media/${mediaId}/credits?locale=es`);
   }
 
   getMediaImages(mediaId: number): Promise<ApiResponse<unknown>> {
-    return this.request(`/media/${mediaId}/images`);
+    return this.request(`/media/${mediaId}/images?locale=es`);
   }
 
   getMediaVideos(mediaId: number): Promise<ApiResponse<unknown>> {
-    return this.request(`/media/${mediaId}/videos`);
+    return this.request(`/media/${mediaId}/videos?locale=es`);
   }
 
   getMediaRelated(mediaId: number): Promise<ApiResponse<unknown>> {
-    return this.request(`/media/${mediaId}/related`);
+    return this.request(`/media/${mediaId}/related?locale=es`);
   }
 
   getMediaComments(mediaId: number): Promise<ApiResponse<unknown>> {
-    return this.request(`/media/${mediaId}/comments`);
+    return this.request(`/media/${mediaId}/comments?locale=es`);
   }
 
   getPeople(page = 1, pageSize = 20): Promise<ApiResponse<PeopleItem[]>> {
-    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), locale: "es" });
     return this.request(`/people?${params}`);
   }
 
   getPeopleDetail(id: number): Promise<ApiResponse<PeopleItem>> {
-    return this.request(`/people/${id}`);
+    return this.request(`/people/${id}?locale=es`);
   }
 
   getPeopleCredits(personId: number): Promise<ApiResponse<unknown[]>> {
-    return this.request(`/people/${personId}/credits`);
+    return this.request(`/people/${personId}/credits?locale=es`);
   }
 
   getGenres(): Promise<ApiResponse<unknown[]>> {
-    return this.request("/genres");
+    return this.request("/genres?locale=es");
   }
 
   getGenreMedia(slug: string, page = 1): Promise<ApiResponse<unknown>> {
@@ -125,7 +125,7 @@ class ApiClient {
   }
 
   search(query: string, type?: string): Promise<ApiResponse<unknown[]>> {
-    const params = new URLSearchParams({ q: query });
+    const params = new URLSearchParams({ q: query, locale: "es" });
     if (type) params.set("type", type);
     return this.request(`/search?${params}`);
   }

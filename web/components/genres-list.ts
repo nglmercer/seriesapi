@@ -12,7 +12,7 @@ export class GenresList extends LitElement {
     .loading { text-align: center; padding: 20px; color: #72777d; font-size: 13px; }
   `;
 
-  @state() items: Array<{id: number; slug: string; name: string; count: number}> = [];
+  @state() items: Array<{id: number; slug: string; name: string; count?: number}> = [];
   @state() loading = true;
 
   override connectedCallback() {
@@ -24,7 +24,7 @@ export class GenresList extends LitElement {
     this.loading = true;
     const res = await api.getGenres();
     if (res.ok) {
-      this.items = res.data as Array<{id: number; slug: string; name: string; count: number}>;
+      this.items = res.data as Array<{id: number; slug: string; name: string; count?: number}>;
     }
     this.loading = false;
   }
@@ -34,7 +34,7 @@ export class GenresList extends LitElement {
   }
 
   override render() {
-    if (this.loading) return html`<div class="loading">Loading...</div>`;
+    if (this.loading) return html`<div class="loading">Cargando...</div>`;
 
     return html`
       <div class="list">
