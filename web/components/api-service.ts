@@ -3,7 +3,7 @@ const API_BASE = "/api/v1";
 export interface ApiResponse<T> {
   ok: boolean;
   data: T;
-  params: Record<string, unknown>;
+  params?: Record<string, unknown>;
 }
 
 export interface MediaItem {

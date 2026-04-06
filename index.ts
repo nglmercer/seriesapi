@@ -1,15 +1,3 @@
-/**
- * anima API  –  Main router
- *
- * All routes are prefixed with /api/v1.
- * Pattern matching is done with a simple trie-style switch so there
- * are zero runtime framework dependencies — pure Bun fetch handler.
- *
- * Rate-limit:  60 req / min per IP+endpoint  (configurable via env)
- * Auth:        none – fully public API
- * CORS:        open (*)
- */
-
 import { initializeDatabase, getDb } from "./src/init";
 import { createRateLimiter, handlePreflight, corsHeaders } from "./src/middleware/ratelimit";
 
@@ -37,7 +25,7 @@ import { handleGenresList, handleGenreMedia } from "./src/api/routes/genres";
 import { handleCollectionsList, handleCollectionDetail } from "./src/api/routes/collections";
 import { handleSearch } from "./src/api/routes/search";
 import { handleCommentPost, handleCommentGet } from "./src/api/routes/comments";
-
+import index from './web/index.html'
 // ── config ────────────────────────────────────────────────────────────────────
 
 const PORT = parseInt(process.env.PORT ?? "3000", 10);
@@ -206,6 +194,9 @@ const server = Bun.serve({
       );
     }
   },
+  routes:{
+    "/": index,
+  }
 });
 
 console.log(`[anima] Listening on http://localhost:${server.port}`);

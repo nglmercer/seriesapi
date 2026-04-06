@@ -57,7 +57,7 @@ export class MediaList extends LitElement {
     const res = await api.getMedia(this.page, this.pageSize, filters);
     if (res.ok) {
       this.items = res.data;
-      this.totalItems = res.params.total as number;
+      this.totalItems = res.params?.total as number;
     }
     this.loading = false;
   }

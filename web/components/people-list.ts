@@ -42,9 +42,10 @@ export class PeopleList extends LitElement {
   async load() {
     this.loading = true;
     const res = await api.getPeople(this.page, this.pageSize);
+    console.log({res})
     if (res.ok) {
       this.items = res.data;
-      this.totalItems = res.params.total as number;
+      this.totalItems = res.params?.total as number;
     }
     this.loading = false;
   }
