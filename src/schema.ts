@@ -585,6 +585,50 @@ export const translationRequestsTable = sqliteTable("translation_requests", {
 });
 
 // ─────────────────────────────────────────────────────────────
+// §18  USER ACCOUNTS & AUTHENTICATION
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * users  –  registered user accounts
+ */
+export const usersTable = sqliteTable("users", {
+  id: primaryKey(integer("id")),
+  username: notNull(unique(text("username"))),
+  email: notNull(unique(text("email"))),
+  password_hash: notNull(text("password_hash")),   // bcrypt hash
+  display_name: text("display_name"),              // optional display name
+  role: default_(text("role"), "user"),            // "user"|"editor"|"admin"
+  is_active: default_(boolean("is_active"), 1),
+  created_at: default_(text("created_at"), NOW),
+  updated_at: default_(text("updated_at"), NOW),
+});
+
+/**
+ * sessions  –  active login sessions
+ */
+export const sessionsTable = sqliteTable("sessions", {
+  id: primaryKey(integer("id")),
+  user_id: notNull(references(integer("user_id"), { table: "users", column: "id" })),
+  token: notNull(unique(text("token"))),           // JWT or session token
+  expires_at: notNull(text("expires_at")),         // ISO 8601
+  ip_hash: text("ip_hash"),
+  user_agent: text("user_agent"),
+  created_at: default_(text("created_at"), NOW),
+});
+
+/**
+ * password_resets  –  password reset tokens
+ */
+export const passwordResetsTable = sqliteTable("password_resets", {
+  id: primaryKey(integer("id")),
+  user_id: notNull(references(integer("user_id"), { table: "users", column: "id" })),
+  token: notNull(unique(text("token"))),
+  expires_at: notNull(text("expires_at")),
+  used_at: text("used_at"),
+  created_at: default_(text("created_at"), NOW),
+});
+
+// ─────────────────────────────────────────────────────────────
 // §17  EXPORTS – ordered by dependency for table creation
 // ─────────────────────────────────────────────────────────────
 
@@ -644,6 +688,11 @@ export const ALL_TABLES = [
   rateLimitsTable,
   apiLogsTable,
   translationRequestsTable,
+
+  // user accounts & auth
+  usersTable,
+  sessionsTable,
+  passwordResetsTable,
 ] as const;
 
 // ─────────────────────────────────────────────────────────────

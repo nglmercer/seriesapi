@@ -25,6 +25,7 @@ import { handleGenresList, handleGenreMedia } from "./src/api/routes/genres";
 import { handleCollectionsList, handleCollectionDetail } from "./src/api/routes/collections";
 import { handleSearch } from "./src/api/routes/search";
 import { handleCommentPost, handleCommentGet } from "./src/api/routes/comments";
+import { handleRegister, handleLogin, handleLogout, handleMe } from "./src/api/routes/auth";
 import index from './web/index.html'
 // ── config ────────────────────────────────────────────────────────────────────
 
@@ -155,6 +156,15 @@ function route(req: Request): Response | Promise<Response> {
       if (!isNaN(id)) return handleCommentGet(req, db, id);
     }
     return GET ? json404() : json405();
+  }
+
+  // ── /api/v1/auth ───────────────────────────────────────────────────────────
+  if (resource === "auth") {
+    if (POST && p3 === "register") return handleRegister(req);
+    if (POST && p3 === "login") return handleLogin(req);
+    if (POST && p3 === "logout") return handleLogout(req);
+    if (GET && p3 === "me") return handleMe(req);
+    return json404();
   }
 
   return json404();

@@ -6,3 +6,4 @@ export * from "./search-box";
 export * from "./media-detail";
 export * from "./wiki-infobox";
 export * from "./empty-state";
+export * from "./auth-modal";

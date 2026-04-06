@@ -7,9 +7,18 @@ import "./search-box";
 import "./media-detail";
 import "./wiki-infobox";
 import "./empty-state";
+import "./auth-modal";
 import type {MediaItem} from "./api-service";
 
-type View = "home" | "media" | "people" | "search";
+type View = "home" | "media" | "people" | "search" | "upload";
+
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  display_name: string;
+  role: string;
+}
 
 @customElement("app-root")
 export class AppRoot extends LitElement {
@@ -18,9 +27,16 @@ export class AppRoot extends LitElement {
     .wiki-header { background: #eaecf0; border: 1px solid #a7d7f9; border-bottom: 1px solid #a2a9b1; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; }
     .wiki-logo { font-size: 24px; font-weight: bold; color: #0645ad; text-decoration: none; }
     .wiki-logo:hover { text-decoration: underline; }
-    .wiki-search-header { display: flex; gap: 8px; }
+    .wiki-search-header { display: flex; gap: 8px; align-items: center; }
     .wiki-search-header input { padding: 6px 12px; border: 1px solid #a2a9b1; border-radius: 2px; width: 200px; }
     .wiki-search-header button { background: #36c; color: #fff; border: none; padding: 6px 16px; border-radius: 2px; cursor: pointer; }
+    .user-area { display: flex; align-items: center; gap: 12px; }
+    .user-info { font-size: 13px; color: #202122; }
+    .user-info strong { color: #0645ad; }
+    .login-btn { background: #36c; color: #fff; border: none; padding: 6px 16px; border-radius: 2px; cursor: pointer; font-size: 14px; }
+    .login-btn:hover { background: #447ff5; }
+    .logout-btn { background: #f8f9fa; color: #0645ad; border: 1px solid #a2a9b1; padding: 5px 12px; border-radius: 2px; cursor: pointer; font-size: 13px; }
+    .logout-btn:hover { background: #eaf3ff; }
     .wiki-nav { background: #f8f9fa; border-bottom: 1px solid #a2a9b1; padding: 6px 16px; display: flex; gap: 4px; }
     .nav-item { color: #0645ad; text-decoration: none; padding: 4px 12px; border-radius: 2px; font-size: 14px; cursor: pointer; }
     .nav-item:hover { background: #eaf3ff; }
@@ -30,6 +46,7 @@ export class AppRoot extends LitElement {
     .wiki-sidebar { width: 280px; flex-shrink: 0; }
     .page-title { font-family: sans-serif; font-size: 28px; font-weight: normal; border-bottom: 1px solid #a2a9b1; padding-bottom: 8px; margin-bottom: 16px; color: #202122; }
     .breadcrumb { font-size: 12px; color: #72777d; margin-bottom: 8px; }
+    .breadcrumb a { color: #0645ad; }
     .hero-search { max-width: 500px; margin: 40px auto; text-align: center; }
     .hero-search h2 { font-weight: normal; font-size: 20px; margin-bottom: 16px; }
     .hero-search input { width: 100%; padding: 8px 12px; border: 1px solid #a2a9b1; border-radius: 2px; font-size: 16px; }
@@ -51,6 +68,25 @@ export class AppRoot extends LitElement {
   @state() view: View = "home";
   @state() selectedMediaId: number | null = null;
   @state() searchQuery = "";
+  @state() user: User | null = null;
+  @state() showAuthModal = false;
+
+  constructor() {
+    super();
+    this.loadUserFromStorage();
+  }
+
+  private loadUserFromStorage() {
+    const token = localStorage.getItem("auth_token");
+    const userStr = localStorage.getItem("auth_user");
+    if (token && userStr) {
+      try {
+        this.user = JSON.parse(userStr);
+      } catch {
+        this.user = null;
+      }
+    }
+  }
 
   private handleMediaSelect(e: CustomEvent<MediaItem>) {
     this.selectedMediaId = e.detail.id;
@@ -89,6 +125,32 @@ export class AppRoot extends LitElement {
     }
   }
 
+  private openAuthModal() {
+    this.showAuthModal = true;
+  }
+
+  private closeAuthModal() {
+    this.showAuthModal = false;
+  }
+
+  private handleAuthSuccess(e: CustomEvent<User>) {
+    this.user = e.detail;
+    this.showAuthModal = false;
+  }
+
+  private handleLogout() {
+    const token = localStorage.getItem("auth_token");
+    if (token) {
+      fetch("/api/v1/auth/logout", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}` },
+      }).catch(() => {});
+    }
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("auth_user");
+    this.user = null;
+  }
+
   override render() {
     return html`
       <header class="wiki-header">
@@ -97,13 +159,31 @@ export class AppRoot extends LitElement {
           <input type="text" placeholder="Search wiki" @keydown=${this.handleSearchKeydown} />
           <button @click=${this.handleHeaderSearch}>Search</button>
         </div>
+        <div class="user-area">
+          ${this.user ? html`
+            <span class="user-info">Logged in as <strong>${this.user.display_name || this.user.username}</strong></span>
+            ${this.user.role === "admin" || this.user.role === "editor" ? html`
+              <span style="font-size: 12px; color: #14866d; background: #d5fdf4; padding: 2px 8px; border-radius: 2px;">${this.user.role}</span>
+            ` : ""}
+            <button class="logout-btn" @click=${this.handleLogout}>Log out</button>
+          ` : html`
+            <button class="login-btn" @click=${this.openAuthModal}>Log in / Register</button>
+          `}
+        </div>
       </header>
       
       <nav class="wiki-nav">
         <span class="nav-item ${this.view === "home" ? "active" : ""}" @click=${() => this.handleNavClick("home")}>Main page</span>
         <span class="nav-item ${this.view === "search" ? "active" : ""}" @click=${() => this.handleNavClick("search")}>Search</span>
         <span class="nav-item ${this.view === "people" ? "active" : ""}" @click=${() => this.handleNavClick("people")}>People</span>
+        ${this.user && (this.user.role === "admin" || this.user.role === "editor") ? html`
+          <span class="nav-item ${this.view === "upload" ? "active" : ""}" @click=${() => this.handleNavClick("upload")}>Upload</span>
+        ` : ""}
       </nav>
+      
+      ${this.showAuthModal ? html`
+        <auth-modal @close=${this.closeAuthModal} @auth-success=${this.handleAuthSuccess}></auth-modal>
+      ` : ""}
       
       <div class="wiki-content">
         <main class="wiki-main">
@@ -127,6 +207,7 @@ export class AppRoot extends LitElement {
         <media-detail 
           .mediaId=${this.selectedMediaId} 
           @back=${this.handleBack}
+          .user=${this.user}
         ></media-detail>
       `;
     }
@@ -143,6 +224,13 @@ export class AppRoot extends LitElement {
       return html`
         <h1 class="page-title">People</h1>
         <people-list @people-select=${(e: CustomEvent) => console.log(e)}></people-list>
+      `;
+    }
+
+    if (this.view === "upload") {
+      return html`
+        <h1 class="page-title">Upload Media</h1>
+        <p style="color: #72777d;">Upload functionality for editors and admins.</p>
       `;
     }
 
@@ -176,6 +264,9 @@ export class AppRoot extends LitElement {
         <a href="#" @click=${(e: Event) => { e.preventDefault(); this.handleNavClick("home"); }}>Main page</a>
         <a href="#" @click=${(e: Event) => { e.preventDefault(); this.handleNavClick("search"); }}>Search</a>
         <a href="#" @click=${(e: Event) => { e.preventDefault(); this.handleNavClick("people"); }}>People</a>
+        ${this.user && (this.user.role === "admin" || this.user.role === "editor") ? html`
+          <a href="#" @click=${(e: Event) => { e.preventDefault(); this.handleNavClick("upload"); }}>Upload</a>
+        ` : ""}
       </div>
     `;
   }
