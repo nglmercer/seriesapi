@@ -4,7 +4,7 @@ import { h } from "./dom";
  * Premium UI Utilities for async alerts and prompts.
  */
 class UI {
-  private static createModal(content: HTMLElement): { modal: HTMLElement; close: () => void } {
+  private static createModal(content: HTMLElement, wide = false): { modal: HTMLElement; close: () => void } {
     const overlay = h("div", {
       className: "modal-overlay",
       style: `
@@ -24,7 +24,9 @@ class UI {
       className: "card modal-card",
       style: `
         width: 100%;
-        max-width: 400px;
+        max-width: ${wide ? '600px' : '400px'};
+        max-height: 90vh;
+        overflow-y: auto;
         margin: 20px;
         padding: 24px;
         animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -115,6 +117,48 @@ class UI {
         )
       );
       const { close } = this.createModal(content);
+    });
+  }
+
+  static form<T>(title: string, fields: { label: string; name: string; type: string; value?: any; options?: { label: string; value: any }[] }[]): Promise<T | null> {
+    return new Promise((resolve) => {
+      const inputs: Record<string, any> = {};
+      const formContent = h("div", { className: "ui-form", style: "display: flex; flex-direction: column; gap: 12px;" },
+        h("h3", { style: "margin-top:0;" }, title),
+        ...fields.map(f => {
+          let input;
+          if (f.type === "textarea") {
+            input = h("textarea", { name: f.name, rows: 4 }, f.value || "");
+          } else if (f.type === "select") {
+            input = h("select", { name: f.name }, 
+              ...(f.options || []).map(opt => h("option", { value: opt.value, selected: opt.value === f.value }, opt.label))
+            );
+          } else {
+            input = h("input", { type: f.type, name: f.name, value: f.value || "" });
+          }
+          inputs[f.name] = input;
+          return h("div", {},
+            h("label", { style: "font-size: 13px; font-weight: 600;" }, f.label),
+            input
+          );
+        }),
+        h("div", { style: "display:flex; justify-content: flex-end; gap: 10px; margin-top: 10px;" },
+          h("button", { onclick: () => { close(); resolve(null); } }, "Cancel"),
+          h("button", { 
+            className: "primary", 
+            onclick: () => {
+              const res: any = {};
+              fields.forEach(f => {
+                res[f.name] = inputs[f.name].value;
+                if (f.type === "number") res[f.name] = parseFloat(res[f.name]);
+              });
+              close();
+              resolve(res);
+            }
+          }, "Save")
+        )
+      );
+      const { close } = this.createModal(formContent, true);
     });
   }
 }

@@ -37,17 +37,24 @@ export class AdminContentManager extends HTMLElement {
   }
 
   private async handleEditSeason(season: any) {
-      const newTitle = await ui.prompt("Season Title:", season.name || "");
-      if (newTitle !== null) {
-          await api.updateSeason(season.id, { name: newTitle });
+      const data = await ui.form<{ name: string; season_number: number }>("Edit Season", [
+          { label: "Season Number", name: "season_number", type: "number", value: season.season_number },
+          { label: "Season Title", name: "name", type: "text", value: season.name || "" }
+      ]);
+      if (data) {
+          await api.updateSeason(season.id, data);
           await this.fetchData();
       }
   }
 
   private async handleEditEpisode(ep: EpisodeItem) {
-      const newTitle = await ui.prompt("Episode Title:", ep.title || "");
-      if (newTitle !== null) {
-          await api.updateEpisode(ep.id, { title: newTitle });
+      const data = await ui.form<Partial<EpisodeItem>>("Edit Episode", [
+          { label: "Number", name: "episode_number", type: "number", value: ep.episode_number },
+          { label: "Title", name: "title", type: "text", value: ep.title },
+          { label: "Synopsis", name: "synopsis", type: "textarea", value: ep.synopsis || "" }
+      ]);
+      if (data) {
+          await api.updateEpisode(ep.id, data);
           if(this.selectedSeasonId) await this.fetchEpisodes(this.selectedSeasonId);
       }
   }
@@ -61,14 +68,17 @@ export class AdminContentManager extends HTMLElement {
 
   private async handleAddSeason() {
       if (!this.mediaId) return;
-      const num = await ui.prompt("Season Number:", (this.seasons.length + 1).toString());
-      if (!num) return;
-      const title = await ui.prompt("Season Title (Optional):", "");
+      const data = await ui.form<{ season_number: number; title: string }>("New Season", [
+          { label: "Season Number", name: "season_number", type: "number", value: this.seasons.length + 1 },
+          { label: "Season Name (optional)", name: "title", type: "text" }
+      ]);
       
+      if (!data) return;
+
       const res = await api.createSeason({
           mediaId: this.mediaId,
-          seasonNumber: parseInt(num, 10),
-          title: title || undefined
+          seasonNumber: data.season_number,
+          title: data.title || undefined
       });
 
       if (res.ok) {
@@ -78,15 +88,20 @@ export class AdminContentManager extends HTMLElement {
 
   private async handleAddEpisode() {
       if (!this.mediaId || !this.selectedSeasonId) return;
-      const num = await ui.prompt("Episode Number:", (this.episodes.length + 1).toString());
-      if (!num) return;
-      const title = await ui.prompt("Episode Title:", "");
+      const data = await ui.form<{ number: number; title: string; synopsis: string }>("New Episode", [
+          { label: "Episode #", name: "number", type: "number", value: this.episodes.length + 1 },
+          { label: "Title", name: "title", type: "text" },
+          { label: "Synopsis", name: "synopsis", type: "textarea" }
+      ]);
       
+      if (!data) return;
+
       const res = await api.createEpisode({
           mediaId: this.mediaId,
           seasonId: this.selectedSeasonId,
-          number: parseInt(num, 10),
-          title: title || undefined
+          number: data.number,
+          title: data.title || undefined,
+          synopsis: data.synopsis || undefined
       });
 
       if (res.ok) {
@@ -137,7 +152,7 @@ export class AdminContentManager extends HTMLElement {
             this.selectedSeasonId ? h("div", { className: "episodes-list", style: "display: grid; gap: 8px;" },
                  ...this.episodes.map(ep => h("div", { className: "card", style: "margin:0; padding: 8px; display:flex; justify-content: space-between; align-items:center;" },
                     h("div", {},
-                        h("span", { style: "font-weight:bold; margin-right:10px;" }, `#${ep.number}`),
+                        h("span", { style: "font-weight:bold; margin-right:10px;" }, `#${ep.episode_number}`),
                         h("span", {}, ep.title)
                     ),
                     h("div", { style: "display:flex; gap: 5px;" },

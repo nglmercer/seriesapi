@@ -18,9 +18,11 @@ export class AdminGenresView extends HTMLElement {
   }
 
   private async handleAdd() {
-    const name = await ui.prompt("Genre Name:");
-    if (name) {
-      const res = await api.createGenre(name);
+    const data = await ui.form<{ name: string }>("New Genre", [
+        { label: "Name", name: "name", type: "text" }
+    ]);
+    if (data?.name) {
+      const res = await api.createGenre(data.name);
       if (res.ok) {
         await this.fetchGenres();
         this.render();
@@ -31,9 +33,11 @@ export class AdminGenresView extends HTMLElement {
   }
 
   private async handleEdit(id: string | number, oldName: string) {
-    const newName = await ui.prompt("New Name:", oldName);
-    if (newName && newName !== oldName) {
-      const res = await api.updateGenre(id, newName);
+    const data = await ui.form<{ name: string }>("Edit Genre", [
+        { label: "Name", name: "name", type: "text", value: oldName }
+    ]);
+    if (data?.name && data.name !== oldName) {
+      const res = await api.updateGenre(id, data.name);
       if (res.ok) {
         await this.fetchGenres();
         this.render();

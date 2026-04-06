@@ -52,14 +52,16 @@ export interface PeopleItem {
 
 export interface EpisodeItem {
   id: number;
-  mediaId: number;
-  seasonNumber: number;
-  number: number;
+  media_id: number;
+  season_id: number;
+  episode_number: number;
+  absolute_number?: number;
+  episode_type?: string;
   title: string;
   synopsis?: string;
-  airDate?: string;
-  runtime?: number;
-  thumbnail?: string;
+  air_date?: string;
+  runtime_minutes?: number;
+  still_url?: string;
 }
 
 class ApiClient {

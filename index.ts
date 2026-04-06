@@ -36,7 +36,8 @@ import { handleCollectionsList, handleCollectionDetail } from "./src/api/routes/
 import { handleSearch } from "./src/api/routes/search";
 import { handleCommentPost, handleCommentGet } from "./src/api/routes/comments";
 import { handleRegister, handleLogin, handleLogout, handleMe } from "./src/api/routes/auth";
-import index from './web/index.html'
+import index_admin from './web/index.html'
+import index_public from './web/public.html'
 // ── config ────────────────────────────────────────────────────────────────────
 
 const PORT = parseInt(process.env.PORT ?? "3000", 10);
@@ -182,7 +183,6 @@ function route(req: Request): Response | Promise<Response> {
     if (GET && p3 === "me") return handleMe(req);
     return json404();
   }
-
   return json404();
 }
 
@@ -221,7 +221,8 @@ const server = Bun.serve({
     }
   },
   routes:{
-    "/": index,
+    "/": index_public,
+    "/admin": index_admin
   }
 });
 
