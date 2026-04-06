@@ -6,6 +6,9 @@ import { handleSearch } from "../../src/api/routes/search";
 import { handleSeasonDetail, handleSeasonEpisodes, handleSeasonImages } from "../../src/api/routes/seasons";
 import { Database } from "sqlite-napi";
 
+import { sqliteNapi } from "../../src/core/driver";
+import { mock } from "bun:test";
+
 // A dummy db that throws on any query
 const failingDb = {
   query: () => {
@@ -15,6 +18,12 @@ const failingDb = {
     throw new Error("Simulated DB Error");
   }
 } as unknown as Database;
+
+mock.module("../../src/init", () => {
+  return {
+    getDrizzle: () => sqliteNapi(failingDb)
+  }
+});
 
 describe("Error Handling in Routes", () => {
   const req = new Request("http://localhost/");
