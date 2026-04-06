@@ -32,7 +32,7 @@ describe("Search Route", () => {
       const res = handleSearch(req, db);
       const body = await res.json() as { data: { entity_type: string }[] };
       expect(body.data.length).toBeGreaterThan(0);
-      expect(body.data[0].entity_type).toBe("media");
+      expect(body.data[0]!.entity_type).toBe("media");
     });
 
     it("should search people by name", async () => {
@@ -43,7 +43,7 @@ describe("Search Route", () => {
       const req = new Request("http://localhost/api/v1/search?q=Keanu&type=person");
       const res = handleSearch(req, db);
       const body = await res.json() as { data: { entity_type: string }[] };
-      expect(body.data[0].entity_type).toBe("person");
+      expect(body.data[0]!.entity_type).toBe("person");
     });
 
     it("should search all types when no type specified", async () => {
@@ -82,7 +82,7 @@ describe("Search Route", () => {
       const req = new Request("http://localhost/api/v1/search?q=Translated&type=media");
       const res = handleSearch(req, db);
       const body = await res.json() as { data: { title: string }[] };
-      expect(body.data[0].title).toBe("Translated");
+      expect(body.data[0]!.title).toBe("Translated");
     });
   });
 });

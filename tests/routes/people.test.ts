@@ -42,7 +42,7 @@ describe("People Routes", () => {
       const res = handlePeopleList(req, db);
       const body = await res.json() as { data: { name: string }[] };
       expect(body.data.length).toBe(1);
-      expect(body.data[0].name).toBe("John Actor");
+      expect(body.data[0]!.name).toBe("John Actor");
     });
 
     it("should support pagination", async () => {
@@ -99,7 +99,7 @@ describe("People Routes", () => {
       const req = new Request(`http://localhost/api/v1/people/${pResult.lastInsertRowid}/credits`);
       const res = handlePersonCredits(req, db, Number(pResult.lastInsertRowid));
       const body = await res.json() as { data: { credit_type: string }[] };
-      expect(body.data[0].credit_type).toBe("cast");
+      expect(body.data[0]!.credit_type).toBe("cast");
     });
 
     it("should return crew credits", async () => {
@@ -112,7 +112,7 @@ describe("People Routes", () => {
       const req = new Request(`http://localhost/api/v1/people/${pResult.lastInsertRowid}/credits`);
       const res = handlePersonCredits(req, db, Number(pResult.lastInsertRowid));
       const body = await res.json() as { data: { department: string }[] };
-      expect(body.data[0].department).toBe("Directing");
+      expect(body.data[0]!.department).toBe("Directing");
     });
   });
 });

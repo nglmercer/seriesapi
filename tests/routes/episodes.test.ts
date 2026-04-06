@@ -71,7 +71,7 @@ describe("Episodes Routes", () => {
       const req = new Request(`http://localhost/api/v1/episodes/${eResult.lastInsertRowid}/credits`);
       const res = handleEpisodeCredits(req, db, Number(eResult.lastInsertRowid));
       const body = await res.json() as { data: { credit_type: string }[] };
-      expect(body.data[0].credit_type).toBe("cast");
+      expect(body.data[0]!.credit_type).toBe("cast");
     });
   });
 
@@ -87,7 +87,7 @@ describe("Episodes Routes", () => {
       const req = new Request(`http://localhost/api/v1/episodes/${eResult.lastInsertRowid}/images`);
       const res = handleEpisodeImages(req, db, Number(eResult.lastInsertRowid));
       const body = await res.json() as { data: { image_type: string }[] };
-      expect(body.data[0].image_type).toBe("still");
+      expect(body.data[0]!.image_type).toBe("still");
     });
   });
 
@@ -103,7 +103,7 @@ describe("Episodes Routes", () => {
       const req = new Request(`http://localhost/api/v1/episodes/${eResult.lastInsertRowid}/comments`);
       const res = handleEpisodeComments(req, db, Number(eResult.lastInsertRowid));
       const body = await res.json() as { data: { display_name: string }[] };
-      expect(body.data[0].display_name).toBe("User");
+      expect(body.data[0]!.display_name).toBe("User");
     });
   });
 });

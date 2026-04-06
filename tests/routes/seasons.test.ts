@@ -97,7 +97,7 @@ describe("Seasons Routes", () => {
       const req = new Request(`http://localhost/api/v1/seasons/${sResult.lastInsertRowid}/images`);
       const res = handleSeasonImages(req, db, Number(sResult.lastInsertRowid));
       const body = await res.json() as { data: { image_type: string }[] };
-      expect(body.data[0].image_type).toBe("poster");
+      expect(body.data[0]!.image_type).toBe("poster");
     });
   });
 });

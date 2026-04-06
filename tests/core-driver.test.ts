@@ -36,13 +36,13 @@ describe("Core Driver", () => {
     expect(all.length).toBe(2);
 
     const specific = adapter.select(users).select("name").all();
-    expect(specific[0].name).toBeDefined();
+    expect(specific[0]!.name).toBeDefined();
     // @ts-expect-error id shouldn't be here
-    expect(specific[0].id).toBeUndefined();
+    expect(specific[0]!.id).toBeUndefined();
 
     const limitOffset = adapter.select(users).orderBy("id", "desc").limit(1).offset(1).all();
     expect(limitOffset.length).toBe(1);
-    expect(limitOffset[0].name).toBe("Alice");
+    expect(limitOffset[0]!.name).toBe("Alice");
   });
 
   it("should select single data with get()", () => {
@@ -65,7 +65,7 @@ describe("Core Driver", () => {
     // update without where
     adapter.update(users).set({ name: "Everyone" }).run();
     const all = adapter.select(users).all();
-    expect(all[0].name).toBe("Everyone");
+    expect(all[0]!.name).toBe("Everyone");
   });
 
   it("should delete data", () => {

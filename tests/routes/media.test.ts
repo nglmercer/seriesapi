@@ -81,7 +81,7 @@ describe("Media Routes", () => {
       const req = new Request("http://localhost/api/v1/media?sort=score&order=desc");
       const res = handleMediaList(req, db);
       const body = await res.json() as { data: { score: number }[] };
-      expect(body.data[0].score).toBe(9);
+      expect(body.data[0]!.score).toBe(9);
     });
   });
 
@@ -215,7 +215,7 @@ describe("Media Routes", () => {
       const req = new Request(`http://localhost/api/v1/media/${mResult.lastInsertRowid}/videos`);
       const res = handleMediaVideos(req, db, Number(mResult.lastInsertRowid));
       const body = await res.json() as { data: { video_type: string }[] };
-      expect(body.data[0].video_type).toBe("trailer");
+      expect(body.data[0]!.video_type).toBe("trailer");
     });
   });
 
@@ -230,7 +230,7 @@ describe("Media Routes", () => {
       const req = new Request(`http://localhost/api/v1/media/${m1.lastInsertRowid}/related`);
       const res = handleMediaRelated(req, db, Number(m1.lastInsertRowid));
       const body = await res.json() as { data: { relation_type: string }[] };
-      expect(body.data[0].relation_type).toBe("sequel");
+      expect(body.data[0]!.relation_type).toBe("sequel");
     });
   });
 
@@ -259,7 +259,7 @@ describe("Media Routes", () => {
       const res = handleMediaImages(req, db, Number(mResult.lastInsertRowid));
       const body = await res.json() as { data: { image_type: string }[] };
       expect(body.data.length).toBe(1);
-      expect(body.data[0].image_type).toBe("poster");
+      expect(body.data[0]!.image_type).toBe("poster");
     });
   });
 
@@ -273,7 +273,7 @@ describe("Media Routes", () => {
       const req = new Request(`http://localhost/api/v1/media/${mResult.lastInsertRowid}/comments`);
       const res = handleMediaComments(req, db, Number(mResult.lastInsertRowid));
       const body = await res.json() as { data: { display_name: string }[] };
-      expect(body.data[0].display_name).toBe("User");
+      expect(body.data[0]!.display_name).toBe("User");
     });
   });
 });
