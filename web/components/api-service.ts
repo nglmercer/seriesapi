@@ -9,18 +9,27 @@ export interface ApiResponse<T> {
 
 export interface MediaItem {
   id: number;
-  type: string;
+  slug: string;
+  content_type: string;
+  original_title: string;
+  status: string;
+  release_date: string | null;
   title: string;
-  originalTitle?: string;
+  synopsis_short: string | null;
+  score: number;
+  popularity: number;
+  poster_url: string;
+  // Legacy fields for compatibility
+  type?: string;
   year?: number;
   poster?: string;
   banner?: string;
-  status?: string;
   rating?: number;
   genres?: string[];
   synopsis?: string;
   episodes?: number;
   duration?: number;
+  originalTitle?: string;
 }
 
 export interface PeopleItem {

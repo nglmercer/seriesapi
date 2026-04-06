@@ -22,6 +22,7 @@ export class MediaList extends LitElement {
     .pagination button:disabled { color: #c8ccd1; cursor: not-allowed; }
     .pagination-info { color: #72777d; font-size: 14px; padding: 8px; }
     .no-results { text-align: center; padding: 40px; color: #72777d; }
+    .error { text-align: center; padding: 20px; color: #d33; background: #fee7e7; border: 1px solid #f8b8b8; border-radius: 2px; margin: 16px; }
   `;
 
   @property({type: Number}) page = 1;
@@ -89,44 +90,44 @@ export class MediaList extends LitElement {
   }
 
   override render() {
-    if (this.loading) return html`<div class="loading">Loading...</div>`;
+    if (this.loading) return html`<div class="loading">Cargando...</div>`;
 
     if (this.items.length === 0) {
-      return html`<div class="no-results">No results found</div>`;
+      return html`<div class="no-results">No se encontraron resultados</div>`;
     }
 
     return html`
       <div class="filter">
         <select @change=${this.handleTypeChange}>
-          <option value="">All Types</option>
+          <option value="">Todos los tipos</option>
           <option value="anime">Anime</option>
           <option value="manga">Manga</option>
-          <option value="movie">Movie</option>
+          <option value="movie">Película</option>
           <option value="ova">OVA</option>
           <option value="ona">ONA</option>
-          <option value="special">Special</option>
+          <option value="special">Especial</option>
         </select>
         <select @change=${this.handleStatusChange}>
-          <option value="">All Status</option>
-          <option value="current">Current</option>
-          <option value="finished">Finished</option>
-          <option value="upcoming">Upcoming</option>
-          <option value="tba">TBA</option>
+          <option value="">Todos los estados</option>
+          <option value="ongoing">En emisión</option>
+          <option value="completed">Finalizado</option>
+          <option value="upcoming">Próximamente</option>
+          <option value="tba">Por anunciarse</option>
         </select>
       </div>
       <div class="grid">
         ${this.items.map(item => html`
           <div class="card" @click=${() => this.handleCardClick(item)}>
-            <img class="card-poster" src=${item.poster || ""} alt=${item.title} loading="lazy" />
+            <img class="card-poster" src=${item.poster_url} alt=${item.title} loading="lazy" />
             <div class="card-title">${item.title}</div>
-            <div class="card-meta">${item.year} · ${item.type}</div>
+            <div class="card-meta">${item.release_date ? item.release_date.split("-")[0] : ""} · ${item.content_type}</div>
           </div>
         `)}
       </div>
       <div class="pagination">
-        <button ?disabled=${this.page <= 1} @click=${() => this.handlePageChange(-1)}>Previous</button>
-        <span class="pagination-info">Page ${this.page} of ${Math.max(1, Math.ceil(this.totalItems / this.pageSize))}</span>
-        <button ?disabled=${this.page * this.pageSize >= this.totalItems} @click=${() => this.handlePageChange(1)}>Next</button>
+        <button ?disabled=${this.page <= 1} @click=${() => this.handlePageChange(-1)}>Anterior</button>
+        <span class="pagination-info">Página ${this.page} de ${Math.max(1, Math.ceil(this.totalItems / this.pageSize))}</span>
+        <button ?disabled=${this.page * this.pageSize >= this.totalItems} @click=${() => this.handlePageChange(1)}>Siguiente</button>
       </div>
     `;
   }
