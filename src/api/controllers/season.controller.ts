@@ -65,4 +65,55 @@ export class SeasonController {
 
     return { rows, locale, total: rows.length };
   }
+
+  static create(data: { mediaId: number; seasonNumber: number; title?: string }) {
+    const drizzle = getDrizzle();
+    const now = new Date().toISOString();
+
+    const seasonId = drizzle.query(`
+      INSERT INTO seasons (media_id, season_number, created_at, updated_at)
+      VALUES (?, ?, ?, ?)
+    `).run([data.mediaId, data.seasonNumber, now, now]).lastInsertRowid;
+
+    if (data.title) {
+      drizzle.query(`
+        INSERT INTO season_translations (season_id, locale, name)
+        VALUES (?, 'es', ?)
+      `).run([seasonId, data.title]);
+    }
+
+    return { id: seasonId };
+  }
+
+  static update(id: number, data: { seasonNumber?: number; title?: string }) {
+    const drizzle = getDrizzle();
+    const now = new Date().toISOString();
+
+    if (data.seasonNumber !== undefined) {
+      drizzle.query(`UPDATE seasons SET season_number = ?, updated_at = ? WHERE id = ?`)
+        .run([data.seasonNumber, now, id]);
+    }
+
+    if (data.title !== undefined) {
+      // Upsert translation for 'es'
+      const existing = drizzle.query(`SELECT id FROM season_translations WHERE season_id = ? AND locale = 'es'`).get([id]);
+      if (existing) {
+        drizzle.query(`UPDATE season_translations SET name = ? WHERE season_id = ? AND locale = 'es'`)
+          .run([data.title, id]);
+      } else {
+        drizzle.query(`INSERT INTO season_translations (season_id, locale, name) VALUES (?, 'es', ?)`)
+          .run([id, data.title]);
+      }
+    }
+
+    return { ok: true };
+  }
+
+  static delete(id: number) {
+    const drizzle = getDrizzle();
+    drizzle.query(`DELETE FROM seasons WHERE id = ?`).run([id]);
+    drizzle.query(`DELETE FROM season_translations WHERE season_id = ?`).run([id]);
+    // Note: Episodes should probably be deleted too, but we might want cascading for that in the schema.
+    return { ok: true };
+  }
 }

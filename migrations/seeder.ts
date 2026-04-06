@@ -1,4 +1,4 @@
-import { createORM } from "./builder";
+import { createORM, WhereBuilder } from "./builder";
 import type {
 	MediaRow,
 	MediaTranslationRow,
@@ -12,7 +12,7 @@ import type {
 	MediaGenreRow,
 	ContentTypeRow,
 	LanguageRow,
-} from "./builder";
+} from "./schema";
 import type { Catalogo, Capitulo, Temporada, Categoria, Asignacion } from "./types";
 import { toSlug, CONTENT_TYPE_MAP, STATUS_MAP } from "./utils";
 import type { MediaInput, SeasonInput, EpisodeInput, GenreInput, GenreAssignmentInput } from "./migrate";
@@ -137,8 +137,8 @@ export class Seeder {
 						.where((w) => w.eq("original_title", cat.nombreCatalogo))
 						.first();
 
-				if (existing) {
-					this.catalogoIdMap.set(cat.idCatalogo, existing.id);
+			if (existing && existing.id) {
+				this.catalogoIdMap.set(cat.idCatalogo, existing.id);
 					skipCount++;
 					continue;
 				}
@@ -226,8 +226,8 @@ export class Seeder {
 						.where((w) => w.eq("original_title", item.title))
 						.first();
 
-				if (existing) {
-					this.catalogoIdMap.set(item.oldId, existing.id);
+			if (existing && existing.id) {
+				this.catalogoIdMap.set(item.oldId, existing.id);
 					skipCount++;
 					continue;
 				}

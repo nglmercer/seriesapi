@@ -89,4 +89,58 @@ export class EpisodeController {
 
     return { rows, locale, page, pageSize, total };
   }
+
+  static create(data: { mediaId: number; seasonId: number; number: number; title?: string; synopsis?: string }) {
+    const drizzle = getDrizzle();
+    const now = new Date().toISOString();
+
+    const episodeId = drizzle.query(`
+      INSERT INTO episodes (media_id, season_id, episode_number, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?)
+    `).run([data.mediaId, data.seasonId, data.number, now, now]).lastInsertRowid;
+
+    if (data.title || data.synopsis) {
+      drizzle.query(`
+        INSERT INTO episode_translations (episode_id, locale, title, synopsis)
+        VALUES (?, 'es', ?, ?)
+      `).run([episodeId, data.title || null, data.synopsis || null]);
+    }
+
+    return { id: episodeId };
+  }
+
+  static update(id: number, data: { number?: number; title?: string; synopsis?: string }) {
+    const drizzle = getDrizzle();
+    const now = new Date().toISOString();
+
+    if (data.number !== undefined) {
+      drizzle.query(`UPDATE episodes SET episode_number = ?, updated_at = ? WHERE id = ?`)
+        .run([data.number, now, id]);
+    }
+
+    if (data.title !== undefined || data.synopsis !== undefined) {
+      const existing = drizzle.query(`SELECT id FROM episode_translations WHERE episode_id = ? AND locale = 'es'`).get([id]);
+      if (existing) {
+        let updateSql = "UPDATE episode_translations SET";
+        const params = [];
+        if (data.title !== undefined) { updateSql += " title = ?,"; params.push(data.title); }
+        if (data.synopsis !== undefined) { updateSql += " synopsis = ?,"; params.push(data.synopsis); }
+        updateSql = updateSql.slice(0, -1) + " WHERE episode_id = ? AND locale = 'es'";
+        params.push(id);
+        drizzle.query(updateSql).run(params);
+      } else {
+        drizzle.query(`INSERT INTO episode_translations (episode_id, locale, title, synopsis) VALUES (?, 'es', ?, ?)`)
+          .run([id, data.title || null, data.synopsis || null]);
+      }
+    }
+
+    return { ok: true };
+  }
+
+  static delete(id: number) {
+    const drizzle = getDrizzle();
+    drizzle.query(`DELETE FROM episodes WHERE id = ?`).run([id]);
+    drizzle.query(`DELETE FROM episode_translations WHERE episode_id = ?`).run([id]);
+    return { ok: true };
+  }
 }

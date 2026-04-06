@@ -13,12 +13,22 @@ import {
   handleMediaRelated,
   handleMediaComments,
 } from "./src/api/routes/media";
-import { handleSeasonDetail, handleSeasonEpisodes, handleSeasonImages } from "./src/api/routes/seasons";
+import {
+  handleSeasonDetail,
+  handleSeasonEpisodes,
+  handleSeasonImages,
+  handleSeasonCreate,
+  handleSeasonUpdate,
+  handleSeasonDelete,
+} from "./src/api/routes/seasons";
 import {
   handleEpisodeDetail,
   handleEpisodeCredits,
   handleEpisodeImages,
   handleEpisodeComments,
+  handleEpisodeCreate,
+  handleEpisodeUpdate,
+  handleEpisodeDelete,
 } from "./src/api/routes/episodes";
 import { handlePeopleList, handlePersonDetail, handlePersonCredits } from "./src/api/routes/people";
 import { handleGenresList, handleGenreMedia } from "./src/api/routes/genres";
@@ -127,9 +137,12 @@ function route(req: Request): Response | Promise<Response> {
 
   // ── /api/v1/seasons ────────────────────────────────────────────────────────
   if (resource === "seasons") {
-    if (!GET) return json405();
+    if (req.method === "POST") return handleSeasonCreate(req);
     const id = seg(parts, 3);
     if (isNaN(id)) return json404();
+    if (req.method === "PUT") return handleSeasonUpdate(req, db, id);
+    if (req.method === "DELETE") return handleSeasonDelete(req, db, id);
+    if (!GET) return json405();
     if (!p4) return handleSeasonDetail(req, db, id);
     if (p4 === "episodes") return handleSeasonEpisodes(req, db, id);
     if (p4 === "images")   return handleSeasonImages(req, db, id);
@@ -138,9 +151,12 @@ function route(req: Request): Response | Promise<Response> {
 
   // ── /api/v1/episodes ───────────────────────────────────────────────────────
   if (resource === "episodes") {
-    if (!GET) return json405();
+    if (req.method === "POST") return handleEpisodeCreate(req);
     const id = seg(parts, 3);
     if (isNaN(id)) return json404();
+    if (req.method === "PUT") return handleEpisodeUpdate(req, db, id);
+    if (req.method === "DELETE") return handleEpisodeDelete(req, db, id);
+    if (!GET) return json405();
     if (!p4) return handleEpisodeDetail(req, db, id);
     if (p4 === "credits")  return handleEpisodeCredits(req, db, id);
     if (p4 === "images")   return handleEpisodeImages(req, db, id);

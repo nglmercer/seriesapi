@@ -58,6 +58,41 @@ export class AdminContentManager extends HTMLElement {
       }
   }
 
+  private async handleAddSeason() {
+      if (!this.mediaId) return;
+      const num = prompt("Season Number:", (this.seasons.length + 1).toString());
+      if (!num) return;
+      const title = prompt("Season Title (Optional):", "");
+      
+      const res = await api.createSeason({
+          mediaId: this.mediaId,
+          seasonNumber: parseInt(num, 10),
+          title: title || undefined
+      });
+
+      if (res.ok) {
+          await this.fetchData();
+      }
+  }
+
+  private async handleAddEpisode() {
+      if (!this.mediaId || !this.selectedSeasonId) return;
+      const num = prompt("Episode Number:", (this.episodes.length + 1).toString());
+      if (!num) return;
+      const title = prompt("Episode Title:", "");
+      
+      const res = await api.createEpisode({
+          mediaId: this.mediaId,
+          seasonId: this.selectedSeasonId,
+          number: parseInt(num, 10),
+          title: title || undefined
+      });
+
+      if (res.ok) {
+          await this.fetchEpisodes(this.selectedSeasonId);
+      }
+  }
+
   render() {
     this.innerHTML = "";
     if (!this.media) {
@@ -80,7 +115,7 @@ export class AdminContentManager extends HTMLElement {
         h("div", {},
             h("div", { style: "display:flex; justify-content: space-between; align-items:center; margin-bottom:10px;" },
                 h("h3", {}, "Seasons"),
-                h("button", { onclick: () => alert("Add Season API needed"), className: "primary" }, "+")
+                h("button", { onclick: () => this.handleAddSeason(), className: "primary" }, "+")
             ),
             h("div", { className: "seasons-list", style: "display: flex; flex-direction: column; gap: 8px;" },
                 ...this.seasons.map(s => h("div", { 
@@ -109,7 +144,7 @@ export class AdminContentManager extends HTMLElement {
                         h("button", { onclick: () => this.handleDeleteEpisode(ep.id), className: "danger", style: "padding:2px 6px; font-size:11px; background:var(--error-color); color:white;" }, "Del")
                     )
                  )),
-                 h("button", { style: "margin-top:10px;", className: "primary" }, "+ Add Episode")
+                 h("button", { onclick: () => this.handleAddEpisode(), style: "margin-top:10px;", className: "primary" }, "+ Add Episode")
             ) : h("div", { className: "card", style: "text-align:center; color: var(--text-secondary);" }, "← Select a season on the left")
         )
     );

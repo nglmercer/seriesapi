@@ -38,3 +38,32 @@ export function handleSeasonImages(req: Request, _db: Database, seasonId: number
     return serverError(err, "en");
   }
 }
+
+export async function handleSeasonCreate(req: Request): Promise<Response> {
+  try {
+    const body = await req.json();
+    const result = SeasonController.create(body);
+    return ok(result, { locale: "es" });
+  } catch (err) {
+    return serverError(err, "en");
+  }
+}
+
+export async function handleSeasonUpdate(req: Request, _db: Database, id: number): Promise<Response> {
+  try {
+    const body = await req.json();
+    const result = SeasonController.update(id, body);
+    return ok(result, { locale: "es" });
+  } catch (err) {
+    return serverError(err, "en");
+  }
+}
+
+export async function handleSeasonDelete(req: Request, _db: Database, id: number): Promise<Response> {
+  try {
+    const result = SeasonController.delete(id);
+    return ok(result, { locale: "es" });
+  } catch (err) {
+    return serverError(err, "en");
+  }
+}

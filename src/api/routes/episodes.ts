@@ -48,3 +48,32 @@ export function handleEpisodeComments(req: Request, _db: Database, episodeId: nu
     return serverError(err, "en");
   }
 }
+
+export async function handleEpisodeCreate(req: Request): Promise<Response> {
+  try {
+    const body = await req.json();
+    const result = EpisodeController.create(body);
+    return ok(result, { locale: "es" });
+  } catch (err) {
+    return serverError(err, "en");
+  }
+}
+
+export async function handleEpisodeUpdate(req: Request, _db: Database, id: number): Promise<Response> {
+  try {
+    const body = await req.json();
+    const result = EpisodeController.update(id, body);
+    return ok(result, { locale: "es" });
+  } catch (err) {
+    return serverError(err, "en");
+  }
+}
+
+export async function handleEpisodeDelete(req: Request, _db: Database, id: number): Promise<Response> {
+  try {
+    const result = EpisodeController.delete(id);
+    return ok(result, { locale: "es" });
+  } catch (err) {
+    return serverError(err, "en");
+  }
+}

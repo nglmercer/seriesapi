@@ -10,7 +10,7 @@ export class EmptyState extends LitElement {
     .empty-title { font-size: 18px; font-weight: bold; color: #202122; margin-bottom: 8px; }
     .empty-message { color: #72777d; font-size: 14px; }
   `;
-
+  //@ts-ignore  recommend change this on future
   @property({type: String}) title = "No content found";
   @property({type: String}) message = "The requested content does not exist or has been removed.";
 
