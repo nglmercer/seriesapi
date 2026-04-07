@@ -66,7 +66,7 @@ export class SearchBox extends LitElement {
   `;
 
   @state() query = "";
-  @state() results: Array<{id: number; entityType: string; title: string; type: string; poster?: string}> = [];
+  @state() results: Array<{id: number; entity_type: string; title: string; content_type?: string; image_url?: string}> = [];
   @state() loading = false;
 
   private handleInput(e: GlobalEventHandlers & Event) {
@@ -85,13 +85,15 @@ export class SearchBox extends LitElement {
     this.loading = true;
     const res = await api.search(this.query);
     if (res.ok) {
-      this.results = res.data as Array<{id: number; entityType: string; title: string; type: string; poster?: string}>;
+      this.results = res.data as any[];
     }
     this.loading = false;
   }
 
-  private handleResultClick(result: {id: number; entityType: string; title: string}) {
+  private handleResultClick(result: any) {
     this.dispatchEvent(new CustomEvent("search-result", {detail: result, bubbles: true, composed: true}));
+    this.results = [];
+    this.query = "";
   }
 
   override render() {
@@ -114,7 +116,7 @@ export class SearchBox extends LitElement {
             ${this.results.map(result => html`
               <div class="result" @click=${() => this.handleResultClick(result)}>
                 <div>
-                  <div class="result-type">${result.entityType}</div>
+                  <div class="result-type">${result.entity_type}</div>
                   <div class="result-title">${result.title}</div>
                 </div>
               </div>

@@ -14,7 +14,7 @@ class PublicApp extends HTMLElement {
     });
 
     this.addEventListener("search-result", (e: any) => {
-      if (e.detail.entityType === "media") {
+      if (e.detail.entity_type === "media") {
         this.selectedMediaId = e.detail.id;
         this.selectedSeasonId = null;
         this.render();
