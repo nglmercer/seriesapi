@@ -54,6 +54,36 @@ export class MediaList extends LitElement {
       color: var(--text-secondary);
     }
 
+    /* Skeleton Styles */
+    .skeleton {
+      background: linear-gradient(90deg, var(--card-bg) 25%, var(--border-color) 50%, var(--card-bg) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite;
+      border-radius: 4px;
+    }
+
+    @keyframes skeleton-loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .skeleton-img {
+      width: 100%;
+      height: 260px;
+    }
+
+    .skeleton-title {
+      height: 20px;
+      margin-top: 10px;
+      width: 80%;
+    }
+
+    .skeleton-meta {
+      height: 15px;
+      margin-top: 5px;
+      width: 60%;
+    }
+
     .loading-container, .no-items {
       text-align: center;
       padding: 40px;
@@ -112,12 +142,88 @@ export class MediaList extends LitElement {
   @state() private _loading = false;
   @state() private _page = 1;
   @state() private _totalPages = 1;
+  @state() private _pageSize = 20;
+
+  private _resizeObserver: ResizeObserver | null = null;
+  private _resizeTimeout: any;
 
   override async connectedCallback() {
     super.connectedCallback();
-    if (this._items.length === 0) {
-      this.load();
+    this._setupResizeObserver();
+  }
+
+  protected override firstUpdated() {
+    // Wait a frame for layout to settle
+    setTimeout(() => {
+      this._calculatePageSize();
+      if (this._items.length === 0) {
+        this.load();
+      }
+    }, 0);
+  }
+
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._resizeObserver) {
+      this._resizeObserver.disconnect();
     }
+    clearTimeout(this._resizeTimeout);
+  }
+
+  private _setupResizeObserver() {
+    this._resizeObserver = new ResizeObserver(() => {
+      clearTimeout(this._resizeTimeout);
+      this._resizeTimeout = setTimeout(() => {
+        const oldPageSize = this._pageSize;
+        this._calculatePageSize();
+        if (oldPageSize !== this._pageSize) {
+          console.log("[media-list] page size changed, recalculating page");
+          // Recalculate current page to stay on roughly the same items
+          const currentOffset = (this._page - 1) * oldPageSize;
+          this._page = Math.floor(currentOffset / this._pageSize) + 1;
+          this.load();
+        }
+      }, 300);
+    });
+    this._resizeObserver.observe(this);
+  }
+
+  private _calculatePageSize() {
+    // Get the actual width from the element or its parent
+    const containerWidth = this.getBoundingClientRect().width || this.offsetWidth || window.innerWidth;
+    const minItemWidth = 180;
+    const gap = 20;
+    
+    // Exact column calculation matching CSS: repeat(auto-fill, minmax(180px, 1fr))
+    const itemsPerRow = Math.floor((containerWidth + gap) / (minItemWidth + gap)) || 1;
+    
+    // Target is around 20 elements (standard page size)
+    const targetElements = 20;
+    
+    // We want a number of rows that results in a total close to targetElements,
+    // but ensuring we fill the visible space.
+    
+    // Find out how much space is left in the viewport
+    const rect = this.getBoundingClientRect();
+    const topOffset = rect.height > 0 ? Math.max(0, rect.top) : 250; 
+    const availableHeight = window.innerHeight - topOffset;
+    const itemHeight = 350; 
+    
+    // Minimum rows to fill the viewport
+    const minRowsToFill = Math.max(1, Math.ceil((availableHeight - 100) / itemHeight));
+    
+    // Let's try to find a row count that gets us closest to targetElements (20)
+    // but is at least minRowsToFill to avoid empty space.
+    let idealRows = Math.round(targetElements / itemsPerRow);
+    
+    // Ensure we don't have too few rows (to avoid leaving space)
+    // but also not too many if it's not needed.
+    const finalRows = Math.max(minRowsToFill, idealRows);
+    
+    // Final page size is a perfect multiple of columns
+    this._pageSize = itemsPerRow * finalRows;
+    
+    console.log(`[media-list] Calculated pageSize: ${this._pageSize} (${itemsPerRow} cols x ${finalRows} rows), target: ~20, minRows: ${minRowsToFill}`);
   }
 
   public setFilters(newFilters: Record<string, string>) {
@@ -127,11 +233,11 @@ export class MediaList extends LitElement {
   }
 
   async load() {
-    console.log("[media-list] load called, page:", this._page);
+    console.log("[media-list] load called, page:", this._page, "pageSize:", this._pageSize);
     this._loading = true;
 
     try {
-      const result = await mediaService.fetchMediaList(this._page, 20, this._filters);
+      const result = await mediaService.fetchMediaList(this._page, this._pageSize, this._filters);
       this._items = result.items;
       this._totalPages = result.pages;
     } catch (err) {
@@ -191,10 +297,16 @@ export class MediaList extends LitElement {
   }
 
   override render() {
-    if (this._loading) {
+    if (this._loading && this._items.length === 0) {
       return html`
-        <div class="loading-container">
-          ${translate("media.loading", "Loading...")}
+        <div class="media-grid">
+          ${Array(this._pageSize).fill(0).map(() => html`
+            <div class="card">
+              <div class="skeleton skeleton-img"></div>
+              <div class="skeleton skeleton-title"></div>
+              <div class="skeleton skeleton-meta"></div>
+            </div>
+          `)}
         </div>
       `;
     }
@@ -206,12 +318,16 @@ export class MediaList extends LitElement {
         </div>
       `;
     }
-    console.log("[media-list] render called, items:", this._items);
+    
+    // Strictly slice the items to match the pageSize to ensure a perfect grid
+    const visibleItems = this._items.slice(0, this._pageSize);
+    
+    console.log(`[media-list] render called, items: ${this._items.length}, showing: ${visibleItems.length}, pageSize: ${this._pageSize}`);
     return html`
-      <div class="media-grid">
-        ${this._items.map(item => html`
+      <div class="media-grid" style="${this._loading ? 'opacity: 0.7; pointer-events: none;' : ''}">
+        ${visibleItems.map(item => html`
           <div class="card" @click=${() => eventBus.emit("media-select", { id: item.id })}>
-            <img src=${item.poster_url} alt=${item.title} loading="lazy">
+            <img src=${item.poster_url || item.image_url} alt=${item.title} loading="lazy">
             <div class="title">${item.title}</div>
             <div class="meta">
               ${item.content_type} | ${item.status || ""}

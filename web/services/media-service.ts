@@ -21,20 +21,21 @@ class MediaService {
     }
   }
 
-  async fetchMediaList(page: number, pageSize: number, filters?: Record<string, string>): Promise<{ items: MediaItem[], total: number, pages: number }> {
+  async fetchMediaList(page: number, pageSize: number, filters?: Record<string, string>, offset?: number): Promise<{ items: MediaItem[], total: number, pages: number, offset: number }> {
     try {
-      const response = await api.getMedia(page, pageSize, filters);
+      const response = await api.getMedia(page, pageSize, filters, offset);
       if (response.ok) {
         return {
           items: response.data || [],
           total: Number(response.meta?.total) || response.data?.length || 0,
           pages: Number(response.meta?.pages) || Number(response.meta?.total) || 0,
+          offset: Number(response.meta?.offset) || 0,
         };
       }
-      return { items: [], total: 0, pages: 1 };
+      return { items: [], total: 0, pages: 1, offset: 0 };
     } catch (error) {
       console.error("[media-list] fetchMediaList error:", error);
-      return { items: [], total: 0, pages: 1 };
+      return { items: [], total: 0, pages: 1, offset: 0 };
     }
   }
 

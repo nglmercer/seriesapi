@@ -39,7 +39,7 @@ export interface MediaItem {
   age_rating: string | null;
   is_adult: boolean;
   poster_url: string;
-  
+  image_url?: string;
   // Localized fields
   title: string;
   tagline: string | null;
@@ -162,8 +162,9 @@ class ApiClient {
     }
   }
 
-  getMedia(page = 1, pageSize = 20, filters?: Record<string, string>): Promise<ApiResponse<MediaItem[]>> {
-    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), locale: this.getLocale() });
+  getMedia(page = 1, pageSize = 20, filters?: Record<string, string>, offset?: number): Promise<ApiResponse<MediaItem[]>> {
+    const params = new URLSearchParams({ page: String(page), limit: String(pageSize), locale: this.getLocale() });
+    if (offset !== undefined) params.set("offset", String(offset));
     if (filters) {
       Object.entries(filters).forEach(([k, v]) => v && params.set(k, v));
     }
@@ -205,7 +206,7 @@ class ApiClient {
   }
 
   getPeople(page = 1, pageSize = 20): Promise<ApiResponse<PeopleItem[]>> {
-    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), locale: this.getLocale() });
+    const params = new URLSearchParams({ page: String(page), limit: String(pageSize), locale: this.getLocale() });
     return this.request(`/people?${params}`);
   }
 

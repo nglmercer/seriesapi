@@ -28,10 +28,11 @@ export class MediaController {
     const { 
       page, limit: pageSize, type, genre, status, 
       sort_by: sortBy, order, q: search, 
-      year_from: yearFrom, year_to: yearTo, score_from: scoreFrom 
+      year_from: yearFrom, year_to: yearTo, score_from: scoreFrom,
+      offset: requestedOffset
     } = v.data;
 
-    const offset = (page - 1) * pageSize;
+    const offset = requestedOffset !== undefined ? requestedOffset : (page - 1) * pageSize;
     const safeSort = sortBy;
 
     const drizzle = getDrizzle();
@@ -94,7 +95,9 @@ export class MediaController {
       .offset(offset)
       .all();
 
-    return { data, params: { locale, page, pageSize, total } };
+    const pages = Math.ceil(total / pageSize);
+
+    return { data, params: { locale, page, pageSize, total, offset, pages } };
   }
 
   static getDetail(req: Request, id: number) {
@@ -191,6 +194,7 @@ export class MediaController {
 
     const totalRes = totalQuery.get() as { c: number } | undefined;
     const total = totalRes ? totalRes.c : 0;
+    const pages = Math.ceil(total / pageSize);
 
     const rows = itemsQuery
       .orderBy("s.season_number", "asc")
@@ -199,7 +203,7 @@ export class MediaController {
       .offset(offset)
       .all();
 
-    return { rows, params: { locale, page, pageSize, total } };
+    return { rows, params: { locale, page, pageSize, total, pages } };
   }
 
   static getCredits(req: Request, mediaId: number) {
