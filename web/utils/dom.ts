@@ -1,4 +1,4 @@
-export function h(tag: string, props: Record<string, any> = {}, ...children: Array<string | Node>): HTMLElement {
+export function h(tag: string, props: Record<string, any> = {}, ...children: Array<string | Node | null | undefined | boolean>): HTMLElement {
   const el = document.createElement(tag);
   Object.assign(el, props);
   if (props.style && typeof props.style === 'object') {

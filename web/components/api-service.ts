@@ -230,6 +230,23 @@ class ApiClient {
     });
   }
 
+  getMediaRelations(mediaId: number): Promise<ApiResponse<unknown[]>> {
+    return this.request(`/media/${mediaId}/related?locale=${this.getLocale()}`);
+  }
+
+  createMediaRelation(data: { sourceId: number; relatedId: number; type: string }): Promise<ApiResponse<void>> {
+    return this.request(`/media/${data.sourceId}/related`, {
+      method: "POST",
+      body: JSON.stringify({ relatedId: data.relatedId, type: data.type }),
+    });
+  }
+
+  deleteMediaRelation(mediaId: number, relationId: number): Promise<ApiResponse<void>> {
+    return this.request(`/media/${mediaId}/related/${relationId}`, {
+      method: "DELETE",
+    });
+  }
+
   // Admin Operations
   createMedia(data: Partial<MediaItem>): Promise<ApiResponse<MediaItem>> {
     return this.request("/media", {
