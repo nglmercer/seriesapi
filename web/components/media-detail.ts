@@ -14,24 +14,52 @@ interface SeasonData {
 @customElement("media-detail")
 export class MediaDetail extends LitElement {
   static override styles = css`
-    :host { display: block; }
-    .container { display: flex; gap: 24px; padding: 16px; }
+    :host { display: block; --accent: #ff4757; }
+    .container { display: flex; gap: 32px; padding: 24px 0; }
     .wiki-main { flex: 1; min-width: 0; }
-    .wiki-sidebar { width: 300px; flex-shrink: 0; }
-    .page-title { font-family: sans-serif; font-size: 28px; font-weight: normal; border-bottom: 1px solid #a2a9b1; padding-bottom: 8px; margin-bottom: 16px; color: #202122; }
-    .back-link { display: inline-block; margin-bottom: 12px; color: #0645ad; font-size: 14px; cursor: pointer; }
-    .back-link:hover { text-decoration: underline; }
-    .section { margin-bottom: 24px; }
-    .section-title { font-size: 20px; font-weight: bold; border-bottom: 1px solid #a2a9b1; padding-bottom: 8px; margin-bottom: 12px; color: #202122; }
-    .synopsis { font-size: 15px; line-height: 1.7; color: #202122; background: #f8f9fa; padding: 16px; border: 1px solid #a2a9b1; border-radius: 2px; }
-    .seasons { display: flex; flex-direction: column; gap: 8px; }
-    .season { display: flex; justify-content: space-between; background: #f8f9fa; padding: 12px 16px; border: 1px solid #a2a9b1; border-radius: 2px; cursor: pointer; }
-    .season:hover { background: #eaecf0; }
-    .season-title { color: #0645ad; }
-    .season-episodes { color: #72777d; font-size: 14px; }
-    .season-filter { margin-bottom: 12px; }
-    .season-filter select { background: #fff; color: #202122; border: 1px solid #a2a9b1; padding: 6px 10px; border-radius: 2px; font-size: 14px; }
-    .loading { text-align: center; padding: 40px; color: #72777d; }
+    .wiki-sidebar { width: 320px; flex-shrink: 0; }
+    
+    .back-link { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 24px; color: var(--text-secondary); font-size: 14px; font-weight: 500; cursor: pointer; transition: color 0.2s; }
+    .back-link:hover { color: var(--accent); }
+    
+    .page-title { font-size: 42px; font-weight: 800; margin: 0 0 24px 0; letter-spacing: -1px; }
+    
+    .section { margin-bottom: 40px; }
+    .section-title { font-size: 22px; font-weight: 700; margin-bottom: 20px; color: var(--text-primary); display: flex; align-items: center; gap: 10px; }
+    .section-title::after { content: ""; flex: 1; height: 1px; background: var(--border-color); }
+    
+    .synopsis { font-size: 16px; line-height: 1.8; color: var(--text-secondary); white-space: pre-wrap; }
+    
+    .seasons-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+    .season-card { 
+      background: var(--bg-secondary); 
+      border: 1px solid var(--border-color); 
+      border-radius: 12px; 
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .season-card:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: 0 10px 20px -5px rgba(0,0,0,0.1); }
+    .season-name { font-size: 18px; font-weight: 700; display: block; margin-bottom: 8px; }
+    .season-count { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
+    
+    .filter-bar { margin-bottom: 24px; display: flex; align-items: center; gap: 12px; }
+    .filter-bar select {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      outline: none;
+    }
+    .filter-bar select:focus { border-color: var(--accent); }
+
+    .loading { text-align: center; padding: 60px; color: var(--text-secondary); font-size: 18px; }
   `;
 
   @property({type: Number}) mediaId = 0;
@@ -95,7 +123,10 @@ export class MediaDetail extends LitElement {
     );
 
     return html`
-      <a class="back-link" @click=${this.handleBack}>← Back</a>
+      <div class="back-link" @click=${this.handleBack}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        Back to Explorer
+      </div>
       <div class="container">
         <div class="wiki-sidebar">
           <wiki-infobox .media=${this.media}></wiki-infobox>
@@ -114,19 +145,19 @@ export class MediaDetail extends LitElement {
           ${uniqueSeasons.length > 0 ? html`
             <div class="section">
               <h2 class="section-title">Seasons</h2>
-              <div class="season-filter">
+              <div class="filter-bar">
                 <select @change=${this.handleSeasonChange}>
-                  <option value="">Todas las temporadas</option>
+                  <option value="">All Seasons</option>
                   ${uniqueSeasons.map(s => html`
                     <option value=${s.season_number}>${s.name || `Season ${s.season_number}`}</option>
                   `)}
                 </select>
               </div>
-              <div class="seasons">
+              <div class="seasons-grid">
                 ${uniqueSeasons.filter(s => this.selectedSeason === null || s.season_number === this.selectedSeason).map(s => html`
-                  <div class="season" @click=${() => this.handleSeasonClick(s.id)}>
-                    <span class="season-title">${s.name || `Season ${s.season_number}`}</span>
-                    <span class="season-episodes">${s.episode_count} episodes</span>
+                  <div class="season-card" @click=${() => this.handleSeasonClick(s.id)}>
+                    <span class="season-name">${s.name || `Season ${s.season_number}`}</span>
+                    <span class="season-count">${s.episode_count} Episodes</span>
                   </div>
                 `)}
               </div>

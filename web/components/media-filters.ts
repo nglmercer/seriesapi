@@ -15,15 +15,54 @@ export interface MediaFiltersState {
 @customElement("media-filters")
 export class MediaFilters extends LitElement {
   static override styles = css`
-    :host { display: block; }
-    .filters { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; background: #f8f9fa; border: 1px solid #a2a9b1; margin-bottom: 16px; border-radius: 2px; }
-    .filter-group { display: flex; flex-direction: column; gap: 4px; }
-    .filter-group label { font-size: 11px; color: #72777d; text-transform: uppercase; }
-    select, input { background: #fff; color: #202122; border: 1px solid #a2a9b1; padding: 6px 10px; border-radius: 2px; font-size: 14px; }
-    input { width: 70px; }
-    select:focus, input:focus { border-color: #36c; outline: none; }
-    .reset { background: #fff; color: #0645ad; border: 1px solid #a2a9b1; padding: 6px 12px; border-radius: 2px; cursor: pointer; font-size: 14px; align-self: flex-end; }
-    .reset:hover { background: #f8f9fa; }
+    :host { display: block; --accent: #ff4757; }
+    .filters-container { 
+      background: var(--bg-primary); 
+      padding: 24px; 
+      border-radius: 16px; 
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
+      border: 1px solid var(--border-color);
+    }
+    .filters-grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+      gap: 16px; 
+      align-items: flex-end;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 8px; }
+    .filter-group label { 
+      font-size: 12px; 
+      font-weight: 700; 
+      color: var(--text-secondary); 
+      text-transform: uppercase; 
+      letter-spacing: 0.5px;
+    }
+    select, input { 
+      background: var(--bg-secondary); 
+      color: var(--text-primary); 
+      border: 1px solid var(--border-color); 
+      padding: 10px 14px; 
+      border-radius: 8px; 
+      font-size: 14px; 
+      font-weight: 500;
+      transition: all 0.2s;
+      outline: none;
+    }
+    select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(255, 71, 87, 0.1); }
+    input { width: 100%; }
+    
+    .actions { display: flex; gap: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color); justify-content: flex-end; }
+    .btn-reset { 
+      background: transparent; 
+      color: var(--text-secondary); 
+      border: none; 
+      padding: 8px 16px; 
+      font-size: 14px; 
+      font-weight: 600; 
+      cursor: pointer; 
+      transition: color 0.2s;
+    }
+    .btn-reset:hover { color: var(--accent); }
   `;
 
   @property({type: String}) type = "";
@@ -90,67 +129,75 @@ export class MediaFilters extends LitElement {
 
   override render() {
     const currentYear = new Date().getFullYear();
-    const years = Array.from({length: currentYear - 1989}, (_, i) => currentYear - i);
 
     return html`
-      <div class="filters">
-        <div class="filter-group">
-          <label>Tipo</label>
-          <select @change=${(e: Event) => this.handleChange("type", (e.target as HTMLSelectElement).value)} .value=${this.type}>
-            <option value="">Todos</option>
-            <option value="anime">Anime</option>
-            <option value="manga">Manga</option>
-            <option value="movie">Película</option>
-            <option value="ova">OVA</option>
-            <option value="ona">ONA</option>
-            <option value="special">Especial</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label>Estado</label>
-          <select @change=${(e: Event) => this.handleChange("status", (e.target as HTMLSelectElement).value)} .value=${this.status}>
-            <option value="">Todos</option>
-            <option value="ongoing">En emisión</option>
-            <option value="completed">Finalizado</option>
-            <option value="upcoming">Próximamente</option>
-            <option value="tba">Por anunciarse</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label>Género</label>
-          <select @change=${(e: Event) => this.handleChange("genre", (e.target as HTMLSelectElement).value)} .value=${this.genre}>
-            <option value="">Todos</option>
-            ${this.genres.map(g => html`<option value=${g.slug}>${g.name}</option>`)}
-          </select>
-        </div>
-        <div class="filter-group">
-          <label>Año</label>
-          <div style="display: flex; gap: 4px;">
-            <input type="number" placeholder="Desde" min="1990" max=${currentYear} .value=${this.yearFrom} @change=${(e: Event) => this.handleChange("yearFrom", (e.target as HTMLInputElement).value)} />
-            <input type="number" placeholder="Hasta" min="1990" max=${currentYear} .value=${this.yearTo} @change=${(e: Event) => this.handleChange("yearTo", (e.target as HTMLInputElement).value)} />
+      <div class="filters-container">
+        <div class="filters-grid">
+          <div class="filter-group">
+            <label>Type</label>
+            <select @change=${(e: Event) => this.handleChange("type", (e.target as HTMLSelectElement).value)} .value=${this.type}>
+              <option value="">All</option>
+              <option value="anime">Anime</option>
+              <option value="manga">Manga</option>
+              <option value="movie">Movie</option>
+              <option value="ova">OVA</option>
+              <option value="ona">ONA</option>
+              <option value="special">Special</option>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label>Status</label>
+            <select @change=${(e: Event) => this.handleChange("status", (e.target as HTMLSelectElement).value)} .value=${this.status}>
+              <option value="">All</option>
+              <option value="ongoing">Ongoing</option>
+              <option value="completed">Completed</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="tba">TBA</option>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label>Genre</label>
+            <select @change=${(e: Event) => this.handleChange("genre", (e.target as HTMLSelectElement).value)} .value=${this.genre}>
+              <option value="">All</option>
+              ${this.genres.map(g => html`<option value=${g.slug}>${g.name}</option>`)}
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label>Year Range</label>
+            <div style="display: flex; gap: 8px;">
+              <input type="number" placeholder="From" min="1990" max=${currentYear} .value=${this.yearFrom} @change=${(e: Event) => this.handleChange("yearFrom", (e.target as HTMLInputElement).value)} />
+              <input type="number" placeholder="To" min="1990" max=${currentYear} .value=${this.yearTo} @change=${(e: Event) => this.handleChange("yearTo", (e.target as HTMLInputElement).value)} />
+            </div>
+          </div>
+          
+          <div class="filter-group">
+            <label>Score</label>
+            <select @change=${(e: Event) => this.handleChange("scoreFrom", (e.target as HTMLSelectElement).value)} .value=${this.scoreFrom}>
+              <option value="">Any</option>
+              <option value="9">9+ ★</option>
+              <option value="8">8+ ★</option>
+              <option value="7">7+ ★</option>
+              <option value="6">6+ ★</option>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label>Sort By</label>
+            <select @change=${(e: Event) => this.handleChange("sortBy", (e.target as HTMLSelectElement).value)} .value=${this.sortBy}>
+              <option value="popularity">Popularity</option>
+              <option value="score">Score</option>
+              <option value="release_date">Date</option>
+              <option value="title">Title</option>
+            </select>
           </div>
         </div>
-        <div class="filter-group">
-          <label>Puntuación</label>
-          <select @change=${(e: Event) => this.handleChange("scoreFrom", (e.target as HTMLSelectElement).value)} .value=${this.scoreFrom}>
-            <option value="">Cualquiera</option>
-            <option value="9">9+</option>
-            <option value="8">8+</option>
-            <option value="7">7+</option>
-            <option value="6">6+</option>
-            <option value="5">5+</option>
-          </select>
+        
+        <div class="actions">
+          <button class="btn-reset" @click=${this.handleReset}>Reset Filters</button>
         </div>
-        <div class="filter-group">
-          <label>Ordenar por</label>
-          <select @change=${(e: Event) => this.handleChange("sortBy", (e.target as HTMLSelectElement).value)} .value=${this.sortBy}>
-            <option value="popularity">Popularidad</option>
-            <option value="score">Puntuación</option>
-            <option value="release_date">Fecha</option>
-            <option value="title">Título</option>
-          </select>
-        </div>
-        <button class="reset" @click=${this.handleReset}>Limpiar</button>
       </div>
     `;
   }

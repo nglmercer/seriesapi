@@ -3,6 +3,7 @@ import { h } from "../utils/dom";
 
 export class MediaList extends HTMLElement {
   private items: MediaItem[] = [];
+  private filters: Record<string, string> = {};
   private loading = false;
   private page = 1;
 
@@ -10,10 +11,16 @@ export class MediaList extends HTMLElement {
     await this.load();
   }
 
+  public async setFilters(newFilters: Record<string, string>) {
+    this.filters = newFilters;
+    this.page = 1;
+    await this.load();
+  }
+
   async load() {
     this.loading = true;
     this.render();
-    const res = await api.getMedia(this.page, 20);
+    const res = await api.getMedia(this.page, 20, this.filters);
     if (res.ok) {
       this.items = res.data;
     }

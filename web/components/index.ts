@@ -5,6 +5,7 @@ export * from "./people-list";
 export * from "./genres-list";
 export * from "./search-box";
 export * from "./media-detail";
+export * from "./media-episodes";
 export * from "./wiki-infobox";
 export * from "./empty-state";
 export * from "./auth-modal";
