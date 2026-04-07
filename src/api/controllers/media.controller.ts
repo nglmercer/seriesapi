@@ -1,8 +1,7 @@
+import { imagesTable, videosTable, contentTypesTable, mediaTable, mediaTranslationsTable, mediaGenresTable, genresTable, genreTranslationsTable, mediaTagsTable, tagsTable, mediaStudiosTable, studiosTable, mediaNetworksTable, networksTable, seasonsTable, seasonTranslationsTable, episodesTable, episodeTranslationsTable, peopleTable, peopleTranslationsTable, creditsTable, mediaRelationsTable, commentsTable } from "../../schema";
 import { getDrizzle } from "../../init";
 import { parsePagination } from "../response";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
-import type { Database } from "sqlite-napi";
-import { imagesTable, videosTable, contentTypesTable, mediaTable, mediaTranslationsTable } from "../../schema";
 
 function getPosterUrl(drizzle: any, mediaId: number): string | null {
   const row = drizzle.select(imagesTable)
@@ -26,7 +25,7 @@ export class MediaController {
     const genre = url.searchParams.get("genre");
     const status = url.searchParams.get("status");
     const sortBy = url.searchParams.get("sort_by") ?? "popularity";
-    const order = url.searchParams.get("order") === "asc" ? "ASC" : "DESC";
+    const order = (url.searchParams.get("order") === "asc" ? "asc" : "desc") as "asc" | "desc";
     const search = url.searchParams.get("q");
     const yearFrom = url.searchParams.get("year_from");
     const yearTo = url.searchParams.get("year_to");
@@ -35,64 +34,67 @@ export class MediaController {
     const allowedSorts = new Set(["popularity", "score", "release_date", "title"]);
     const safeSort = allowedSorts.has(sortBy) ? sortBy : "popularity";
 
-    const conditions: string[] = [];
-    const params: unknown[] = [];
+    const drizzle = getDrizzle();
+    const posterSubquery = `(SELECT url FROM images WHERE entity_type='media' AND entity_id=m.id AND image_type='poster' AND is_primary=1 LIMIT 1)`;
 
-    if (type) { conditions.push("ct.slug = ?"); params.push(type); }
-    if (status) { conditions.push("m.status = ?"); params.push(status); }
+    const itemsQuery = drizzle.select(mediaTable).as("m")
+      .distinct()
+      .selectRaw(`m.id, m.slug, ct.slug AS content_type, m.original_title, m.status, m.release_date, m.score, m.popularity, COALESCE(mt.title, m.original_title) AS title, mt.synopsis_short, ${posterSubquery} AS poster_url`)
+      .join("content_types ct", "ct.id = m.content_type_id")
+      .leftJoin("media_translations mt", "mt.media_id = m.id AND mt.locale = ?", [locale]);
+
+    const totalQuery = drizzle.select(mediaTable).as("m")
+      .selectRaw("COUNT(DISTINCT m.id) as total")
+      .join("content_types ct", "ct.id = m.content_type_id")
+      .leftJoin("media_translations mt", "mt.media_id = m.id AND mt.locale = ?", [locale]);
+
+    if (type) {
+      itemsQuery.andWhere("ct.slug = ?", [type]);
+      totalQuery.andWhere("ct.slug = ?", [type]);
+    }
+    if (status) {
+      itemsQuery.andWhere("m.status = ?", [status]);
+      totalQuery.andWhere("m.status = ?", [status]);
+    }
     if (genre) {
-      conditions.push(`m.id IN (SELECT media_id FROM media_genres mg JOIN genres g ON g.id = mg.genre_id WHERE g.slug = ?)`);
-      params.push(genre);
+      const cond = `m.id IN (SELECT media_id FROM media_genres mg JOIN genres g ON g.id = mg.genre_id WHERE g.slug = ?)`;
+      itemsQuery.andWhere(cond, [genre]);
+      totalQuery.andWhere(cond, [genre]);
     }
     if (search) {
-      conditions.push(`(m.original_title LIKE ? OR mt.title LIKE ?)`);
-      params.push(`%${search}%`, `%${search}%`);
+      const cond = `(m.original_title LIKE ? OR mt.title LIKE ?)`;
+      const params = [`%${search}%`, `%${search}%`];
+      itemsQuery.andWhere(cond, params);
+      totalQuery.andWhere(cond, params);
     }
     if (yearFrom) {
-      conditions.push(`m.release_date >= ?`);
-      params.push(`${yearFrom}-01-01`);
+      itemsQuery.andWhere(`m.release_date >= ?`, [`${yearFrom}-01-01`]);
+      totalQuery.andWhere(`m.release_date >= ?`, [`${yearFrom}-01-01`]);
     }
     if (yearTo) {
-      conditions.push(`m.release_date <= ?`);
-      params.push(`${yearTo}-12-31`);
+      itemsQuery.andWhere(`m.release_date <= ?`, [`${yearTo}-12-31`]);
+      totalQuery.andWhere(`m.release_date <= ?`, [`${yearTo}-12-31`]);
     }
     if (scoreFrom) {
-      conditions.push(`m.score >= ?`);
-      params.push(parseFloat(scoreFrom));
+      const s = parseFloat(scoreFrom);
+      itemsQuery.andWhere(`m.score >= ?`, [s]);
+      totalQuery.andWhere(`m.score >= ?`, [s]);
     }
 
-    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-    const orderClause = safeSort === "title"
-      ? `ORDER BY COALESCE(mt.title, m.original_title) ${order}`
-      : `ORDER BY m.${safeSort} ${order}`;
+    if (safeSort === "title") {
+      itemsQuery.orderBy("COALESCE(mt.title, m.original_title)", order);
+    } else {
+      itemsQuery.orderBy(`m.${safeSort}`, order);
+    }
 
-    const drizzle = getDrizzle();
+    const countRes = totalQuery.get() as { total: number } | undefined;
+    const total = countRes ? countRes.total : 0;
 
-    const countRow = drizzle.query<{total: number}>(`
-      SELECT COUNT(DISTINCT m.id) as total
-      FROM media m
-      JOIN content_types ct ON ct.id = m.content_type_id
-      LEFT JOIN media_translations mt ON mt.media_id = m.id AND mt.locale = ?
-      ${where}
-    `).get([locale, ...params]);
-    const total = countRow?.total ?? 0;
+    const data = itemsQuery
+      .limit(pageSize)
+      .offset(offset)
+      .all();
 
-    const rows = drizzle.query(`
-      SELECT DISTINCT
-        m.id, m.slug, ct.slug AS content_type,
-        m.original_title, m.status, m.release_date,
-        m.score, m.popularity,
-        COALESCE(mt.title, m.original_title) AS title,
-        mt.synopsis_short
-      FROM media m
-      JOIN content_types ct ON ct.id = m.content_type_id
-      LEFT JOIN media_translations mt ON mt.media_id = m.id AND mt.locale = ?
-      ${where}
-      ${orderClause}
-      LIMIT ? OFFSET ?
-    `).all([locale, ...params, pageSize, offset]) as any[];
-
-    const data = rows.map((r) => ({ ...r, poster_url: getPosterUrl(drizzle, r.id) }));
     return { data, params: { locale, page, pageSize, total } };
   }
 
@@ -100,70 +102,55 @@ export class MediaController {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     const drizzle = getDrizzle();
 
-    const row = drizzle.query(`
-      SELECT
-        m.id, m.slug, ct.slug AS content_type,
-        m.original_title, m.original_language,
-        m.status, m.release_date, m.end_date,
-        m.runtime_minutes, m.total_episodes, m.total_seasons,
-        m.score, m.score_count, m.popularity,
-        m.age_rating, m.is_adult, m.external_ids,
-        COALESCE(mt.title, m.original_title) AS title,
-        mt.tagline, mt.synopsis, mt.synopsis_short
-      FROM media m
-      JOIN content_types ct ON ct.id = m.content_type_id
-      LEFT JOIN media_translations mt ON mt.media_id = m.id AND mt.locale = ?
-      WHERE m.id = ?
-    `).get([locale, id]);
+    const posterSubquery = `(SELECT url FROM images WHERE entity_type='media' AND entity_id=m.id AND image_type='poster' AND is_primary=1 LIMIT 1)`;
+
+    const row = drizzle.select(mediaTable).as("m")
+      .selectRaw(`m.id, m.slug, ct.slug AS content_type, m.original_title, m.original_language, m.status, m.release_date, m.end_date, m.runtime_minutes, m.total_episodes, m.total_seasons, m.score, m.score_count, m.popularity, m.age_rating, m.is_adult, m.external_ids, COALESCE(mt.title, m.original_title) AS title, mt.tagline, mt.synopsis, mt.synopsis_short, ${posterSubquery} AS poster_url`)
+      .join("content_types ct", "ct.id = m.content_type_id")
+      .leftJoin("media_translations mt", "mt.media_id = m.id AND mt.locale = ?", [locale])
+      .where("m.id = ?", [id])
+      .get();
 
     if (!row) return null;
 
-    const genres = drizzle.query(`
-      SELECT g.id, g.slug, COALESCE(gt.name, g.slug) AS name
-      FROM media_genres mg
-      JOIN genres g ON g.id = mg.genre_id
-      LEFT JOIN genre_translations gt ON gt.genre_id = g.id AND gt.locale = ?
-      WHERE mg.media_id = ?
-    `).all([locale, id]);
+    const genres = drizzle.select(mediaGenresTable).as("mg")
+      .selectRaw("g.id, g.slug, COALESCE(gt.name, g.slug) AS name")
+      .join("genres g", "g.id = mg.genre_id")
+      .leftJoin("genre_translations gt", "gt.genre_id = g.id AND gt.locale = ?", [locale])
+      .where("mg.media_id = ?", [id])
+      .all();
 
-    const tags = drizzle.query(`
-      SELECT t.id, t.slug, t.label, mt2.spoiler
-      FROM media_tags mt2
-      JOIN tags t ON t.id = mt2.tag_id
-      WHERE mt2.media_id = ?
-    `).all([id]);
+    const tags = drizzle.select(mediaTagsTable).as("mt2")
+      .selectRaw("t.id, t.slug, t.label, mt2.spoiler")
+      .join("tags t", "t.id = mt2.tag_id")
+      .where("mt2.media_id = ?", [id])
+      .all();
 
-    const studios = drizzle.query(`
-      SELECT s.id, s.name, s.logo_url
-      FROM media_studios ms
-      JOIN studios s ON s.id = ms.studio_id
-      WHERE ms.media_id = ?
-    `).all([id]);
+    const studios = drizzle.select(mediaStudiosTable).as("ms")
+      .selectRaw("s.id, s.name, s.logo_url")
+      .join("studios s", "s.id = ms.studio_id")
+      .where("ms.media_id = ?", [id])
+      .all();
 
-    const networks = drizzle.query(`
-      SELECT n.id, n.name, n.slug, n.logo_url
-      FROM media_networks mn
-      JOIN networks n ON n.id = mn.network_id
-      WHERE mn.media_id = ?
-    `).all([id]);
+    const networks = drizzle.select(mediaNetworksTable).as("mn")
+      .selectRaw("n.id, n.name, n.slug, n.logo_url")
+      .join("networks n", "n.id = mn.network_id")
+      .where("mn.media_id = ?", [id])
+      .all();
 
-    return { detail: { ...row, poster_url: getPosterUrl(drizzle, id), genres, tags, studios, networks }, locale };
+    return { detail: { ...row, genres, tags, studios, networks }, locale };
   }
 
   static getSeasons(req: Request, mediaId: number) {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     const drizzle = getDrizzle();
 
-    const rows = drizzle.query(`
-      SELECT
-        s.id, s.season_number, s.episode_count, s.air_date, s.score,
-        COALESCE(st.name, 'Season ' || s.season_number) AS name,
-        st.synopsis
-       FROM seasons s
-       LEFT JOIN season_translations st ON st.season_id = s.id AND st.locale = ?
-       WHERE s.media_id = ?
-       ORDER BY s.season_number ASC
-    `).all([locale, mediaId]);
+    const rows = drizzle.select(seasonsTable).as("s")
+      .selectRaw(`s.id, s.season_number, s.episode_count, s.air_date, s.score, COALESCE(st.name, 'Season ' || s.season_number) AS name, st.synopsis`)
+      .leftJoin("season_translations st", "st.season_id = s.id AND st.locale = ?", [locale])
+      .where("s.media_id = ?", [mediaId])
+      .orderBy("s.season_number", "asc")
+      .all();
 
     return { rows, locale, total: rows.length };
   }
@@ -175,34 +162,32 @@ export class MediaController {
     const season = url.searchParams.get("season");
     const drizzle = getDrizzle();
 
-    const conditions = ["e.media_id = ?"];
-    const params: unknown[] = [locale, mediaId];
+    const itemsQuery = drizzle.select(episodesTable).as("e")
+      .selectRaw(`e.id, e.season_id, e.episode_number, e.absolute_number, e.episode_type, e.air_date, e.runtime_minutes, e.score, s.season_number, COALESCE(et.title, 'Episode ' || e.episode_number) AS title, et.synopsis`)
+      .leftJoin("seasons s", "s.id = e.season_id")
+      .leftJoin("episode_translations et", "et.episode_id = e.id AND et.locale = ?", [locale])
+      .where("e.media_id = ?", [mediaId]);
 
-    if (season) { conditions.push("s.season_number = ?"); params.push(parseInt(season, 10)); }
+    const totalQuery = drizzle.select(episodesTable).as("e")
+      .selectRaw("COUNT(*) as c")
+      .leftJoin("seasons s", "s.id = e.season_id")
+      .where("e.media_id = ?", [mediaId]);
 
-    const where = `WHERE ${conditions.join(" AND ")}`;
+    if (season) {
+      const sNum = parseInt(season, 10);
+      itemsQuery.andWhere("s.season_number = ?", [sNum]);
+      totalQuery.andWhere("s.season_number = ?", [sNum]);
+    }
 
-    const totalRes = drizzle.query<{c: number}>(`
-      SELECT COUNT(*) as c FROM episodes e
-      LEFT JOIN seasons s ON s.id = e.season_id
-      WHERE e.media_id = ?${season ? " AND s.season_number = ?" : ""}
-    `).get(season ? [mediaId, parseInt(season, 10)] : [mediaId]);
+    const totalRes = totalQuery.get() as { c: number } | undefined;
     const total = totalRes ? totalRes.c : 0;
 
-    const rows = drizzle.query(`
-      SELECT
-        e.id, e.season_id, e.episode_number, e.absolute_number,
-        e.episode_type, e.air_date, e.runtime_minutes, e.score,
-        s.season_number,
-        COALESCE(et.title, 'Episode ' || e.episode_number) AS title,
-        et.synopsis
-       FROM episodes e
-       LEFT JOIN seasons s ON s.id = e.season_id
-       LEFT JOIN episode_translations et ON et.episode_id = e.id AND et.locale = ?
-       ${where}
-       ORDER BY s.season_number ASC, e.episode_number ASC
-       LIMIT ? OFFSET ?
-    `).all([...params, pageSize, offset]);
+    const rows = itemsQuery
+      .orderBy("s.season_number", "asc")
+      .orderBy("e.episode_number", "asc")
+      .limit(pageSize)
+      .offset(offset)
+      .all();
 
     return { rows, params: { locale, page, pageSize, total } };
   }
@@ -211,28 +196,24 @@ export class MediaController {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     const drizzle = getDrizzle();
 
-    const cast = drizzle.query(`
-      SELECT p.id, p.name, c.role_name, c."order" AS billing_order,
-             c.is_recurring, c.episode_count,
-             (SELECT url FROM images
-              WHERE entity_type='person' AND entity_id=p.id
-                AND image_type='profile' AND is_primary=1 LIMIT 1) AS profile_url
-       FROM credits c
-       JOIN people p ON p.id = c.person_id
-       WHERE c.media_id = ? AND c.credit_type = 'cast'
-       ORDER BY c."order" ASC
-    `).all([mediaId]);
+    const profileSubquery = `(SELECT url FROM images WHERE entity_type='person' AND entity_id=p.id AND image_type='profile' AND is_primary=1 LIMIT 1)`;
 
-    const crew = drizzle.query(`
-      SELECT p.id, p.name, c.department, c.job, c.role_name,
-             (SELECT url FROM images
-              WHERE entity_type='person' AND entity_id=p.id
-                AND image_type='profile' AND is_primary=1 LIMIT 1) AS profile_url
-       FROM credits c
-       JOIN people p ON p.id = c.person_id
-       WHERE c.media_id = ? AND c.credit_type = 'crew'
-       ORDER BY c.department ASC, c.job ASC
-    `).all([mediaId]);
+    const cast = drizzle.select(creditsTable).as("c")
+      .selectRaw(`p.id, p.name, c.role_name, c."order" AS billing_order, c.is_recurring, c.episode_count, ${profileSubquery} AS profile_url`)
+      .join("people p", "p.id = c.person_id")
+      .where("c.media_id = ?", [mediaId])
+      .andWhere("c.credit_type = 'cast'")
+      .orderBy("billing_order", "asc")
+      .all();
+
+    const crew = drizzle.select(creditsTable).as("c")
+      .selectRaw(`p.id, p.name, c.department, c.job, c.role_name, ${profileSubquery} AS profile_url`)
+      .join("people p", "p.id = c.person_id")
+      .where("c.media_id = ?", [mediaId])
+      .andWhere("c.credit_type = 'crew'")
+      .orderBy("c.department", "asc")
+      .orderBy("c.job", "asc")
+      .all();
 
     return { credits: { cast, crew }, locale };
   }
@@ -275,22 +256,18 @@ export class MediaController {
   static getRelated(req: Request, mediaId: number) {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     const drizzle = getDrizzle();
-    const rows = drizzle.query(`
-      SELECT
-        r.relation_type,
-        m.id, m.slug, ct.slug AS content_type,
-        m.original_title, m.score, m.status,
-        COALESCE(mt.title, m.original_title) AS title,
-        (SELECT url FROM images
-         WHERE entity_type='media' AND entity_id=m.id
-           AND image_type='poster' AND is_primary=1 LIMIT 1) AS poster_url
-       FROM media_relations r
-       JOIN media m ON m.id = r.related_media_id
-       JOIN content_types ct ON ct.id = m.content_type_id
-       LEFT JOIN media_translations mt ON mt.media_id = m.id AND mt.locale = ?
-       WHERE r.source_media_id = ?
-       ORDER BY r.relation_type ASC
-    `).all([locale, mediaId]);
+
+    const posterSubquery = `(SELECT url FROM images WHERE entity_type='media' AND entity_id=m.id AND image_type='poster' AND is_primary=1 LIMIT 1)`;
+
+    const rows = drizzle.select(mediaRelationsTable).as("r")
+      .selectRaw(`r.relation_type, m.id, m.slug, ct.slug AS content_type, m.original_title, m.score, m.status, COALESCE(mt.title, m.original_title) AS title, ${posterSubquery} AS poster_url`)
+      .join("media m", "m.id = r.related_media_id")
+      .join("content_types ct", "ct.id = m.content_type_id")
+      .leftJoin("media_translations mt", "mt.media_id = m.id AND mt.locale = ?", [locale])
+      .where("r.source_media_id = ?", [mediaId])
+      .orderBy("r.relation_type", "asc")
+      .all();
+    
     return { rows, locale, total: rows.length };
   }
 
@@ -300,28 +277,23 @@ export class MediaController {
     const { page, pageSize, offset } = parsePagination(url);
     const drizzle = getDrizzle();
 
-    const totalRes = drizzle.query<{c: number}>(`
-      SELECT COUNT(*) as c FROM comments
-      WHERE entity_type = 'media' AND entity_id = ?
-        AND is_hidden = 0 AND parent_id IS NULL
-    `).get([mediaId]);
+    const totalRes = drizzle.select(commentsTable)
+      .selectRaw("COUNT(*) as c")
+      .where("entity_type = 'media' AND entity_id = ? AND is_hidden = 0 AND parent_id IS NULL", [mediaId])
+      .get() as { c: number } | undefined;
     const total = totalRes ? totalRes.c : 0;
 
-    const rows = drizzle.query(`
-      SELECT
-        c.id, c.parent_id, c.display_name, c.locale,
-        c.body, c.contains_spoilers, c.likes, c.dislikes, c.created_at,
-        (SELECT JSON_GROUP_ARRAY(JSON_OBJECT(
-           'id', r.id, 'display_name', r.display_name,
-           'body', r.body, 'likes', r.likes, 'created_at', r.created_at
-         )) FROM comments r
-         WHERE r.parent_id = c.id AND r.is_hidden = 0) AS replies
-       FROM comments c
-       WHERE c.entity_type = 'media' AND c.entity_id = ?
-         AND c.is_hidden = 0 AND c.parent_id IS NULL
-       ORDER BY c.likes DESC, c.created_at DESC
-       LIMIT ? OFFSET ?
-    `).all([mediaId, pageSize, offset]);
+    const repliesSubquery = `(SELECT JSON_GROUP_ARRAY(JSON_OBJECT('id', r.id, 'display_name', r.display_name, 'body', r.body, 'likes', r.likes, 'created_at', r.created_at)) FROM comments r WHERE r.parent_id = c.id AND r.is_hidden = 0)`;
+
+    const rows = drizzle.select(commentsTable).as("c")
+      .selectRaw(`c.id, c.parent_id, c.display_name, c.locale, c.body, c.contains_spoilers, c.likes, c.dislikes, c.created_at, ${repliesSubquery} AS replies`)
+      .where("c.entity_type = 'media' AND c.entity_id = ?", [mediaId])
+      .andWhere("c.is_hidden = 0 AND c.parent_id IS NULL")
+      .orderBy("c.likes", "desc")
+      .orderBy("c.created_at", "desc")
+      .limit(pageSize)
+      .offset(offset)
+      .all();
 
     return { rows, params: { locale, page, pageSize, total } };
   }
