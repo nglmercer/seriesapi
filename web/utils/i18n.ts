@@ -8,6 +8,19 @@ const resources = {
         explorer: "EXPLORER",
         admin_panel: "Admin Panel"
       },
+      common: {
+        cancel: "Cancel",
+        submit: "Submit"
+      },
+      reports: {
+        title: "Report an Issue",
+        missing_translation: "Missing Translation",
+        incorrect_information: "Incorrect Information",
+        missing_fields: "Missing Fields (e.g. synopsis)",
+        other: "Other",
+        optional_message: "Optional message...",
+        submitted: "Submitted"
+      },
       hero: {
         title: "Discover Your Next Favorite Anime",
         subtitle: "Explore thousands of series and movies with detailed information, images, and community ratings.",
@@ -38,7 +51,8 @@ const resources = {
         season: "Season",
         episodes_count: "{{count}} Episodes",
         all_seasons: "All Seasons",
-        loading: "Loading..."
+        loading: "Loading...",
+        personalized_for_you: "Personalized for you"
       },
       episodes: {
         back_to_series: "Back to Series",
@@ -107,7 +121,14 @@ const resources = {
         select_season_desc: "Select a season to view episodes",
         add_episode: "+ Add Episode",
         error_saving: "Error saving media",
-        loading_media_info: "Loading media info..."
+        loading_media_info: "Loading media info...",
+        filters: "Filters",
+        reports: "User Reports",
+        reports_empty: "No reports found.",
+        type: "Type",
+        entity: "Entity",
+        message: "Message",
+        date: "Date"
       }
     }
   },
@@ -116,6 +137,19 @@ const resources = {
       header: {
         explorer: "EXPLORER",
         admin_panel: "Panel Admin"
+      },
+      common: {
+        cancel: "Cancelar",
+        submit: "Enviar"
+      },
+      reports: {
+        title: "Reportar un Problema",
+        missing_translation: "Traducción Faltante",
+        incorrect_information: "Información Incorrecta",
+        missing_fields: "Campos Faltantes (ej. sinopsis)",
+        other: "Otro",
+        optional_message: "Mensaje opcional...",
+        submitted: "Enviado"
       },
       hero: {
         title: "Descubre tu Próximo Anime Favorito",
@@ -147,7 +181,8 @@ const resources = {
         season: "Temporada",
         episodes_count: "{{count}} Episodios",
         all_seasons: "Todas las temporadas",
-        loading: "Cargando..."
+        loading: "Cargando...",
+        personalized_for_you: "Personalizado para ti"
       },
       episodes: {
         back_to_series: "Volver a la Serie",
@@ -216,7 +251,14 @@ const resources = {
         select_season_desc: "Selecciona una temporada para ver episodios",
         add_episode: "+ Añadir Episodio",
         error_saving: "Error al guardar medio",
-        loading_media_info: "Cargando info del medio..."
+        loading_media_info: "Cargando info del medio...",
+        filters: "Filtros",
+        reports: "Reportes de Usuarios",
+        reports_empty: "No se encontraron reportes.",
+        type: "Tipo",
+        entity: "Entidad",
+        message: "Mensaje",
+        date: "Fecha"
       }
     }
   }

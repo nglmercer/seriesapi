@@ -123,7 +123,7 @@ export class AdminView extends HTMLElement {
                style: "height: 48px; padding: 0 16px; display: flex; align-items: center; gap: 8px; font-weight: 600;"
             }, 
               h("span", { innerHTML: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>', style: "display:flex; align-items:center;" }),
-              i18next.t("admin.filters") || "FILTROS"
+              i18next.t("admin.filters", { defaultValue: "Filters" })
             )
           ),
           h("button", { onclick: () => this.openEditMedia(null), className: "primary", style: "height: 48px; border-radius: 10px; font-weight: 600;" }, i18next.t("admin.new_entry"))

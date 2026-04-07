@@ -106,8 +106,8 @@ export class PublicApp extends HTMLElement {
           h("div", { style: "display: grid; grid-template-columns: 1fr; gap: 40px;" },
               h("div", {},
                   h("div", { style: "display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px;" },
-                      h("h2", {}, "Explore Contents"),
-                      h("span", { style: "color: var(--text-secondary);" }, "Personalized for you")
+                      h("h2", {}, i18next.t("media.explore_contents", { defaultValue: "Explore Contents" })),
+                      h("span", { style: "color: var(--text-secondary);" }, i18next.t("media.personalized_for_you", { defaultValue: "Personalized for you" }))
                   ),
                   mediaList
               )

@@ -1,6 +1,7 @@
-import { html, LitElement, css } from "lit";
+import { LitElement, html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { api } from "../../services/api-service";
+import i18next from "../../utils/i18n";
 
 @customElement("admin-reports-view")
 export class AdminReportsView extends LitElement {
@@ -34,29 +35,29 @@ export class AdminReportsView extends LitElement {
   }
 
   override render() {
-    if (this.loading) return html`<div>Loading reports...</div>`;
+    if (this.loading) return html`<div>${i18next.t("media.loading", { defaultValue: "Loading..." })}</div>`;
     
     if (!this.reports.length) {
       return html`
         <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-          No reports found.
+          ${i18next.t("admin.reports_empty", { defaultValue: "No reports found." })}
         </div>
       `;
     }
 
     return html`
-      <h2>User Reports</h2>
+      <h2>${i18next.t("admin.reports", { defaultValue: "User Reports" })}</h2>
       <div style="overflow-x: auto;">
         <table>
           <thead>
             <tr>
               <th>ID</th>
-              <th>Type</th>
-              <th>Entity</th>
+              <th>${i18next.t("admin.type", { defaultValue: "Type" })}</th>
+              <th>${i18next.t("admin.entity", { defaultValue: "Entity" })}</th>
               <th>Locale</th>
-              <th>Message</th>
+              <th>${i18next.t("admin.message", { defaultValue: "Message" })}</th>
               <th>Status</th>
-              <th>Date</th>
+              <th>${i18next.t("admin.date", { defaultValue: "Date" })}</th>
             </tr>
           </thead>
           <tbody>
