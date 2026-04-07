@@ -313,6 +313,11 @@ export class PublicApp extends LitElement {
   @state() private showAuthModal = false;
 
   /**
+   * Whether the profile view is visible.
+   */
+  @state() private showProfile = false;
+
+  /**
    * Loaded media item details.
    */
   @state() private currentMedia: MediaItem | null = null;
@@ -368,6 +373,7 @@ export class PublicApp extends LitElement {
         this.selectedSeasonId = null;
         this.currentMedia = null;
         this.currentSeasons = [];
+        this.showProfile = false;
       }),
 
       eventBus.on("search-result", (data) => {
@@ -376,16 +382,18 @@ export class PublicApp extends LitElement {
           this.selectedSeasonId = null;
           this.currentMedia = null;
           this.currentSeasons = [];
+          this.showProfile = false;
         }
       }),
 
       eventBus.on("filters-change", (data) => {
         this.currentFilters = { ...data };
-        if (this.selectedMediaId) {
+        if (this.selectedMediaId || this.showProfile) {
           this.selectedMediaId = null;
           this.selectedSeasonId = null;
           this.currentMedia = null;
           this.currentSeasons = [];
+          this.showProfile = false;
         }
       }),
 

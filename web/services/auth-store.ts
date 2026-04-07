@@ -99,6 +99,29 @@ class AuthStore {
       }).catch(() => {});
     }
   }
+
+  async updateProfile(data: { display_name?: string; email?: string; password?: string }): Promise<{ ok: boolean; error?: string }> {
+    if (!this._token) return { ok: false, error: "Not authenticated" };
+    try {
+      const res = await fetch("/api/v1/auth/update", {
+        method: "PATCH",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${this._token}`
+        },
+        body: JSON.stringify(data)
+      });
+      const json = await res.json();
+      if (json.ok) {
+        // Refresh user data
+        await this.init();
+        return { ok: true };
+      }
+      return { ok: false, error: json.error || "Update failed" };
+    } catch (err) {
+      return { ok: false, error: "Network error" };
+    }
+  }
 }
 
 export const authStore = new AuthStore();
