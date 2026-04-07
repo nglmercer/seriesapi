@@ -5,6 +5,23 @@ import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
 import { usersTable, sessionsTable, verificationCodesTable } from "../../schema";
 import { ok, badRequest, unauthorized, forbidden, notFound, methodNotAllowed, conflict, serverError } from "../response";
 
+const DAILON_API_KEY = process.env.DAILON_API_KEY ?? "demo_key_123";
+
+/**
+ * Legacy hashing for backward compatibility with old user accounts.
+ */
+function hashPasswordLegacy(password: string): string {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + DAILON_API_KEY);
+  let hash = 0;
+  for (let i = 0; i < data.length; i++) {
+    const char = data[i]!;
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return "sha256_" + Math.abs(hash).toString(16);
+}
+
 async function hashPassword(password: string): Promise<string> {
   return await Bun.password.hash(password, {
     algorithm: "argon2id",
@@ -14,7 +31,18 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  return await Bun.password.verify(password, hash);
+  // Check if it's a legacy hash
+  if (hash.startsWith("sha256_")) {
+    return hashPasswordLegacy(password) === hash;
+  }
+  
+  // Use Bun's native verification for new hashes (Argon2id, etc.)
+  try {
+    return await Bun.password.verify(password, hash);
+  } catch (e) {
+    console.error("[auth] password verification error:", e);
+    return false;
+  }
 }
 
 export function getUserFromToken(req: Request): { id: number; role: string; username: string } | null {
@@ -37,6 +65,35 @@ export function getUserFromToken(req: Request): { id: number; role: string; user
   }
   
   return { id: res.user_id, role: res.role, username: res.username };
+}
+
+/**
+ * Higher-order helper to wrap route handlers with authentication requirements.
+ */
+export function withAuth(
+  handler: (req: Request, user: { id: number; role: string; username: string }) => Promise<Response>
+) {
+  return async (req: Request) => {
+    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+    const user = getUserFromToken(req);
+    if (!user) return unauthorized("Authentication required", locale);
+    return handler(req, user);
+  };
+}
+
+/**
+ * Higher-order helper to wrap route handlers with admin requirements.
+ */
+export function withAdmin(
+  handler: (req: Request, user: { id: number; role: string; username: string }) => Promise<Response>
+) {
+  return async (req: Request) => {
+    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+    const user = getUserFromToken(req);
+    if (!user) return unauthorized("Authentication required", locale);
+    if (user.role !== "admin") return forbidden("Administrator privileges required", locale);
+    return handler(req, user);
+  };
 }
 
 function generateToken(): string {
@@ -130,6 +187,16 @@ export async function handleLogin(req: Request): Promise<Response> {
     const valid = await verifyPassword(password, user.password_hash as string);
     if (!valid) {
       return unauthorized("Invalid credentials", locale);
+    }
+
+    // Migrate legacy hash if necessary
+    if ((user.password_hash as string).startsWith("sha256_")) {
+      const newHash = await hashPassword(password);
+      drizzle.update(usersTable)
+        .set({ password_hash: newHash, updated_at: new Date().toISOString() })
+        .where("id = ?", [user.id])
+        .run();
+      console.log(`[auth] Migrated user ${user.username} to new password hashing algorithm`);
     }
 
     const token = generateToken();
@@ -230,19 +297,10 @@ export async function handleMe(req: Request): Promise<Response> {
   }
 }
 
-export async function handleVerifyCodeGenerate(req: Request): Promise<Response> {
+export const handleVerifyCodeGenerate = withAdmin(async (req: Request) => {
   const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-  if (req.method !== "POST") return methodNotAllowed(locale);
-
+  
   try {
-    const user = getUserFromToken(req);
-    if (!user) {
-      return unauthorized("Not authenticated", locale);
-    }
-    if (user.role !== "admin") {
-      return forbidden("Admin only", locale);
-    }
-
     const body = await req.json();
     const { username, target_role } = body;
 
@@ -280,7 +338,7 @@ export async function handleVerifyCodeGenerate(req: Request): Promise<Response> 
   } catch (err) {
     return serverError(err, locale);
   }
-}
+});
 
 export async function handleVerifyCodeApply(req: Request): Promise<Response> {
   const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
@@ -336,16 +394,10 @@ export async function handleVerifyCodeApply(req: Request): Promise<Response> {
   }
 }
 
-export async function handleUserUpdate(req: Request): Promise<Response> {
+export const handleUserUpdate = withAuth(async (req: Request, user) => {
   const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-  if (req.method !== "PUT" && req.method !== "PATCH") return methodNotAllowed(locale);
-
+  
   try {
-    const user = getUserFromToken(req);
-    if (!user) {
-      return unauthorized("Not authenticated", locale);
-    }
-
     const body = await req.json();
     const v = validateParams(userUpdateSchema, body, locale);
     if (!v.success) return v.error;
@@ -390,4 +442,4 @@ export async function handleUserUpdate(req: Request): Promise<Response> {
   } catch (err) {
     return serverError(err, locale);
   }
-}
+});

@@ -38,6 +38,8 @@ import { handleCommentPost, handleCommentGet } from "./src/api/routes/comments";
 import { handleRegister, handleLogin, handleLogout, handleMe, getUserFromToken, handleVerifyCodeGenerate, handleVerifyCodeApply, handleUserUpdate } from "./src/api/routes/auth";
 import { handleReportCreate, handleReportList } from "./src/api/routes/reports";
 import { handleRatingPost, handleRatingGet } from "./src/api/routes/ratings";
+import { ok, badRequest, unauthorized, forbidden, notFound, methodNotAllowed, serverError } from "./src/api/response";
+import { getLocaleFromRequest, SUPPORTED_LOCALES } from "./src/i18n";
 import admin_view from './web/admin.html'
 import public_view from './web/index.html'
 // ── config ────────────────────────────────────────────────────────────────────
@@ -45,48 +47,6 @@ import public_view from './web/index.html'
 const PORT = parseInt(process.env.PORT ?? "3000", 10);
 const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? "60000", 10);
 const RATE_LIMIT_MAX = parseInt(process.env.RATE_LIMIT_MAX ?? "60", 10);
-
-// ── helpers ───────────────────────────────────────────────────────────────────
-
-function json404(): Response {
-  return new Response(
-    JSON.stringify({ ok: false, data: null, error: "Not Found" }),
-    {
-      status: 404,
-      headers: { "Content-Type": "application/json", ...corsHeaders() },
-    },
-  );
-}
-
-function json405(): Response {
-  return new Response(
-    JSON.stringify({ ok: false, data: null, error: "Method Not Allowed" }),
-    {
-      status: 405,
-      headers: { "Content-Type": "application/json", ...corsHeaders() },
-    },
-  );
-}
-
-function json401(message = "Unauthorized"): Response {
-  return new Response(
-    JSON.stringify({ ok: false, data: null, error: message }),
-    {
-      status: 401,
-      headers: { "Content-Type": "application/json", ...corsHeaders() },
-    },
-  );
-}
-
-function json403(message = "Forbidden"): Response {
-  return new Response(
-    JSON.stringify({ ok: false, data: null, error: message }),
-    {
-      status: 403,
-      headers: { "Content-Type": "application/json", ...corsHeaders() },
-    },
-  );
-}
 
 /** Extract a numeric segment from a URL path array, return NaN if invalid. */
 function seg(parts: string[], index: number): number {
@@ -96,6 +56,7 @@ function seg(parts: string[], index: number): number {
 // ── router ────────────────────────────────────────────────────────────────────
 
 function route(req: Request): Response | Promise<Response> {
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
   const url = new URL(req.url);
   // strip trailing slash, split on /
   const parts = url.pathname.replace(/\/$/, "").split("/").filter(Boolean);
@@ -107,10 +68,7 @@ function route(req: Request): Response | Promise<Response> {
 
   // ── /api/v1/health ─────────────────────────────────────────────────────────
   if (resource === "health" && GET) {
-    return new Response(
-      JSON.stringify({ ok: true, status: "online", ts: new Date().toISOString() }),
-      { headers: { "Content-Type": "application/json", ...corsHeaders() } },
-    );
+    return ok({ status: "online", ts: new Date().toISOString() }, { locale });
   }
 
   // ── /api/v1/search ─────────────────────────────────────────────────────────
@@ -118,40 +76,39 @@ function route(req: Request): Response | Promise<Response> {
 
   // ── /api/v1/genres ─────────────────────────────────────────────────────────
   if (resource === "genres") {
-    if (!GET) return json405();
+    if (!GET) return methodNotAllowed(locale);
     if (!p3) return handleGenresList(req, db);
     return handleGenreMedia(req, db, p3); // p3 = slug
   }
 
   // ── /api/v1/collections ────────────────────────────────────────────────────
   if (resource === "collections") {
-    if (!GET) return json405();
+    if (!GET) return methodNotAllowed(locale);
     if (!p3) return handleCollectionsList(req, db);
     return handleCollectionDetail(req, db, p3); // p3 = slug
   }
 
   // ── /api/v1/people ─────────────────────────────────────────────────────────
   if (resource === "people") {
-    if (!GET) return json405();
+    if (!GET) return methodNotAllowed(locale);
     if (!p3) return handlePeopleList(req, db);
     const id = seg(parts, 3);
-    if (isNaN(id)) return json404();
+    if (isNaN(id)) return notFound("Person", locale);
     if (!p4) return handlePersonDetail(req, db, id);
     if (p4 === "credits") return handlePersonCredits(req, db, id);
-    return json404();
+    return notFound("Resource", locale);
   }
 
   // ── /api/v1/media ──────────────────────────────────────────────────────────
   if (resource === "media") {
     if (!GET) {
       const user = getUserFromToken(req);
-      if (!user) return json401();
-      if (user.role !== "admin") return json403();
-      // Handle modification routes for media here if they existed
+      if (!user) return unauthorized("Authentication required", locale);
+      if (user.role !== "admin") return forbidden("Admin privileges required", locale);
     }
     if (!p3) return handleMediaList(req, db);
     const id = seg(parts, 3);
-    if (isNaN(id)) return json404();
+    if (isNaN(id)) return notFound("Media", locale);
     if (!p4) return handleMediaDetail(req, db, id);
     if (p4 === "seasons")  return handleMediaSeasons(req, db, id);
     if (p4 === "episodes") return handleMediaEpisodes(req, db, id);
@@ -160,67 +117,67 @@ function route(req: Request): Response | Promise<Response> {
     if (p4 === "videos")   return handleMediaVideos(req, db, id);
     if (p4 === "related")  return handleMediaRelated(req, db, id);
     if (p4 === "comments") return handleMediaComments(req, db, id);
-    return json404();
+    return notFound("Resource", locale);
   }
 
   // ── /api/v1/seasons ────────────────────────────────────────────────────────
   if (resource === "seasons") {
     if (!GET) {
       const user = getUserFromToken(req);
-      if (!user) return json401();
-      if (user.role !== "admin") return json403();
+      if (!user) return unauthorized("Authentication required", locale);
+      if (user.role !== "admin") return forbidden("Admin privileges required", locale);
       if (req.method === "POST") return handleSeasonCreate(req);
       const id = seg(parts, 3);
-      if (isNaN(id)) return json404();
+      if (isNaN(id)) return notFound("Season", locale);
       if (req.method === "PUT") return handleSeasonUpdate(req, db, id);
       if (req.method === "DELETE") return handleSeasonDelete(req, db, id);
-      return json405();
+      return methodNotAllowed(locale);
     }
     
     // GET logic
     const id = seg(parts, 3);
-    if (isNaN(id)) return json404();
+    if (isNaN(id)) return notFound("Season", locale);
     if (!p4) return handleSeasonDetail(req, db, id);
     if (p4 === "episodes") return handleSeasonEpisodes(req, db, id);
     if (p4 === "images")   return handleSeasonImages(req, db, id);
-    return json404();
+    return notFound("Resource", locale);
   }
 
   // ── /api/v1/episodes ───────────────────────────────────────────────────────
   if (resource === "episodes") {
     if (!GET) {
       const user = getUserFromToken(req);
-      if (!user) return json401();
-      if (user.role !== "admin") return json403();
+      if (!user) return unauthorized("Authentication required", locale);
+      if (user.role !== "admin") return forbidden("Admin privileges required", locale);
       if (req.method === "POST") return handleEpisodeCreate(req);
       const id = seg(parts, 3);
-      if (isNaN(id)) return json404();
+      if (isNaN(id)) return notFound("Episode", locale);
       if (req.method === "PUT") return handleEpisodeUpdate(req, db, id);
       if (req.method === "DELETE") return handleEpisodeDelete(req, db, id);
-      return json405();
+      return methodNotAllowed(locale);
     }
 
     const id = seg(parts, 3);
-    if (isNaN(id)) return json404();
+    if (isNaN(id)) return notFound("Episode", locale);
     if (!p4) return handleEpisodeDetail(req, db, id);
     if (p4 === "credits")  return handleEpisodeCredits(req, db, id);
     if (p4 === "images")   return handleEpisodeImages(req, db, id);
     if (p4 === "comments") return handleEpisodeComments(req, db, id);
-    return json404();
+    return notFound("Resource", locale);
   }
 
   // ── /api/v1/comments ───────────────────────────────────────────────────────
   if (resource === "comments") {
     if (POST && !p3) {
       const user = getUserFromToken(req);
-      if (!user) return json401("You must log in to post a comment");
+      if (!user) return unauthorized("Authentication required", locale);
       return handleCommentPost(req, db);
     }
     if (GET && p3) {
       const id = seg(parts, 3);
       if (!isNaN(id)) return handleCommentGet(req, db, id);
     }
-    return GET ? json404() : json405();
+    return GET ? notFound("Comment", locale) : methodNotAllowed(locale);
   }
 
   // ── /api/v1/reports ────────────────────────────────────────────────────────
@@ -228,18 +185,18 @@ function route(req: Request): Response | Promise<Response> {
     if (POST) return handleReportCreate(req);
     if (GET) {
       const user = getUserFromToken(req);
-      if (!user) return json401();
-      if (user.role !== "admin") return json403();
+      if (!user) return unauthorized("Authentication required", locale);
+      if (user.role !== "admin") return forbidden("Admin privileges required", locale);
       return handleReportList(req);
     }
-    return json404();
+    return notFound("Report", locale);
   }
 
   // ── /api/v1/ratings ───────────────────────────────────────────────────
   if (resource === "ratings") {
     if (POST) return handleRatingPost(req);
     if (GET) return handleRatingGet(req);
-    return json404();
+    return notFound("Rating", locale);
   }
 
   // ── /api/v1/auth ───────────────────────────────────────────────────────────
@@ -251,9 +208,9 @@ function route(req: Request): Response | Promise<Response> {
     if (p3 === "update" && (req.method === "PUT" || req.method === "PATCH")) return handleUserUpdate(req);
     if (POST && p3 === "verify-code" && p4 === "generate") return handleVerifyCodeGenerate(req);
     if (POST && p3 === "verify-code" && p4 === "apply") return handleVerifyCodeApply(req);
-    return json404();
+    return notFound("Auth route", locale);
   }
-  return json404();
+  return notFound("API Route", locale);
 }
 
 // ── server ────────────────────────────────────────────────────────────────────
