@@ -170,7 +170,7 @@ export class PublicApp extends HTMLElement {
     const header = this.buildHeader();
 
     let content: HTMLElement;
-
+    console.log(`[public-app] render, selectedMediaId=${this.selectedMediaId}, selectedSeasonId=${this.selectedSeasonId}`);
     if (this.selectedSeasonId) {
       content = h("div", { className: "container", style: "padding:40px 0;" },
         h("media-episodes", { mediaId: this.selectedMediaId, seasonId: this.selectedSeasonId } as any)

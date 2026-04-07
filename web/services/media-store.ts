@@ -18,7 +18,7 @@ class MediaStore {
   private readonly CACHE_TTL = 5 * 60 * 1000;
 
   private getLocale(): string {
-    return i18next.language || "es";
+    return i18next.language || "en";
   }
 
   private getListKey(page: number, pageSize: number, filters?: Record<string, string>): string {
@@ -121,6 +121,7 @@ class MediaStore {
 
   async fetchDetail(id: number): Promise<MediaItem | null> {
     const cacheKey = `detail-${id}`;
+    console.log(`[media-store] fetchDetail called for id=${id}, pending=${this.pendingFetches.has(cacheKey)}, cached=${!!this.detailCache.get(id)}`);
     
     if (this.pendingFetches.has(cacheKey)) {
       return (await this.pendingFetches.get(cacheKey)) as MediaItem | null;
@@ -128,13 +129,16 @@ class MediaStore {
 
     const cached = this.detailCache.get(id);
     if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+      console.log(`[media-store] fetchDetail returning cached for id=${id}`);
       return cached.data;
     }
 
     const fetchPromise = (async () => {
       try {
+        console.log(`[media-store] fetchDetail making API call for id=${id}`);
         const res = await fetch(`/api/v1/media/${id}?locale=${this.getLocale()}`);
         const json = await res.json();
+        console.log(`[media-store] fetchDetail API response:`, json);
         if (json.ok && json.data) {
           this.detailCache.set(id, { data: json.data, timestamp: Date.now() });
           this.notifyDetail(id);

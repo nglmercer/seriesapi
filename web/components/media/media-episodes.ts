@@ -1,6 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { api, type EpisodeItem, type MediaItem } from "../../services/api-service";
+import { type EpisodeItem, type MediaItem } from "../../services/api-service";
+import { mediaService } from "../../services/media-service";
 import i18next from "../../utils/i18n";
 import "../shared/empty-state";
 import "../shared/rating-widget";
@@ -61,15 +62,18 @@ export class MediaEpisodes extends LitElement {
     if (!this.seasonId) return;
     this.loading = true;
     
-    const [epRes, mediaRes, seasonRes] = await Promise.all([
-      api.getSeasonEpisodes(this.seasonId),
-      api.getMediaDetail(this.mediaId),
-      api.getSeason(this.seasonId)
-    ]);
+    try {
+      const episodesData = await mediaService.fetchSeasonEpisodes(this.seasonId);
+      const mediaData = await mediaService.fetchMediaDetail(this.mediaId);
+      const seasonData = await mediaService.fetchSeason(this.seasonId);
 
-    if (epRes.ok) this.episodes = epRes.data;
-    if (mediaRes.ok) this.media = mediaRes.data;
-    if (seasonRes.ok) this.season = seasonRes.data;
+      this.episodes = episodesData;
+      this.media = mediaData;
+      this.season = seasonData;
+    } catch (error) {
+      console.error("[media-episodes] load error:", error);
+      this.error = true;
+    }
     
     this.loading = false;
   }

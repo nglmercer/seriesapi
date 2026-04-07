@@ -10,6 +10,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { authStore, type AuthUser } from "../../services/auth-store";
+import { mediaService } from "../../services/media-service";
 import { api } from "../../services/api-service";
 import i18next from "../../utils/i18n";
 import type { CommentData } from "./comment-item";
@@ -106,14 +107,13 @@ export class CommentsSection extends LitElement {
     if (!this.entityType || !this.entityId) return;
     if (!append) this.loading = true;
 
-    const res = await api.getComments(this.entityType, this.entityId, this.page);
-    if (res.ok && res.data) {
-      const rows: CommentData[] = Array.isArray(res.data)
-        ? res.data
-        : ((res.data as any).rows ?? []);
-      this.total = Array.isArray(res.data)
-        ? rows.length
-        : ((res.data as any).total ?? rows.length);
+    const res = this.entityType === 'media' 
+      ? await mediaService.fetchMediaComments(this.entityId, this.page)
+      : await mediaService.fetchEpisodeComments(this.entityId, this.page);
+    
+    if (res) {
+      const rows: CommentData[] = Array.isArray(res.comments) ? res.comments : [];
+      this.total = res.total || rows.length;
       this.comments = append ? [...this.comments, ...rows] : rows;
     }
     this.loading = false;

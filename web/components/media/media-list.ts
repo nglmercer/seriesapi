@@ -1,4 +1,5 @@
-import { mediaStore, type MediaItem } from "../../services/api-service";
+import { type MediaItem } from "../../services/api-service";
+import { mediaService } from "../../services/media-service";
 import { h } from "../../utils/dom";
 import i18next from "../../utils/i18n";
 
@@ -7,47 +8,43 @@ export class MediaList extends HTMLElement {
   private filters: Record<string, string> = {};
   private loading = false;
   private page = 1;
-  private unsub: (() => void) | null = null;
 
   async connectedCallback() {
     this.load();
   }
 
-  disconnectedCallback() {
-    if (this.unsub) {
-      this.unsub();
-      this.unsub = null;
-    }
-  }
-
   public setFilters(newFilters: Record<string, string>) {
-    if (this.unsub) {
-      this.unsub();
-      this.unsub = null;
-    }
     this.filters = newFilters;
     this.page = 1;
     this.load();
   }
 
-  load() {
-    if (this.unsub) {
-      this.unsub();
-    }
+  async load() {
+    console.log("[media-list] load called");
     this.loading = true;
     this.render();
+
+    try {
+      this.items = await mediaService.fetchMediaList(this.page, 20, this.filters);
+    } catch (err) {
+      console.error("[media-list] load error:", err);
+      this.items = [];
+    }
     
-    this.unsub = mediaStore.subscribeList(this.page, 20, this.filters, (items) => {
-      this.items = items;
-      this.loading = false;
-      this.render();
-    });
+    this.loading = false;
+    console.log("[media-list] render, items:", this.items.length);
+    this.render();
   }
 
   render() {
     this.innerHTML = "";
     if (this.loading) {
       this.appendChild(h("div", { className: "card", style: "text-align:center; padding: 40px; color: var(--text-secondary);" }, i18next.t("media.loading") || "Loading..."));
+      return;
+    }
+
+    if (this.items.length === 0) {
+      this.appendChild(h("div", { className: "card", style: "text-align:center; padding: 40px; color: var(--text-secondary);" }, "No items found"));
       return;
     }
 
