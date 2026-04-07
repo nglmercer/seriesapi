@@ -68,7 +68,7 @@ export async function handleRatingPost(req: Request) {
       "SELECT avg(score) as avgScore, count(id) as count FROM ratings WHERE entity_type = ? AND entity_id = ?"
     ).get([body.entity_type, body.entity_id]);
     
-    const newAverage = result?.avgScore ?? 0;
+    const newAverage = result?.avgScore ? Math.round(result.avgScore * 10) / 10 : 0;
     const newCount = result?.count ?? 0;
 
     // Synchronize aggregate scores to parent tables
@@ -126,7 +126,7 @@ export async function handleRatingGet(req: Request) {
     }
 
     return ok({
-      average: stats?.avgScore ?? 0,
+      average: stats?.avgScore ? Math.round(stats.avgScore * 10) / 10 : 0,
       count: stats?.count ?? 0,
       userScore
     }, { locale });

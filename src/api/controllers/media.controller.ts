@@ -137,11 +137,14 @@ export class MediaController {
       .where("mn.media_id = ?", [id])
       .all();
 
-    const ratingInfo = drizzle.query<{ avgScore: number, count: number }>(
+    const ratingInfo = drizzle.query<{ avgScore: number | null, count: number }>(
       "SELECT avg(score) as avgScore, count(id) as count FROM ratings WHERE entity_type = 'media' AND entity_id = ?"
     ).get([id]);
 
-    return { detail: { ...row, genres, tags, studios, networks, rating_average: ratingInfo?.avgScore || 0, rating_count: ratingInfo?.count || 0 }, locale };
+    const avg = ratingInfo?.avgScore ? Math.round(ratingInfo.avgScore * 10) / 10 : 0;
+    const count = ratingInfo?.count ?? 0;
+
+    return { detail: { ...row, genres, tags, studios, networks, rating_average: avg, rating_count: count }, locale };
   }
 
   static getSeasons(req: Request, mediaId: number) {
