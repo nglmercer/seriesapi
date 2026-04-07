@@ -1,13 +1,13 @@
 import {LitElement, html, css} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
-import {api, mediaStore, type MediaItem} from "../../services/api-service";
-import {mediaService} from "../../services/media-service";
-import i18next from "../../utils/i18n";
+import {type MediaItem} from "../../services/api-service";
 import "./wiki-infobox";
 import "../shared/empty-state";
 import "../shared/report-modal";
 import "../shared/rating-widget";
 import "../shared/comments-section";
+import i18next from "../../utils/i18n";
+import { eventBus } from "../../utils/events";
 
 interface SeasonData {
   id: number;
@@ -63,72 +63,16 @@ export class MediaDetail extends LitElement {
       outline: none;
     }
     .filter-bar select:focus { border-color: var(--accent); }
-
-    .loading { text-align: center; padding: 60px; color: var(--text-secondary); font-size: 18px; }
   `;
 
   @property({type: Number}) mediaId = 0;
-  @state() media: MediaItem | null = null;
-  @state() allSeasons: SeasonData[] = [];
+  @property({type: Object}) media: MediaItem | null = null;
+  @property({type: Array}) allSeasons: SeasonData[] = [];
   @state() selectedSeason: number | null = null;
-  @state() loading = true;
   @state() showReportModal = false;
-  private currentId = 0;
-  private loadPromise: Promise<void> | null = null;
-
-  override updated(changedProperties: Map<string, unknown>) {
-    if (changedProperties.has("mediaId") && this.mediaId > 0 && this.mediaId !== this.currentId) {
-      this.currentId = this.mediaId;
-      this.load();
-    }
-  }
-
-  async load() {
-    console.log(`[media-detail] load called, mediaId=${this.mediaId}, currentId=${this.currentId}, loading=${this.loading}`);
-    if (!this.mediaId) return;
-
-    if (this.loadPromise) {
-      console.log(`[media-detail] load already in progress, waiting...`);
-      await this.loadPromise;
-      console.log(`[media-detail] load completed, loading=${this.loading}, media=${!!this.media}`);
-      return;
-    }
-
-    const cached = mediaStore.getCachedDetail(this.mediaId);
-    console.log(`[media-detail] cached=${!!cached}`);
-    if (cached) {
-      this.media = cached;
-      this.loading = false;
-      return;
-    }
-    
-    this.loading = true;
-    console.log(`[media-detail] starting fetch...`);
-    
-    const loadPromise = (async () => {
-      try {
-        const [mediaData, seasonsData] = await Promise.all([
-          mediaService.fetchMediaDetail(this.mediaId),
-          mediaService.fetchMediaSeasons(this.mediaId)
-        ]);
-        
-        this.media = mediaData;
-        this.allSeasons = seasonsData;
-        this.loading = false;
-      } catch (error) {
-        console.error("[media-detail] load error:", error);
-        this.loading = false;
-      } finally {
-        this.loadPromise = null;
-      }
-    })();
-    
-    this.loadPromise = loadPromise;
-    await loadPromise;
-  }
 
   private handleBack() {
-    this.dispatchEvent(new CustomEvent("back", {bubbles: true, composed: true}));
+    eventBus.emit("back", undefined);
   }
 
   private handleSeasonChange(e: Event) {
@@ -137,12 +81,12 @@ export class MediaDetail extends LitElement {
   }
 
   private handleSeasonClick(seasonId: number) {
-    this.dispatchEvent(new CustomEvent("season-select", {detail: {mediaId: this.mediaId, seasonId}, bubbles: true, composed: true}));
+    eventBus.emit("season-select", {mediaId: this.mediaId, seasonId});
   }
 
   override render() {
     if (!this.media) {
-      return html`<div class="loading">${i18next.t("media.loading") || "Loading..."}</div>`;
+      return html``;
     }
 
     const uniqueSeasons = this.allSeasons.filter((s, i, arr) => 

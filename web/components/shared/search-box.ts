@@ -2,6 +2,7 @@ import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { api } from "../../services/api-service";
 import i18next from "../../utils/i18n";
+import { eventBus } from "../../utils/events";
 
 @customElement("search-box")
 export class SearchBox extends LitElement {
@@ -220,11 +221,7 @@ export class SearchBox extends LitElement {
   }
 
   private handleResultClick(result: any) {
-    this.dispatchEvent(new CustomEvent("search-result", {
-      detail: result,
-      bubbles: true,
-      composed: true
-    }));
+    eventBus.emit("search-result", result);
     this.results = [];
     this.query = "";
   }

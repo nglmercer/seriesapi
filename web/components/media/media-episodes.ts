@@ -6,6 +6,7 @@ import i18next from "../../utils/i18n";
 import "../shared/empty-state";
 import "../shared/rating-widget";
 import "../shared/comments-section";
+import { eventBus } from "../../utils/events";
 
 @customElement("media-episodes")
 export class MediaEpisodes extends LitElement {
@@ -79,7 +80,7 @@ export class MediaEpisodes extends LitElement {
   }
 
   private handleBack() {
-    this.dispatchEvent(new CustomEvent("back", { bubbles: true, composed: true }));
+    eventBus.emit("back", undefined);
   }
 
   override render() {
