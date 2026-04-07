@@ -1,6 +1,6 @@
 import {LitElement, html, css} from "lit";
 import {customElement, state} from "lit/decorators.js";
-import {api} from "./api-service";
+import {api} from "../../services/api-service";
 
 @customElement("auth-modal")
 export class AuthModal extends LitElement {

@@ -1,6 +1,6 @@
-import { api,type MediaItem } from "./api-service";
-import { h } from "../utils/dom";
-import i18next from "../utils/i18n";
+import { api,type MediaItem } from "../../services/api-service";
+import { h } from "../../utils/dom";
+import i18next from "../../utils/i18n";
 
 export class MediaList extends HTMLElement {
   private items: MediaItem[] = [];

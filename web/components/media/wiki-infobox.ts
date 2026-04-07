@@ -1,7 +1,7 @@
 import {LitElement, html, css} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import type {MediaItem} from "./api-service";
-import i18next from "../utils/i18n";
+import type {MediaItem} from "../../services/api-service";
+import i18next from "../../utils/i18n";
 
 @customElement("wiki-infobox")
 export class WikiInfobox extends LitElement {

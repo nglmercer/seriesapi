@@ -1,7 +1,7 @@
-import i18next from "../utils/i18n";
-import { h, toggleTheme } from "../utils/dom";
-import { api, type MediaItem } from "./api-service";
-import "./admin-view";
+import i18next from "../../utils/i18n";
+import { h, toggleTheme } from "../../utils/dom";
+import { api, type MediaItem } from "../../services/api-service";
+import "../admin/admin-view";
 
 type View = "home" | "admin" | "media";
 

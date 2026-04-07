@@ -1,7 +1,7 @@
-import { api, type MediaItem, type EpisodeItem, type SeasonItem } from "./api-service";
-import i18next from "../utils/i18n";
-import { h } from "../utils/dom";
-import { ui } from "../utils/ui";
+import { api, type MediaItem, type EpisodeItem, type SeasonItem } from "../../services/api-service";
+import i18next from "../../utils/i18n";
+import { h } from "../../utils/dom";
+import { ui } from "../../utils/ui";
 
 export class AdminContentManager extends HTMLElement {
   private mediaId: number | null = null;

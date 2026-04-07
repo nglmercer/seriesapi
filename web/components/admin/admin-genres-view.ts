@@ -1,7 +1,7 @@
-import { api, type Genres } from "./api-service";
-import i18next from "../utils/i18n";
-import { h } from "../utils/dom";
-import { ui } from "../utils/ui";
+import { api, type Genres } from "../../services/api-service";
+import i18next from "../../utils/i18n";
+import { h } from "../../utils/dom";
+import { ui } from "../../utils/ui";
 
 export class AdminGenresView extends HTMLElement {
   private genres: Genres[] = [];

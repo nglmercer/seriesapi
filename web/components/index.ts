@@ -1,15 +1,25 @@
-export * from "./api-service";
-export * from "./media-list";
-export * from "./media-filters";
-export * from "./people-list";
-export * from "./genres-list";
-export * from "./search-box";
-export * from "./media-detail";
-export * from "./media-episodes";
-export * from "./wiki-infobox";
-export * from "./empty-state";
-export * from "./auth-modal";
-export * from "./admin-view";
-export * from "./admin-media-form";
-export * from "./admin-genres-view";
-export * from "./admin-content-manager";
+export * from "../services/api-service";
+
+// Shared components
+export * from "./shared/search-box";
+export * from "./shared/genres-list";
+export * from "./shared/empty-state";
+export * from "./shared/auth-modal";
+
+// Media components
+export * from "./media/media-list";
+export * from "./media/media-detail";
+export * from "./media/media-episodes";
+export * from "./media/media-filters";
+export * from "./media/wiki-infobox";
+export * from "./media/people-list";
+
+// Admin components
+export * from "./admin/admin-view";
+export * from "./admin/admin-media-form";
+export * from "./admin/admin-genres-view";
+export * from "./admin/admin-content-manager";
+
+// Layout components
+export * from "./layout/admin-app";
+export * from "./layout/public-app";

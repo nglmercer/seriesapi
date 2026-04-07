@@ -1,6 +1,6 @@
-import { api, type MediaItem, type Genres } from "./api-service";
-import i18next from "../utils/i18n";
-import { ui } from "../utils/ui";
+import { api, type MediaItem, type Genres } from "../../services/api-service";
+import i18next from "../../utils/i18n";
+import { ui } from "../../utils/ui";
 
 export class AdminMediaForm {
   static async open(media: Partial<MediaItem> | null, onSaved: () => void) {

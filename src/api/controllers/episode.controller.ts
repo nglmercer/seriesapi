@@ -126,7 +126,7 @@ export class EpisodeController {
         .get();
       
       if (existing) {
-        const updateData: any = {};
+        const updateData: Record<string, string | null> = {};
         if (data.title !== undefined) updateData.title = data.title;
         if (data.synopsis !== undefined) updateData.synopsis = data.synopsis;
         

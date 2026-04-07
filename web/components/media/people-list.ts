@@ -1,6 +1,6 @@
 import {LitElement, html, css} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
-import {api, type PeopleItem} from "./api-service";
+import {api, type PeopleItem} from "../../services/api-service";
 
 @customElement("people-list")
 export class PeopleList extends LitElement {

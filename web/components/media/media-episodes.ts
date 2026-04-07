@@ -1,8 +1,8 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { api, type EpisodeItem, type MediaItem } from "./api-service";
-import i18next from "../utils/i18n";
-import "./empty-state";
+import { api, type EpisodeItem, type MediaItem } from "../../services/api-service";
+import i18next from "../../utils/i18n";
+import "../shared/empty-state";
 
 @customElement("media-episodes")
 export class MediaEpisodes extends LitElement {

@@ -1,4 +1,4 @@
 import "./components/index";
-import "./components/admin-app";
+import "./components/layout/admin-app";
 
 document.querySelector("#app")?.appendChild(document.createElement("admin-app"));

@@ -4,17 +4,17 @@ import { parsePagination } from "../response";
 import { validateParams, mediaListParamsSchema, episodeParamsSchema, imageParamsSchema, paginationSchema } from "../validation";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
 
-function getPosterUrl(drizzle: any, mediaId: number): string | null {
-  const row = drizzle.select(imagesTable)
-    .select("url")
-    .where("entity_type = 'media'")
-    .andWhere("entity_id = ?", [mediaId])
-    .andWhere("image_type = 'poster'")
-    .andWhere("is_primary = 1")
-    .limit(1)
-    .get();
-  return row?.url ?? null;
-}
+// function getPosterUrl(drizzle: any, mediaId: number): string | null {
+//   const row = drizzle.select(imagesTable)
+//     .select("url")
+//     .where("entity_type = 'media'")
+//     .andWhere("entity_id = ?", [mediaId])
+//     .andWhere("image_type = 'poster'")
+//     .andWhere("is_primary = 1")
+//     .limit(1)
+//     .get();
+//   return row?.url ?? null;
+// }
 
 export class MediaController {
   static getList(req: Request) {

@@ -1,13 +1,13 @@
-import { api, type MediaItem } from "./api-service";
-import i18next from "../utils/i18n";
-import { h } from "../utils/dom";
-import { ui } from "../utils/ui";
+import { api, type MediaItem } from "../../services/api-service";
+import i18next from "../../utils/i18n";
+import { h } from "../../utils/dom";
+import { ui } from "../../utils/ui";
 import { AdminMediaForm } from "./admin-media-form";
 import "./admin-genres-view";
 import "./admin-content-manager";
-import "./search-box";
-import "./media-filters";
-import type { MediaFiltersState } from "./media-filters";
+import "../shared/search-box";
+import "../media/media-filters";
+import type { MediaFiltersState } from "../media-filters";
 
 export class AdminView extends HTMLElement {
   private mediaList: MediaItem[] = [];

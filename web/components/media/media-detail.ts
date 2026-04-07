@@ -1,9 +1,9 @@
 import {LitElement, html, css} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
-import {api, type MediaItem} from "./api-service";
-import i18next from "../utils/i18n";
+import {api, type MediaItem} from "../../services/api-service";
+import i18next from "../../utils/i18n";
 import "./wiki-infobox";
-import "./empty-state";
+import "../shared/empty-state";
 
 interface SeasonData {
   id: number;

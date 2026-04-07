@@ -24,7 +24,7 @@ function hashIP(req: Request): string {
 export class CommentController {
   static async createComment(req: Request) {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    let rawBody: any;
+    let rawBody: unknown;
     try {
       rawBody = await req.json();
     } catch {
