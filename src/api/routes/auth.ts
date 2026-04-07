@@ -225,10 +225,9 @@ export async function handleLogin(req: Request): Promise<Response> {
   }
 }
 
-export async function handleLogout(req: Request): Promise<Response> {
+export const handleLogout = withAuth(async (req: Request, user) => {
   const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-  if (req.method !== "POST") return methodNotAllowed(locale);
-
+  
   try {
     const authHeader = req.headers.get("Authorization");
     if (authHeader?.startsWith("Bearer ")) {
@@ -241,61 +240,37 @@ export async function handleLogout(req: Request): Promise<Response> {
   } catch (err) {
     return serverError(err, locale);
   }
-}
+});
 
-export async function handleMe(req: Request): Promise<Response> {
+export const handleMe = withAuth(async (req: Request, user) => {
   const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-  if (req.method !== "GET") return methodNotAllowed(locale);
-
+  
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return unauthorized("Not authenticated", locale);
-    }
-
-    const token = authHeader.slice(7);
     const drizzle = getDrizzle();
 
-    const sessions = (drizzle.select(sessionsTable).as("s")
-      .selectRaw("s.user_id, s.expires_at, u.username, u.email, u.display_name, u.role, u.is_active")
-      .join("users u", "s.user_id = u.id")
-      .where("s.token = ?", [token])
-      .all() as any) as {
-        user_id: number;
-        expires_at: string;
-        username: string;
-        email: string;
-        display_name: string | null;
-        role: string;
-        is_active: number;
-      }[];
+    // Get more info about the user since withAuth only provides basic info
+    const users = drizzle.select(usersTable)
+      .select("id", "username", "email", "display_name", "role")
+      .where("id = ?", [user.id])
+      .all();
 
-    if (sessions.length === 0) {
-      return unauthorized("Invalid or expired session", locale);
+    if (users.length === 0) {
+      return unauthorized("User not found", locale);
     }
 
-    const session = sessions[0]!;
-
-    if (new Date(session.expires_at) < new Date()) {
-      drizzle.delete(sessionsTable).where("token = ?", [token]).run();
-      return unauthorized("Session expired", locale);
-    }
-
-    if (!session.is_active) {
-      return forbidden("Account is disabled", locale);
-    }
+    const userData = users[0]! as any;
 
     return ok({
-      id: session.user_id,
-      username: session.username,
-      email: session.email,
-      display_name: session.display_name || session.username,
-      role: session.role,
+      id: userData.id,
+      username: userData.username,
+      email: userData.email,
+      display_name: userData.display_name || userData.username,
+      role: userData.role,
     }, { locale });
   } catch (err) {
     return serverError(err, locale);
   }
-}
+});
 
 export const handleVerifyCodeGenerate = withAdmin(async (req: Request) => {
   const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
@@ -443,3 +418,29 @@ export const handleUserUpdate = withAuth(async (req: Request, user) => {
     return serverError(err, locale);
   }
 });
+
+/**
+ * Main authentication router that dispatches requests to sub-routes.
+ */
+export async function handleAuthRouter(req: Request, parts: string[]): Promise<Response> {
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+  const [, , , p3, p4] = parts; // parts[0] = "api", parts[1] = "v1", parts[2] = "auth", parts[3] = action, parts[4] = subaction
+  const POST = req.method === "POST";
+  const GET = req.method === "GET";
+  const PATCH = req.method === "PATCH";
+  const PUT = req.method === "PUT";
+
+  if (p3 === "register" && POST) return handleRegister(req);
+  if (p3 === "login" && POST) return handleLogin(req);
+  if (p3 === "logout" && POST) return handleLogout(req);
+  if (p3 === "me" && GET) return handleMe(req);
+  if (p3 === "update" && (PATCH || PUT)) return handleUserUpdate(req);
+  
+  if (p3 === "verify-code") {
+    if (p4 === "generate" && POST) return handleVerifyCodeGenerate(req);
+    if (p4 === "apply" && POST) return handleVerifyCodeApply(req);
+    return notFound("Verification code route", locale);
+  }
+
+  return notFound("Auth route", locale);
+}

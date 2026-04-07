@@ -11,6 +11,7 @@ import { ok, notFound, serverError } from "../response";
 import { SeasonController } from "../controllers/season.controller";
 import { SeasonView } from "../views/season.view";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
+import { withAdmin } from "./auth";
 
 export function handleSeasonDetail(req: Request, _db: Database, id: number): Response {
   try {
@@ -43,7 +44,7 @@ export function handleSeasonImages(req: Request, _db: Database, seasonId: number
   }
 }
 
-export async function handleSeasonCreate(req: Request): Promise<Response> {
+export const handleSeasonCreate = withAdmin(async (req: Request) => {
   try {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     const body = await req.json();
@@ -52,25 +53,39 @@ export async function handleSeasonCreate(req: Request): Promise<Response> {
   } catch (err) {
     return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
   }
-}
+});
 
-export async function handleSeasonUpdate(req: Request, _db: Database, id: number): Promise<Response> {
+export const handleSeasonUpdate = withAdmin(async (req: Request, user) => {
+  // We need the id which is normally passed separately. 
+  // For consistency with withAdmin, we'll need to handle id extraction.
+  // Actually, handleSeasonUpdate in seasons.ts takes (req, db, id).
+  // Let's modify it to be a higher-order function compatible with index.ts.
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
   try {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+    const url = new URL(req.url);
+    const parts = url.pathname.replace(/\/$/, "").split("/").filter(Boolean);
+    const id = parseInt(parts[3] ?? "", 10);
+    if (isNaN(id)) return notFound("Season", locale);
+
     const body = await req.json();
     const result = SeasonController.update(id, body, locale);
     return ok(result, { locale });
   } catch (err) {
-    return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
+    return serverError(err, locale);
   }
-}
+});
 
-export async function handleSeasonDelete(req: Request, _db: Database, id: number): Promise<Response> {
+export const handleSeasonDelete = withAdmin(async (req: Request, user) => {
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
   try {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+    const url = new URL(req.url);
+    const parts = url.pathname.replace(/\/$/, "").split("/").filter(Boolean);
+    const id = parseInt(parts[3] ?? "", 10);
+    if (isNaN(id)) return notFound("Season", locale);
+
     const result = SeasonController.delete(id);
     return ok(result, { locale });
   } catch (err) {
-    return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
+    return serverError(err, locale);
   }
-}
+});

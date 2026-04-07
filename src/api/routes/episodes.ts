@@ -12,6 +12,7 @@ import { ok, notFound, serverError } from "../response";
 import { EpisodeController } from "../controllers/episode.controller";
 import { EpisodeView } from "../views/episode.view";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
+import { withAdmin } from "./auth";
 
 export function handleEpisodeDetail(req: Request, _db: Database, id: number): Response {
   try {
@@ -52,7 +53,7 @@ export function handleEpisodeComments(req: Request, _db: Database, episodeId: nu
   }
 }
 
-export async function handleEpisodeCreate(req: Request): Promise<Response> {
+export const handleEpisodeCreate = withAdmin(async (req: Request) => {
   try {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     const body = await req.json();
@@ -61,25 +62,35 @@ export async function handleEpisodeCreate(req: Request): Promise<Response> {
   } catch (err) {
     return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
   }
-}
+});
 
-export async function handleEpisodeUpdate(req: Request, _db: Database, id: number): Promise<Response> {
+export const handleEpisodeUpdate = withAdmin(async (req: Request, user) => {
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
   try {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+    const url = new URL(req.url);
+    const parts = url.pathname.replace(/\/$/, "").split("/").filter(Boolean);
+    const id = parseInt(parts[3] ?? "", 10);
+    if (isNaN(id)) return notFound("Episode", locale);
+
     const body = await req.json();
     const result = EpisodeController.update(id, body, locale);
     return ok(result, { locale });
   } catch (err) {
-    return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
+    return serverError(err, locale);
   }
-}
+});
 
-export async function handleEpisodeDelete(req: Request, _db: Database, id: number): Promise<Response> {
+export const handleEpisodeDelete = withAdmin(async (req: Request, user) => {
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
   try {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+    const url = new URL(req.url);
+    const parts = url.pathname.replace(/\/$/, "").split("/").filter(Boolean);
+    const id = parseInt(parts[3] ?? "", 10);
+    if (isNaN(id)) return notFound("Episode", locale);
+
     const result = EpisodeController.delete(id);
     return ok(result, { locale });
   } catch (err) {
-    return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
+    return serverError(err, locale);
   }
-}
+});

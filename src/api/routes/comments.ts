@@ -16,8 +16,9 @@ import type { Database } from "sqlite-napi";
 import { ok, notFound, serverError } from "../response";
 import { CommentController } from "../controllers/comment.controller";
 import { CommentView } from "../views/comment.view";
+import { withAuth } from "./auth";
 
-export async function handleCommentPost(req: Request, _db: Database): Promise<Response> {
+export const handleCommentPost = withAuth(async (req: Request, user) => {
   try {
     const result = await CommentController.createComment(req);
     if (result.error) return result.error;
@@ -26,7 +27,7 @@ export async function handleCommentPost(req: Request, _db: Database): Promise<Re
   } catch (err) {
     return serverError(err, "en");
   }
-}
+});
 
 export function handleCommentGet(req: Request, _db: Database, id: number): Response {
   try {

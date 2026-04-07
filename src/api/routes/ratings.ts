@@ -1,17 +1,13 @@
 import { getDrizzle } from "../../init";
 import { ratingsTable, mediaTable, seasonsTable, episodesTable } from "../../schema";
-import { ok, badRequest, serverError, unauthorized } from "../response";
+import { ok, badRequest, serverError } from "../response";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
-import { getUserFromToken } from "./auth";
+import { getUserFromToken, withAuth } from "./auth";
 
-export async function handleRatingPost(req: Request) {
+export const handleRatingPost = withAuth(async (req: Request, user) => {
   try {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const user = getUserFromToken(req);
-    if (!user) {
-      return unauthorized("Authentication required for rating", locale);
-    }
-
+    
     const body = await req.json() as { entity_type?: string; entity_id?: number; score?: number };
     
     if (!body.entity_type || !body.entity_id || typeof body.score !== "number") {
@@ -46,7 +42,7 @@ export async function handleRatingPost(req: Request) {
       .select("id")
       .where("entity_type = ? AND entity_id = ? AND user_id = ?", 
         [body.entity_type, body.entity_id, user.id])
-      .get();
+      .get() as { id: number } | undefined;
       
     if (existing) {
       drizzle.update(ratingsTable)
@@ -93,7 +89,7 @@ export async function handleRatingPost(req: Request) {
   } catch (err) {
     return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
   }
-}
+});
 
 export async function handleRatingGet(req: Request) {
   try {

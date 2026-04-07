@@ -2,12 +2,12 @@ import { getDrizzle } from "../../init";
 import { contentReportsTable } from "../../schema";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
 import { validateParams, reportCreateSchema } from "../validation";
-import { ok, badRequest, methodNotAllowed, serverError } from "../response";
+import { ok, badRequest, serverError } from "../response";
+import { withAdmin } from "./auth";
 
 export async function handleReportCreate(req: Request) {
   const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-  if (req.method !== "POST") return methodNotAllowed(locale);
-
+  
   try {
     const body = await req.json();
     const v = validateParams(reportCreateSchema, body, locale);
@@ -34,10 +34,9 @@ export async function handleReportCreate(req: Request) {
   }
 }
 
-export async function handleReportList(req: Request) {
+export const handleReportList = withAdmin(async (req: Request) => {
   const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-  if (req.method !== "GET") return methodNotAllowed(locale);
-
+  
   try {
     const drizzle = getDrizzle();
     
@@ -50,4 +49,4 @@ export async function handleReportList(req: Request) {
   } catch (err) {
     return serverError(err, locale);
   }
-}
+});

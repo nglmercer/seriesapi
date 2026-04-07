@@ -35,7 +35,7 @@ import { handleGenresList, handleGenreMedia } from "./src/api/routes/genres";
 import { handleCollectionsList, handleCollectionDetail } from "./src/api/routes/collections";
 import { handleSearch } from "./src/api/routes/search";
 import { handleCommentPost, handleCommentGet } from "./src/api/routes/comments";
-import { handleRegister, handleLogin, handleLogout, handleMe, getUserFromToken, handleVerifyCodeGenerate, handleVerifyCodeApply, handleUserUpdate } from "./src/api/routes/auth";
+import { handleRegister, handleLogin, handleLogout, handleMe, getUserFromToken, handleVerifyCodeGenerate, handleVerifyCodeApply, handleUserUpdate, handleAuthRouter } from "./src/api/routes/auth";
 import { handleReportCreate, handleReportList } from "./src/api/routes/reports";
 import { handleRatingPost, handleRatingGet } from "./src/api/routes/ratings";
 import { ok, badRequest, unauthorized, forbidden, notFound, methodNotAllowed, serverError } from "./src/api/response";
@@ -101,11 +101,7 @@ function route(req: Request): Response | Promise<Response> {
 
   // ── /api/v1/media ──────────────────────────────────────────────────────────
   if (resource === "media") {
-    if (!GET) {
-      const user = getUserFromToken(req);
-      if (!user) return unauthorized("Authentication required", locale);
-      if (user.role !== "admin") return forbidden("Admin privileges required", locale);
-    }
+    if (!GET) return methodNotAllowed(locale);
     if (!p3) return handleMediaList(req, db);
     const id = seg(parts, 3);
     if (isNaN(id)) return notFound("Media", locale);
@@ -122,57 +118,38 @@ function route(req: Request): Response | Promise<Response> {
 
   // ── /api/v1/seasons ────────────────────────────────────────────────────────
   if (resource === "seasons") {
-    if (!GET) {
-      const user = getUserFromToken(req);
-      if (!user) return unauthorized("Authentication required", locale);
-      if (user.role !== "admin") return forbidden("Admin privileges required", locale);
-      if (req.method === "POST") return handleSeasonCreate(req);
+    if (GET) {
       const id = seg(parts, 3);
       if (isNaN(id)) return notFound("Season", locale);
-      if (req.method === "PUT") return handleSeasonUpdate(req, db, id);
-      if (req.method === "DELETE") return handleSeasonDelete(req, db, id);
-      return methodNotAllowed(locale);
+      if (!p4) return handleSeasonDetail(req, db, id);
+      if (p4 === "episodes") return handleSeasonEpisodes(req, db, id);
+      if (p4 === "images")   return handleSeasonImages(req, db, id);
+      return notFound("Resource", locale);
     }
     
-    // GET logic
-    const id = seg(parts, 3);
-    if (isNaN(id)) return notFound("Season", locale);
-    if (!p4) return handleSeasonDetail(req, db, id);
-    if (p4 === "episodes") return handleSeasonEpisodes(req, db, id);
-    if (p4 === "images")   return handleSeasonImages(req, db, id);
-    return notFound("Resource", locale);
+    if (req.method === "POST") return handleSeasonCreate(req);
+    return (req.method === "PUT" ? handleSeasonUpdate(req) : req.method === "DELETE" ? handleSeasonDelete(req) : methodNotAllowed(locale));
   }
 
   // ── /api/v1/episodes ───────────────────────────────────────────────────────
   if (resource === "episodes") {
-    if (!GET) {
-      const user = getUserFromToken(req);
-      if (!user) return unauthorized("Authentication required", locale);
-      if (user.role !== "admin") return forbidden("Admin privileges required", locale);
-      if (req.method === "POST") return handleEpisodeCreate(req);
+    if (GET) {
       const id = seg(parts, 3);
       if (isNaN(id)) return notFound("Episode", locale);
-      if (req.method === "PUT") return handleEpisodeUpdate(req, db, id);
-      if (req.method === "DELETE") return handleEpisodeDelete(req, db, id);
-      return methodNotAllowed(locale);
+      if (!p4) return handleEpisodeDetail(req, db, id);
+      if (p4 === "credits")  return handleEpisodeCredits(req, db, id);
+      if (p4 === "images")   return handleEpisodeImages(req, db, id);
+      if (p4 === "comments") return handleEpisodeComments(req, db, id);
+      return notFound("Resource", locale);
     }
 
-    const id = seg(parts, 3);
-    if (isNaN(id)) return notFound("Episode", locale);
-    if (!p4) return handleEpisodeDetail(req, db, id);
-    if (p4 === "credits")  return handleEpisodeCredits(req, db, id);
-    if (p4 === "images")   return handleEpisodeImages(req, db, id);
-    if (p4 === "comments") return handleEpisodeComments(req, db, id);
-    return notFound("Resource", locale);
+    if (req.method === "POST") return handleEpisodeCreate(req);
+    return (req.method === "PUT" ? handleEpisodeUpdate(req) : req.method === "DELETE" ? handleEpisodeDelete(req) : methodNotAllowed(locale));
   }
 
   // ── /api/v1/comments ───────────────────────────────────────────────────────
   if (resource === "comments") {
-    if (POST && !p3) {
-      const user = getUserFromToken(req);
-      if (!user) return unauthorized("Authentication required", locale);
-      return handleCommentPost(req, db);
-    }
+    if (POST && !p3) return handleCommentPost(req);
     if (GET && p3) {
       const id = seg(parts, 3);
       if (!isNaN(id)) return handleCommentGet(req, db, id);
@@ -183,12 +160,7 @@ function route(req: Request): Response | Promise<Response> {
   // ── /api/v1/reports ────────────────────────────────────────────────────────
   if (resource === "reports") {
     if (POST) return handleReportCreate(req);
-    if (GET) {
-      const user = getUserFromToken(req);
-      if (!user) return unauthorized("Authentication required", locale);
-      if (user.role !== "admin") return forbidden("Admin privileges required", locale);
-      return handleReportList(req);
-    }
+    if (GET) return handleReportList(req);
     return notFound("Report", locale);
   }
 
@@ -201,14 +173,7 @@ function route(req: Request): Response | Promise<Response> {
 
   // ── /api/v1/auth ───────────────────────────────────────────────────────────
   if (resource === "auth") {
-    if (POST && p3 === "register") return handleRegister(req);
-    if (POST && p3 === "login") return handleLogin(req);
-    if (POST && p3 === "logout") return handleLogout(req);
-    if (GET && p3 === "me") return handleMe(req);
-    if (p3 === "update" && (req.method === "PUT" || req.method === "PATCH")) return handleUserUpdate(req);
-    if (POST && p3 === "verify-code" && p4 === "generate") return handleVerifyCodeGenerate(req);
-    if (POST && p3 === "verify-code" && p4 === "apply") return handleVerifyCodeApply(req);
-    return notFound("Auth route", locale);
+    return handleAuthRouter(req, parts);
   }
   return notFound("API Route", locale);
 }
