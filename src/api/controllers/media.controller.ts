@@ -1,6 +1,7 @@
 import { imagesTable, videosTable, contentTypesTable, mediaTable, mediaTranslationsTable, mediaGenresTable, genresTable, genreTranslationsTable, mediaTagsTable, tagsTable, mediaStudiosTable, studiosTable, mediaNetworksTable, networksTable, seasonsTable, seasonTranslationsTable, episodesTable, episodeTranslationsTable, peopleTable, peopleTranslationsTable, creditsTable, mediaRelationsTable, commentsTable } from "../../schema";
 import { getDrizzle } from "../../init";
 import { parsePagination } from "../response";
+import { validateParams, mediaListParamsSchema, episodeParamsSchema, imageParamsSchema, paginationSchema } from "../validation";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
 
 function getPosterUrl(drizzle: any, mediaId: number): string | null {
@@ -19,20 +20,19 @@ export class MediaController {
   static getList(req: Request) {
     const url = new URL(req.url);
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const { page, pageSize, offset } = parsePagination(url);
+    
+    const params = Object.fromEntries(url.searchParams);
+    const v = validateParams(mediaListParamsSchema, params, locale);
+    if (!v.success) return { error: v.error };
 
-    const type = url.searchParams.get("type");
-    const genre = url.searchParams.get("genre");
-    const status = url.searchParams.get("status");
-    const sortBy = url.searchParams.get("sort_by") ?? "popularity";
-    const order = (url.searchParams.get("order") === "asc" ? "asc" : "desc") as "asc" | "desc";
-    const search = url.searchParams.get("q");
-    const yearFrom = url.searchParams.get("year_from");
-    const yearTo = url.searchParams.get("year_to");
-    const scoreFrom = url.searchParams.get("score_from");
+    const { 
+      page, limit: pageSize, type, genre, status, 
+      sort_by: sortBy, order, q: search, 
+      year_from: yearFrom, year_to: yearTo, score_from: scoreFrom 
+    } = v.data;
 
-    const allowedSorts = new Set(["popularity", "score", "release_date", "title"]);
-    const safeSort = allowedSorts.has(sortBy) ? sortBy : "popularity";
+    const offset = (page - 1) * pageSize;
+    const safeSort = sortBy;
 
     const drizzle = getDrizzle();
     const posterSubquery = `(SELECT url FROM images WHERE entity_type='media' AND entity_id=m.id AND image_type='poster' AND is_primary=1 LIMIT 1)`;
@@ -68,17 +68,16 @@ export class MediaController {
       totalQuery.andWhere(cond, params);
     }
     if (yearFrom) {
-      itemsQuery.andWhere(`m.release_date >= ?`, [`${yearFrom}-01-01`]);
-      totalQuery.andWhere(`m.release_date >= ?`, [`${yearFrom}-01-01`]);
+      itemsQuery.andWhere(`m.release_date >= ?`, [`${yearFrom.toString()}-01-01`]);
+      totalQuery.andWhere(`m.release_date >= ?`, [`${yearFrom.toString()}-01-01`]);
     }
     if (yearTo) {
-      itemsQuery.andWhere(`m.release_date <= ?`, [`${yearTo}-12-31`]);
-      totalQuery.andWhere(`m.release_date <= ?`, [`${yearTo}-12-31`]);
+      itemsQuery.andWhere(`m.release_date <= ?`, [`${yearTo.toString()}-12-31`]);
+      totalQuery.andWhere(`m.release_date <= ?`, [`${yearTo.toString()}-12-31`]);
     }
-    if (scoreFrom) {
-      const s = parseFloat(scoreFrom);
-      itemsQuery.andWhere(`m.score >= ?`, [s]);
-      totalQuery.andWhere(`m.score >= ?`, [s]);
+    if (scoreFrom !== undefined) {
+      itemsQuery.andWhere(`m.score >= ?`, [scoreFrom]);
+      totalQuery.andWhere(`m.score >= ?`, [scoreFrom]);
     }
 
     if (safeSort === "title") {
@@ -158,9 +157,14 @@ export class MediaController {
   static getEpisodes(req: Request, mediaId: number) {
     const url = new URL(req.url);
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const { page, pageSize, offset } = parsePagination(url);
-    const season = url.searchParams.get("season");
     const drizzle = getDrizzle();
+
+    const queryParams = Object.fromEntries(url.searchParams);
+    const v = validateParams(episodeParamsSchema, queryParams, locale);
+    if (!v.success) return { error: v.error };
+
+    const { page, limit: pageSize, season } = v.data;
+    const offset = (page - 1) * pageSize;
 
     const itemsQuery = drizzle.select(episodesTable).as("e")
       .selectRaw(`e.id, e.season_id, e.episode_number, e.absolute_number, e.episode_type, e.air_date, e.runtime_minutes, e.score, s.season_number, COALESCE(et.title, 'Episode ' || e.episode_number) AS title, et.synopsis`)
@@ -173,10 +177,9 @@ export class MediaController {
       .leftJoin("seasons s", "s.id = e.season_id")
       .where("e.media_id = ?", [mediaId]);
 
-    if (season) {
-      const sNum = parseInt(season, 10);
-      itemsQuery.andWhere("s.season_number = ?", [sNum]);
-      totalQuery.andWhere("s.season_number = ?", [sNum]);
+    if (season !== undefined) {
+      itemsQuery.andWhere("s.season_number = ?", [season]);
+      totalQuery.andWhere("s.season_number = ?", [season]);
     }
 
     const totalRes = totalQuery.get() as { c: number } | undefined;
@@ -221,8 +224,13 @@ export class MediaController {
   static getImages(req: Request, mediaId: number) {
     const url = new URL(req.url);
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const type = url.searchParams.get("type");
     const drizzle = getDrizzle();
+
+    const queryParams = Object.fromEntries(url.searchParams);
+    const v = validateParams(imageParamsSchema, queryParams, locale);
+    if (!v.success) return { error: v.error };
+
+    const { type } = v.data;
 
     const query = drizzle.select(imagesTable)
       .where("entity_type = 'media'")
@@ -274,8 +282,14 @@ export class MediaController {
   static getComments(req: Request, mediaId: number) {
     const url = new URL(req.url);
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const { page, pageSize, offset } = parsePagination(url);
     const drizzle = getDrizzle();
+
+    const queryParams = Object.fromEntries(url.searchParams);
+    const v = validateParams(paginationSchema, queryParams, locale);
+    if (!v.success) return { error: v.error };
+
+    const { page, limit: pageSize } = v.data;
+    const offset = (page - 1) * pageSize;
 
     const totalRes = drizzle.select(commentsTable)
       .selectRaw("COUNT(*) as c")

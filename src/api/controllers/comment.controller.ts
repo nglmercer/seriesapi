@@ -3,6 +3,7 @@ import { getDrizzle } from "../../init";
 import { getLocaleFromRequest, SUPPORTED_LOCALES, DEFAULT_LOCALE } from "../../i18n";
 import { badRequest } from "../response";
 import { commentsTable } from "../../schema";
+import { validateParams, commentCreateSchema } from "../validation";
 
 export interface CommentBody {
   entity_type: string;
@@ -14,10 +15,6 @@ export interface CommentBody {
   parent_id?: number;
 }
 
-const ALLOWED_ENTITY_TYPES = new Set(["media", "season", "episode"]);
-const MAX_DISPLAY_NAME = 64;
-const MAX_BODY = 2000;
-
 function hashIP(req: Request): string {
   const forwarded = req.headers.get("x-forwarded-for");
   const ip = forwarded ? forwarded.split(",")[0]!.trim() : "unknown";
@@ -27,35 +24,21 @@ function hashIP(req: Request): string {
 export class CommentController {
   static async createComment(req: Request) {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    let body: CommentBody;
+    let rawBody: any;
     try {
-      body = (await req.json()) as CommentBody;
+      rawBody = await req.json();
     } catch {
       return { error: badRequest("Invalid JSON body.", locale) };
     }
-    const { entity_type, entity_id, display_name, body: text } = body || {};
 
-    if (!ALLOWED_ENTITY_TYPES.has(entity_type)) {
-      return { error: badRequest(`entity_type must be one of: ${[...ALLOWED_ENTITY_TYPES].join(", ")}.`, locale) };
-    }
-    if (!Number.isInteger(entity_id) || entity_id < 1) {
-      return { error: badRequest("entity_id must be a positive integer.", locale) };
-    }
-    if (typeof display_name !== "string" || display_name.trim().length < 2 || display_name.trim().length > MAX_DISPLAY_NAME) {
-      return { error: badRequest(`display_name must be between 2 and ${MAX_DISPLAY_NAME} characters.`, locale) };
-    }
-    if (typeof text !== "string" || text.trim().length < 1 || text.trim().length > MAX_BODY) {
-      return { error: badRequest(`body must be between 1 and ${MAX_BODY} characters.`, locale) };
-    }
+    const v = validateParams(commentCreateSchema, rawBody, locale);
+    if (!v.success) return { error: v.error };
 
+    const { entity_type, entity_id, display_name, body: text, locale: commentLocale, contains_spoilers, parent_id } = v.data;
     const ip_hash = hashIP(req);
-    const commentLocale = body.locale ?? DEFAULT_LOCALE;
-    const contains_spoilers = body.contains_spoilers ? 1 : 0;
-    const parent_id = body.parent_id ?? null;
-
     const drizzle = getDrizzle();
 
-    if (parent_id !== null) {
+    if (parent_id) {
       const parent = drizzle.select(commentsTable)
         .select("id")
         .where("id = ? AND entity_type = ? AND entity_id = ?", [parent_id, entity_type, entity_id])

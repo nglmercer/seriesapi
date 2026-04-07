@@ -1,7 +1,7 @@
 import { genresTable, genreTranslationsTable, mediaGenresTable, mediaTable, contentTypesTable, mediaTranslationsTable, imagesTable } from "../../schema";
 import { getDrizzle } from "../../init";
-import { parsePagination } from "../response";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
+import { validateParams, genreDetailParamsSchema } from "../validation";
 
 export class GenreController {
   static getList(req: Request) {
@@ -21,8 +21,13 @@ export class GenreController {
     const drizzle = getDrizzle();
     const url = new URL(req.url);
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const { page, pageSize, offset } = parsePagination(url);
-    const type = url.searchParams.get("type");
+
+    const params = Object.fromEntries(url.searchParams);
+    const v = validateParams(genreDetailParamsSchema, params, locale);
+    if (!v.success) return { error: v.error };
+
+    const { page, limit: pageSize, type } = v.data;
+    const offset = (page - 1) * pageSize;
 
     const genre = drizzle.select(genresTable).as("g")
       .selectRaw("g.id, g.slug, COALESCE(gt.name, g.slug) AS name")

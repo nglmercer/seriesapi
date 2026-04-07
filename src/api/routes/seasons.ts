@@ -23,7 +23,10 @@ export function handleSeasonDetail(req: Request, _db: Database, id: number): Res
 
 export function handleSeasonEpisodes(req: Request, _db: Database, seasonId: number): Response {
   try {
-    const { rows, locale, page, pageSize, total } = SeasonController.getEpisodes(req, seasonId);
+    const result = SeasonController.getEpisodes(req, seasonId);
+    if ("error" in result) return result.error as Response;
+
+    const { rows, locale, page, pageSize, total } = result;
     return ok(SeasonView.formatEpisodes(rows), { locale, page, pageSize, total });
   } catch (err) {
     return serverError(err, "en");

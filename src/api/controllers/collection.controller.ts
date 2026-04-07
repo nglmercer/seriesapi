@@ -1,6 +1,6 @@
 import { collectionsTable, collectionTranslationsTable, imagesTable, collectionItemsTable, mediaTable, contentTypesTable, mediaTranslationsTable } from "../../schema";
 import { getDrizzle } from "../../init";
-import { parsePagination } from "../response";
+import { validateParams, paginationSchema } from "../validation";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
 
 export class CollectionController {
@@ -8,7 +8,13 @@ export class CollectionController {
     const drizzle = getDrizzle();
     const url = new URL(req.url);
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const { page, pageSize, offset } = parsePagination(url);
+    
+    const queryParams = Object.fromEntries(url.searchParams);
+    const v = validateParams(paginationSchema, queryParams, locale);
+    if (!v.success) return { error: v.error };
+
+    const { page, limit: pageSize } = v.data;
+    const offset = (page - 1) * pageSize;
 
     const totalRes = drizzle.select(collectionsTable)
       .selectRaw("COUNT(*) as c")

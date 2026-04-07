@@ -24,6 +24,7 @@ export function handleGenreMedia(req: Request, _db: Database, slug: string): Res
   try {
     const result = GenreController.getDetail(req, slug);
     if (!result) return notFound("Genre", "en");
+    if ("error" in result) return result.error as Response;
 
     const formattedData = GenreView.formatDetail(result.genre, result.items);
     return ok(formattedData, { 

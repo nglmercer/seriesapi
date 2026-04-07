@@ -19,7 +19,9 @@ import { MediaView } from "../views/media.view";
 
 export function handleMediaList(req: Request, _db: Database): Response {
   try {
-    const { data, params } = MediaController.getList(req);
+    const result = MediaController.getList(req);
+    if ("error" in result) return result.error as Response;
+    const { data, params } = result;
     return ok(MediaView.formatList(data), params);
   } catch (err) { return serverError(err, "en"); }
 }
@@ -42,7 +44,9 @@ export function handleMediaSeasons(req: Request, _db: Database, mediaId: number)
 
 export function handleMediaEpisodes(req: Request, _db: Database, mediaId: number): Response {
   try {
-    const { rows, params } = MediaController.getEpisodes(req, mediaId);
+    const result = MediaController.getEpisodes(req, mediaId);
+    if ("error" in result) return result.error as Response;
+    const { rows, params } = result;
     return ok(MediaView.formatEpisodes(rows), params);
   } catch (err) { return serverError(err, "en"); }
 }
@@ -56,7 +60,9 @@ export function handleMediaCredits(req: Request, _db: Database, mediaId: number)
 
 export function handleMediaImages(req: Request, _db: Database, mediaId: number): Response {
   try {
-    const { rows, locale, total } = MediaController.getImages(req, mediaId);
+    const result = MediaController.getImages(req, mediaId);
+    if ("error" in result) return result.error as Response;
+    const { rows, locale, total } = result;
     return ok(MediaView.formatImages(rows), { locale, total });
   } catch (err) { return serverError(err, "en"); }
 }
@@ -77,7 +83,9 @@ export function handleMediaRelated(req: Request, _db: Database, mediaId: number)
 
 export function handleMediaComments(req: Request, _db: Database, mediaId: number): Response {
   try {
-    const { rows, params } = MediaController.getComments(req, mediaId);
+    const result = MediaController.getComments(req, mediaId);
+    if ("error" in result) return result.error as Response;
+    const { rows, params } = result;
     return ok(MediaView.formatComments(rows), params);
   } catch (err) { return serverError(err, "en"); }
 }

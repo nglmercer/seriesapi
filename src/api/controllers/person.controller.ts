@@ -1,15 +1,20 @@
 import { peopleTable, peopleTranslationsTable, imagesTable, creditsTable, mediaTable, contentTypesTable, mediaTranslationsTable } from "../../schema";
 import { getDrizzle } from "../../init";
-import { parsePagination } from "../response";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
+import { validateParams, personListParamsSchema } from "../validation";
 
 export class PersonController {
   static getList(req: Request) {
     const url = new URL(req.url);
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const { page, pageSize, offset } = parsePagination(url);
-    const search = url.searchParams.get("q");
     const drizzle = getDrizzle();
+
+    const queryParams = Object.fromEntries(url.searchParams);
+    const v = validateParams(personListParamsSchema, queryParams, locale);
+    if (!v.success) return { error: v.error };
+
+    const { page, limit: pageSize, q: search } = v.data;
+    const offset = (page - 1) * pageSize;
 
     const profileSubquery = `(SELECT url FROM images WHERE entity_type='person' AND entity_id=p.id AND image_type='profile' AND is_primary=1 LIMIT 1)`;
 

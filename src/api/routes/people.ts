@@ -13,7 +13,10 @@ import { PersonView } from "../views/person.view";
 
 export function handlePeopleList(req: Request, _db: Database): Response {
   try {
-    const { rows, params } = PersonController.getList(req);
+    const result = PersonController.getList(req);
+    if ("error" in result) return result.error as Response;
+
+    const { rows, params } = result;
     return ok(PersonView.formatList(rows), params);
   } catch (err) {
     return serverError(err, "en");

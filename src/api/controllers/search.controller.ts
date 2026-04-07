@@ -1,6 +1,6 @@
 import { mediaTable, contentTypesTable, mediaTranslationsTable, peopleTable, peopleTranslationsTable, collectionsTable, collectionTranslationsTable, imagesTable } from "../../schema";
 import { getDrizzle } from "../../init";
-import { parsePagination, badRequest } from "../response";
+import { validateParams, searchParamsSchema } from "../validation";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
 
 type SearchEntityType = "media" | "person" | "collection";
@@ -10,17 +10,15 @@ export class SearchController {
     const drizzle = getDrizzle();
     const url = new URL(req.url);
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const { page, pageSize, offset } = parsePagination(url);
+    
+    const params = Object.fromEntries(url.searchParams);
+    const v = validateParams(searchParamsSchema, params, locale);
+    if (!v.success) return { error: v.error };
+    
+    const { q, type, page, limit: pageSize } = v.data;
+    const offset = (page - 1) * pageSize;
 
-    const q = url.searchParams.get("q")?.trim();
-    if (!q || q.length < 2) {
-      return { error: badRequest("Query param 'q' must be at least 2 characters.", locale) };
-    }
-
-    const entityTypes = new Set<SearchEntityType>(["media", "person", "collection"]);
-    const typeParam = url.searchParams.get("type") as SearchEntityType | null;
-    const activeTypes: SearchEntityType[] =
-      typeParam && entityTypes.has(typeParam) ? [typeParam] : [...entityTypes];
+    const activeTypes: SearchEntityType[] = type ? [type] : ["media", "person", "collection"];
 
     const like = `%${q}%`;
     const results: unknown[] = [];

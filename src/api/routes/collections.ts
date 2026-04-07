@@ -12,7 +12,10 @@ import { CollectionView } from "../views/collection.view";
 
 export function handleCollectionsList(req: Request, _db: Database): Response {
   try {
-    const { params, rows } = CollectionController.getList(req);
+    const result = CollectionController.getList(req);
+    if ("error" in result) return result.error as Response;
+
+    const { params, rows } = result;
     const formattedData = CollectionView.formatList(rows);
     return ok(formattedData, params);
   } catch (err) {
