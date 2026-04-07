@@ -34,10 +34,10 @@ import { handlePeopleList, handlePersonDetail, handlePersonCredits } from "./src
 import { handleGenresList, handleGenreMedia } from "./src/api/routes/genres";
 import { handleCollectionsList, handleCollectionDetail } from "./src/api/routes/collections";
 import { handleSearch } from "./src/api/routes/search";
-import { handleCommentPost, handleCommentGet } from "./src/api/routes/comments";
+import { handleCommentPost, handleCommentGet, handleUserComments } from "./src/api/routes/comments";
 import { handleRegister, handleLogin, handleLogout, handleMe, getUserFromToken, handleVerifyCodeGenerate, handleVerifyCodeApply, handleUserUpdate, handleAuthRouter } from "./src/api/routes/auth";
 import { handleReportCreate, handleReportList } from "./src/api/routes/reports";
-import { handleRatingPost, handleRatingGet, handleTopRatings } from "./src/api/routes/ratings";
+import { handleRatingPost, handleRatingGet, handleTopRatings, handleUserRatings } from "./src/api/routes/ratings";
 import { ok, badRequest, unauthorized, forbidden, notFound, methodNotAllowed, serverError } from "./src/api/response";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "./src/i18n";
 import admin_view from './web/admin.html'
@@ -149,6 +149,7 @@ function route(req: Request): Response | Promise<Response> {
 
   // ── /api/v1/comments ───────────────────────────────────────────────────────
   if (resource === "comments") {
+    if (GET && p3 === "user") return handleUserComments(req);
     if (POST && !p3) return handleCommentPost(req);
     if (GET && p3) {
       const id = seg(parts, 3);
@@ -166,6 +167,8 @@ function route(req: Request): Response | Promise<Response> {
 
   // ── /api/v1/ratings ───────────────────────────────────────────────────
   if (resource === "ratings") {
+    if (GET && p3 === "user") return handleUserRatings(req);
+    if (GET && p3 === "top") return handleTopRatings(req);
     if (POST) return handleRatingPost(req);
     if (GET) return handleRatingGet(req);
     return notFound("Rating", locale);

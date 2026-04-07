@@ -421,6 +421,34 @@ class ApiClient {
       method: "GET"
     });
   }
+
+  getTopRatings(entityType: string = "media", limit: number = 10, minVotes: number = 5): Promise<ApiResponse<any[]>> {
+    const params = new URLSearchParams({
+      entity_type: entityType,
+      limit: String(limit),
+      min_votes: String(minVotes),
+      locale: this.getLocale()
+    });
+    return this.request(`/ratings/top?${params}`);
+  }
+
+  getUserRatings(page: number = 1, limit: number = 20): Promise<ApiResponse<any[]>> {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      locale: this.getLocale()
+    });
+    return this.request(`/ratings/user?${params}`);
+  }
+
+  getUserComments(page: number = 1, limit: number = 20): Promise<ApiResponse<any[]>> {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      locale: this.getLocale()
+    });
+    return this.request(`/comments/user?${params}`);
+  }
 }
 
 export const api = new ApiClient();

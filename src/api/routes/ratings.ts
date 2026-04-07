@@ -168,3 +168,40 @@ export async function handleTopRatings(req: Request) {
     return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
   }
 }
+
+export const handleUserRatings = withAuth(async (req: Request, user) => {
+  try {
+    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+    const url = new URL(req.url);
+    const limit = parseInt(url.searchParams.get("limit") || "20", 10);
+    const page = parseInt(url.searchParams.get("page") || "1", 10);
+    const offset = (page - 1) * limit;
+
+    const drizzle = getDrizzle();
+
+    const results = drizzle.query(`
+      SELECT r.id, r.entity_type, r.entity_id, r.score, r.created_at,
+             CASE 
+               WHEN r.entity_type = 'media' THEN (SELECT title FROM media_translations mt WHERE mt.media_id = r.entity_id AND mt.locale = ?)
+               WHEN r.entity_type = 'episode' THEN (SELECT title FROM episode_translations et WHERE et.episode_id = r.entity_id AND et.locale = ?)
+               ELSE NULL
+             END as title,
+             CASE 
+               WHEN r.entity_type = 'media' THEN (SELECT slug FROM media m WHERE m.id = r.entity_id)
+               ELSE NULL
+             END as slug
+      FROM ratings r
+      WHERE r.user_id = ?
+      ORDER BY r.created_at DESC
+      LIMIT ? OFFSET ?
+    `).all([locale, locale, user.id, limit, offset]);
+
+    const total = drizzle.query<{ count: number }>(
+      "SELECT count(id) as count FROM ratings WHERE user_id = ?"
+    ).get([user.id])?.count || 0;
+
+    return ok(results, { locale, total, page, pageSize: limit });
+  } catch (err) {
+    return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
+  }
+});
