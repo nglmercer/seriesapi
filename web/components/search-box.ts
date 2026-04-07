@@ -1,6 +1,7 @@
 import {LitElement, html, css} from "lit";
 import {customElement, state} from "lit/decorators.js";
 import {api} from "./api-service";
+import i18next from "../utils/i18n";
 
 @customElement("search-box")
 export class SearchBox extends LitElement {
@@ -102,13 +103,13 @@ export class SearchBox extends LitElement {
         <div class="search">
           <input 
             type="text" 
-            placeholder="Search for your favorite series or movies..." 
+            placeholder=${i18next.t("hero.search_placeholder")}
             .value=${this.query}
             @input=${this.handleInput}
             @keydown=${this.handleKeydown}
           />
           <button ?disabled=${this.loading} @click=${this.search}>
-            ${this.loading ? "Searching..." : "Explore"}
+            ${this.loading ? i18next.t("hero.searching") : i18next.t("hero.explore_btn")}
           </button>
         </div>
         ${this.results.length > 0 ? html`

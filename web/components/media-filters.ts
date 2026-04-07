@@ -1,6 +1,7 @@
 import {LitElement, html, css} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {api} from "./api-service";
+import i18next from "../utils/i18n";
 
 export interface MediaFiltersState {
   type: string;
@@ -134,49 +135,49 @@ export class MediaFilters extends LitElement {
       <div class="filters-container">
         <div class="filters-grid">
           <div class="filter-group">
-            <label>Type</label>
+            <label>${i18next.t("filters.type")}</label>
             <select @change=${(e: Event) => this.handleChange("type", (e.target as HTMLSelectElement).value)} .value=${this.type}>
-              <option value="">All</option>
+              <option value="">${i18next.t("filters.all")}</option>
               <option value="anime">Anime</option>
               <option value="manga">Manga</option>
-              <option value="movie">Movie</option>
+              <option value="movie">${i18next.language === 'es' ? 'Película' : 'Movie'}</option>
               <option value="ova">OVA</option>
               <option value="ona">ONA</option>
-              <option value="special">Special</option>
+              <option value="special">${i18next.language === 'es' ? 'Especial' : 'Special'}</option>
             </select>
           </div>
           
           <div class="filter-group">
-            <label>Status</label>
+            <label>${i18next.t("filters.status")}</label>
             <select @change=${(e: Event) => this.handleChange("status", (e.target as HTMLSelectElement).value)} .value=${this.status}>
-              <option value="">All</option>
-              <option value="ongoing">Ongoing</option>
-              <option value="completed">Completed</option>
-              <option value="upcoming">Upcoming</option>
+              <option value="">${i18next.t("filters.all")}</option>
+              <option value="ongoing">${i18next.language === 'es' ? 'En emisión' : 'Ongoing'}</option>
+              <option value="completed">${i18next.language === 'es' ? 'Finalizado' : 'Completed'}</option>
+              <option value="upcoming">${i18next.language === 'es' ? 'Próximamente' : 'Upcoming'}</option>
               <option value="tba">TBA</option>
             </select>
           </div>
           
           <div class="filter-group">
-            <label>Genre</label>
+            <label>${i18next.t("filters.genre")}</label>
             <select @change=${(e: Event) => this.handleChange("genre", (e.target as HTMLSelectElement).value)} .value=${this.genre}>
-              <option value="">All</option>
+              <option value="">${i18next.t("filters.all")}</option>
               ${this.genres.map(g => html`<option value=${g.slug}>${g.name}</option>`)}
             </select>
           </div>
           
           <div class="filter-group">
-            <label>Year Range</label>
+            <label>${i18next.t("filters.year_range")}</label>
             <div style="display: flex; gap: 8px;">
-              <input type="number" placeholder="From" min="1990" max=${currentYear} .value=${this.yearFrom} @change=${(e: Event) => this.handleChange("yearFrom", (e.target as HTMLInputElement).value)} />
-              <input type="number" placeholder="To" min="1990" max=${currentYear} .value=${this.yearTo} @change=${(e: Event) => this.handleChange("yearTo", (e.target as HTMLInputElement).value)} />
+              <input type="number" placeholder=${i18next.language === 'es' ? "Desde" : "From"} min="1990" max=${currentYear} .value=${this.yearFrom} @change=${(e: Event) => this.handleChange("yearFrom", (e.target as HTMLInputElement).value)} />
+              <input type="number" placeholder=${i18next.language === 'es' ? "Hasta" : "To"} min="1990" max=${currentYear} .value=${this.yearTo} @change=${(e: Event) => this.handleChange("yearTo", (e.target as HTMLInputElement).value)} />
             </div>
           </div>
           
           <div class="filter-group">
-            <label>Score</label>
+            <label>${i18next.t("filters.score")}</label>
             <select @change=${(e: Event) => this.handleChange("scoreFrom", (e.target as HTMLSelectElement).value)} .value=${this.scoreFrom}>
-              <option value="">Any</option>
+              <option value="">${i18next.t("filters.any")}</option>
               <option value="9">9+ ★</option>
               <option value="8">8+ ★</option>
               <option value="7">7+ ★</option>
@@ -185,18 +186,18 @@ export class MediaFilters extends LitElement {
           </div>
           
           <div class="filter-group">
-            <label>Sort By</label>
+            <label>${i18next.t("filters.sort_by")}</label>
             <select @change=${(e: Event) => this.handleChange("sortBy", (e.target as HTMLSelectElement).value)} .value=${this.sortBy}>
-              <option value="popularity">Popularity</option>
-              <option value="score">Score</option>
-              <option value="release_date">Date</option>
-              <option value="title">Title</option>
+              <option value="popularity">${i18next.t("filters.popularity")}</option>
+              <option value="score">${i18next.t("filters.score")}</option>
+              <option value="release_date">${i18next.t("filters.date")}</option>
+              <option value="title">${i18next.t("filters.title")}</option>
             </select>
           </div>
         </div>
         
         <div class="actions">
-          <button class="btn-reset" @click=${this.handleReset}>Reset Filters</button>
+          <button class="btn-reset" @click=${this.handleReset}>${i18next.t("filters.reset")}</button>
         </div>
       </div>
     `;

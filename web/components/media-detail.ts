@@ -1,6 +1,7 @@
 import {LitElement, html, css} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {api, type MediaItem} from "./api-service";
+import i18next from "../utils/i18n";
 import "./wiki-infobox";
 import "./empty-state";
 
@@ -113,7 +114,7 @@ export class MediaDetail extends LitElement {
   }
 
   override render() {
-    if (this.loading) return html`<div class="loading">Loading...</div>`;
+    if (this.loading) return html`<div class="loading">${i18next.t("media.loading") || "Loading..."}</div>`;
     if (this.error || !this.media) {
       return html`<empty-state title="Page not found" message="This page does not exist or has been removed."></empty-state>`;
     }
@@ -125,7 +126,7 @@ export class MediaDetail extends LitElement {
     return html`
       <div class="back-link" @click=${this.handleBack}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-        Back to Explorer
+        ${i18next.t("media.back_to_explorer")}
       </div>
       <div class="container">
         <div class="wiki-sidebar">
@@ -137,27 +138,27 @@ export class MediaDetail extends LitElement {
           
           ${this.media.synopsis ? html`
             <div class="section">
-              <h2 class="section-title">Synopsis</h2>
+              <h2 class="section-title">${i18next.t("media.synopsis")}</h2>
               <div class="synopsis">${this.media.synopsis}</div>
             </div>
           ` : ""}
 
           ${uniqueSeasons.length > 0 ? html`
             <div class="section">
-              <h2 class="section-title">Seasons</h2>
+              <h2 class="section-title">${i18next.t("media.seasons")}</h2>
               <div class="filter-bar">
                 <select @change=${this.handleSeasonChange}>
-                  <option value="">All Seasons</option>
+                  <option value="">${i18next.t("media.all_seasons")}</option>
                   ${uniqueSeasons.map(s => html`
-                    <option value=${s.season_number}>${s.name || `Season ${s.season_number}`}</option>
+                    <option value=${s.season_number}>${s.name || `${i18next.t("media.season")} ${s.season_number}`}</option>
                   `)}
                 </select>
               </div>
               <div class="seasons-grid">
                 ${uniqueSeasons.filter(s => this.selectedSeason === null || s.season_number === this.selectedSeason).map(s => html`
                   <div class="season-card" @click=${() => this.handleSeasonClick(s.id)}>
-                    <span class="season-name">${s.name || `Season ${s.season_number}`}</span>
-                    <span class="season-count">${s.episode_count} Episodes</span>
+                    <span class="season-name">${s.name || `${i18next.t("media.season")} ${s.season_number}`}</span>
+                    <span class="season-count">${i18next.t("media.episodes_count", { count: s.episode_count })}</span>
                   </div>
                 `)}
               </div>

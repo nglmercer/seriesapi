@@ -1,5 +1,6 @@
 import "./components/index";
 import { h, toggleTheme } from "./utils/dom";
+import i18next from "./utils/i18n";
 
 class PublicApp extends HTMLElement {
   private selectedMediaId: number | null = null;
@@ -7,6 +8,7 @@ class PublicApp extends HTMLElement {
   private currentFilters: Record<string, any> = {};
 
   connectedCallback() {
+    i18next.on('languageChanged', () => this.render());
     this.addEventListener("media-select", (e: any) => {
       this.selectedMediaId = e.detail.id;
       this.selectedSeasonId = null;
@@ -49,15 +51,24 @@ class PublicApp extends HTMLElement {
     this.render();
   }
 
+  private changeLanguage(lng: string) {
+    i18next.changeLanguage(lng);
+    localStorage.setItem("lang", lng);
+  }
+
   private render() {
     this.innerHTML = "";
     
     const header = h("header", { style: "padding: 20px 0; border-bottom: 1px solid var(--border-color); background: var(--header-bg);" },
       h("div", { className: "container", style: "display:flex; justify-content: space-between; align-items:center;" },
-        h("a", { href: "/", onclick: (e: Event) => { e.preventDefault(); this.selectedMediaId = null; this.selectedSeasonId = null; this.render(); }, style: "font-size: 24px; font-weight: 800; color: var(--accent-color); letter-spacing: -1px;" }, "EXPLORER"),
+        h("a", { href: "/", onclick: (e: Event) => { e.preventDefault(); this.selectedMediaId = null; this.selectedSeasonId = null; this.render(); }, style: "font-size: 24px; font-weight: 800; color: var(--accent-color); letter-spacing: -1px;" }, i18next.t("header.explorer")),
         h("div", { style: "display:flex; gap: 20px; align-items:center;" },
+           h("div", { style: "display:flex; gap: 8px; border-right: 1px solid var(--border-color); padding-right: 20px; margin-right: 20px;" },
+             h("button", { onclick: () => this.changeLanguage("en"), style: `background: ${i18next.language === 'en' ? 'var(--accent-color)' : 'transparent'}; color: ${i18next.language === 'en' ? 'white' : 'inherit'}; border:none; padding:4px 8px; font-weight:bold; font-size:12px; cursor:pointer; border-radius:4px;` }, "EN"),
+             h("button", { onclick: () => this.changeLanguage("es"), style: `background: ${i18next.language === 'es' ? 'var(--accent-color)' : 'transparent'}; color: ${i18next.language === 'es' ? 'white' : 'inherit'}; border:none; padding:4px 8px; font-weight:bold; font-size:12px; cursor:pointer; border-radius:4px;` }, "ES")
+           ),
            h("button", { onclick: () => toggleTheme(), style: "border:none; background:transparent; font-size:20px;" }, "🌗"),
-           h("a", { href: "/admin", style: "font-weight: 600; font-size: 14px;" }, "Admin Panel")
+           h("a", { href: "/admin", style: "font-weight: 600; font-size: 14px;" }, i18next.t("header.admin_panel"))
         )
       )
     );
@@ -78,8 +89,8 @@ class PublicApp extends HTMLElement {
     } else {
       const hero = h("section", { style: "padding: 60px 0; text-align:center; background: var(--bg-secondary);" },
           h("div", { className: "container" },
-              h("h1", { style: "font-size: 48px; margin-bottom: 10px;" }, "Discover Your Next Favorite Anime"),
-              h("p", { style: "color: var(--text-secondary); max-width: 600px; margin: 0 auto 30px;" }, "Explore thousands of series and movies with detailed information, images, and community ratings."),
+              h("h1", { style: "font-size: 48px; margin-bottom: 10px;" }, i18next.t("hero.title")),
+              h("p", { style: "color: var(--text-secondary); max-width: 600px; margin: 0 auto 30px;" }, i18next.t("hero.subtitle")),
               h("div", { style: "max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;" },
                   h("search-box", {}),
                   h("media-filters", { ...this.currentFilters } as any)

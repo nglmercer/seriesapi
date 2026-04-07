@@ -1,6 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { api, type EpisodeItem, type MediaItem } from "./api-service";
+import i18next from "../utils/i18n";
 import "./empty-state";
 
 @customElement("media-episodes")
@@ -76,18 +77,18 @@ export class MediaEpisodes extends LitElement {
   }
 
   override render() {
-    if (this.loading) return html`<div class="loading">Loading episodes...</div>`;
+    if (this.loading) return html`<div class="loading">${i18next.t("media.loading") || "Loading episodes..."}</div>`;
     if (this.error) return html`<empty-state title="Error" message="Failed to load episodes."></empty-state>`;
 
     return html`
       <div class="header">
         <div class="back-link" @click=${this.handleBack}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-          Back to Series
+          ${i18next.t("episodes.back_to_series")}
         </div>
         <h1 class="title">
           ${this.media?.title}
-          <small>${this.season?.name || `Season ${this.season?.season_number || ''}`}</small>
+          <small>${this.season?.name || `${i18next.t("media.season")} ${this.season?.season_number || ''}`}</small>
         </h1>
       </div>
 
@@ -103,16 +104,16 @@ export class MediaEpisodes extends LitElement {
                 ${ep.title}
               </div>
               <div class="episode-meta">
-                ${ep.air_date ? html`<span>Air Date: ${new Date(ep.air_date).toLocaleDateString()}</span>` : ""}
-                ${ep.runtime_minutes ? html`<span> • ${ep.runtime_minutes} min</span>` : ""}
+                ${ep.air_date ? html`<span>${i18next.t("episodes.air_date", { date: new Date(ep.air_date).toLocaleDateString() })}</span>` : ""}
+                ${ep.runtime_minutes ? html`<span> • ${i18next.t("episodes.min", { count: ep.runtime_minutes })}</span>` : ""}
               </div>
-              <div class="episode-synopsis">${ep.synopsis || "No synopsis available for this episode."}</div>
+              <div class="episode-synopsis">${ep.synopsis || i18next.t("episodes.no_synopsis")}</div>
             </div>
           </div>
         `)}
       </div>
       
-      ${this.episodes.length === 0 ? html`<empty-state title="No episodes" message="This season doesn't have any episodes yet."></empty-state>` : ""}
+      ${this.episodes.length === 0 ? html`<empty-state title=${i18next.t("episodes.no_episodes_title") || "No episodes"} message=${i18next.t("episodes.no_episodes")}></empty-state>` : ""}
     `;
   }
 }

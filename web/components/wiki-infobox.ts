@@ -1,6 +1,7 @@
 import {LitElement, html, css} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import type {MediaItem} from "./api-service";
+import i18next from "../utils/i18n";
 
 @customElement("wiki-infobox")
 export class WikiInfobox extends LitElement {
@@ -65,35 +66,35 @@ export class WikiInfobox extends LitElement {
         <table class="infobox-data">
           ${this.media.original_title || this.media.originalTitle ? html`
             <tr>
-              <td class="infobox-label">Original Title</td>
+              <td class="infobox-label">${i18next.t("infobox.original_title")}</td>
               <td class="infobox-value">${this.media.original_title || this.media.originalTitle}</td>
             </tr>
           ` : ""}
           
           ${this.media.content_type || this.media.type ? html`
             <tr>
-              <td class="infobox-label">Type</td>
+              <td class="infobox-label">${i18next.t("infobox.type")}</td>
               <td class="infobox-value">${this.media.content_type || this.media.type}</td>
             </tr>
           ` : ""}
           
           ${this.media.release_date || this.media.year ? html`
             <tr>
-              <td class="infobox-label">Release</td>
+              <td class="infobox-label">${i18next.t("infobox.release")}</td>
               <td class="infobox-value">${this.media.release_date || this.media.year}</td>
             </tr>
           ` : ""}
           
           ${this.media.status ? html`
             <tr>
-              <td class="infobox-label">Status</td>
+              <td class="infobox-label">${i18next.t("infobox.status")}</td>
               <td class="infobox-value">${this.media.status}</td>
             </tr>
           ` : ""}
           
           ${this.media.score || this.media.rating ? html`
             <tr>
-              <td class="infobox-label">Score</td>
+              <td class="infobox-label">${i18next.t("infobox.score")}</td>
               <td class="infobox-value">★ ${this.media.score || this.media.rating}/10</td>
             </tr>
           ` : ""}
@@ -101,7 +102,7 @@ export class WikiInfobox extends LitElement {
         
         ${this.media.synopsis ? html`
           <div class="infobox-section">
-            <div class="infobox-section-title">Synopsis Snapshot</div>
+            <div class="infobox-section-title">${i18next.t("infobox.synopsis_snapshot")}</div>
             <div class="infobox-section-content">${this.media.synopsis}</div>
           </div>
         ` : ""}

@@ -1,5 +1,6 @@
 import { api,type MediaItem } from "./api-service";
 import { h } from "../utils/dom";
+import i18next from "../utils/i18n";
 
 export class MediaList extends HTMLElement {
   private items: MediaItem[] = [];
@@ -31,7 +32,7 @@ export class MediaList extends HTMLElement {
   render() {
     this.innerHTML = "";
     if (this.loading) {
-      this.appendChild(h("div", { className: "card", style: "text-align:center" }, "Loading..."));
+      this.appendChild(h("div", { className: "card", style: "text-align:center; padding: 40px; color: var(--text-secondary);" }, i18next.t("media.loading") || "Loading..."));
       return;
     }
 

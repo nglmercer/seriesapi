@@ -1,3 +1,4 @@
+import i18next from "../utils/i18n";
 const API_BASE = "/api/v1";
 
 export interface ApiResponse<T> {
@@ -65,6 +66,10 @@ export interface EpisodeItem {
 }
 
 class ApiClient {
+  private getLocale() {
+    return i18next.language || "es";
+  }
+
   private async request<T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> {
     const res = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
@@ -77,7 +82,7 @@ class ApiClient {
   }
 
   getMedia(page = 1, pageSize = 20, filters?: Record<string, string>): Promise<ApiResponse<MediaItem[]>> {
-    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), locale: "es" });
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), locale: this.getLocale() });
     if (filters) {
       Object.entries(filters).forEach(([k, v]) => v && params.set(k, v));
     }
@@ -85,58 +90,58 @@ class ApiClient {
   }
 
   getMediaDetail(id: number): Promise<ApiResponse<MediaItem>> {
-    return this.request(`/media/${id}?locale=es`);
+    return this.request(`/media/${id}?locale=${this.getLocale()}`);
   }
 
   getMediaSeasons(mediaId: number): Promise<ApiResponse<unknown>> {
-    return this.request(`/media/${mediaId}/seasons?locale=es`);
+    return this.request(`/media/${mediaId}/seasons?locale=${this.getLocale()}`);
   }
 
   getMediaEpisodes(mediaId: number, season?: number): Promise<ApiResponse<unknown>> {
-    const params = new URLSearchParams({ locale: "es" });
+    const params = new URLSearchParams({ locale: this.getLocale() });
     if (season !== undefined) params.set("season", String(season));
     return this.request(`/media/${mediaId}/episodes?${params}`);
   }
 
   getMediaCredits(mediaId: number): Promise<ApiResponse<unknown>> {
-    return this.request(`/media/${mediaId}/credits?locale=es`);
+    return this.request(`/media/${mediaId}/credits?locale=${this.getLocale()}`);
   }
 
   getMediaImages(mediaId: number): Promise<ApiResponse<unknown>> {
-    return this.request(`/media/${mediaId}/images?locale=es`);
+    return this.request(`/media/${mediaId}/images?locale=${this.getLocale()}`);
   }
 
   getMediaVideos(mediaId: number): Promise<ApiResponse<unknown>> {
-    return this.request(`/media/${mediaId}/videos?locale=es`);
+    return this.request(`/media/${mediaId}/videos?locale=${this.getLocale()}`);
   }
 
   getMediaRelated(mediaId: number): Promise<ApiResponse<unknown>> {
-    return this.request(`/media/${mediaId}/related?locale=es`);
+    return this.request(`/media/${mediaId}/related?locale=${this.getLocale()}`);
   }
 
   getMediaComments(mediaId: number): Promise<ApiResponse<unknown>> {
-    return this.request(`/media/${mediaId}/comments?locale=es`);
+    return this.request(`/media/${mediaId}/comments?locale=${this.getLocale()}`);
   }
 
   getPeople(page = 1, pageSize = 20): Promise<ApiResponse<PeopleItem[]>> {
-    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), locale: "es" });
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), locale: this.getLocale() });
     return this.request(`/people?${params}`);
   }
 
   getPeopleDetail(id: number): Promise<ApiResponse<PeopleItem>> {
-    return this.request(`/people/${id}?locale=es`);
+    return this.request(`/people/${id}?locale=${this.getLocale()}`);
   }
 
   getPeopleCredits(personId: number): Promise<ApiResponse<unknown[]>> {
-    return this.request(`/people/${personId}/credits?locale=es`);
+    return this.request(`/people/${personId}/credits?locale=${this.getLocale()}`);
   }
 
   getGenres(): Promise<ApiResponse<unknown[]>> {
-    return this.request("/genres?locale=es");
+    return this.request(`/genres?locale=${this.getLocale()}`);
   }
 
   getGenreMedia(slug: string, page = 1): Promise<ApiResponse<unknown>> {
-    return this.request(`/genres/${slug}?page=${page}`);
+    return this.request(`/genres/${slug}?page=${page}&locale=${this.getLocale()}`);
   }
 
   getCollections(): Promise<ApiResponse<unknown[]>> {
@@ -148,7 +153,7 @@ class ApiClient {
   }
 
   search(query: string, type?: string): Promise<ApiResponse<unknown[]>> {
-    const params = new URLSearchParams({ q: query, locale: "es" });
+    const params = new URLSearchParams({ q: query, locale: this.getLocale() });
     if (type) params.set("type", type);
     return this.request(`/search?${params}`);
   }
