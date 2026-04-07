@@ -5,6 +5,10 @@ export * from "./shared/search-box";
 export * from "./shared/genres-list";
 export * from "./shared/empty-state";
 export * from "./shared/auth-modal";
+export * from "./shared/comment-avatar";
+export * from "./shared/comment-item";
+export * from "./shared/comment-compose";
+export * from "./shared/comments-section";
 
 // Media components
 export * from "./media/media-list";
