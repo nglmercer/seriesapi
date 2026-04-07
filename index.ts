@@ -36,8 +36,8 @@ import { handleCollectionsList, handleCollectionDetail } from "./src/api/routes/
 import { handleSearch } from "./src/api/routes/search";
 import { handleCommentPost, handleCommentGet } from "./src/api/routes/comments";
 import { handleRegister, handleLogin, handleLogout, handleMe } from "./src/api/routes/auth";
-import index_admin from './web/index.html'
-import index_public from './web/public.html'
+import admin_view from './web/admin.html'
+import public_view from './web/index.html'
 // ── config ────────────────────────────────────────────────────────────────────
 
 const PORT = parseInt(process.env.PORT ?? "3000", 10);
@@ -221,8 +221,8 @@ const server = Bun.serve({
     }
   },
   routes:{
-    "/": index_public,
-    "/admin": index_admin
+    "/": public_view,
+    "/admin": admin_view
   }
 });
 
