@@ -1,6 +1,6 @@
 import { episodesTable, episodeTranslationsTable, seasonsTable, imagesTable, commentsTable, peopleTable, episodeCreditsTable } from "../../schema";
 import { getDrizzle } from "../../init";
-import { parsePagination } from "../response";
+import { validateParams, paginationSchema } from "../validation";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
 
 export class EpisodeController {
@@ -53,8 +53,14 @@ export class EpisodeController {
   static getComments(req: Request, episodeId: number) {
     const url = new URL(req.url);
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const { page, pageSize, offset } = parsePagination(url);
     const drizzle = getDrizzle();
+
+    const queryParams = Object.fromEntries(url.searchParams);
+    const v = validateParams(paginationSchema, queryParams, locale);
+    if (!v.success) return { error: v.error };
+
+    const { page, limit: pageSize } = v.data;
+    const offset = (page - 1) * pageSize;
 
     const totalRes = drizzle.select(commentsTable)
       .selectRaw("COUNT(*) as c")
@@ -85,8 +91,8 @@ export class EpisodeController {
       media_id: data.mediaId,
       season_id: data.seasonId,
       episode_number: data.number,
-      created_at: now as any,
-      updated_at: now as any
+      created_at: now,
+      updated_at: now
     }).run();
     const episodeId = res.lastInsertRowid;
 
@@ -108,7 +114,7 @@ export class EpisodeController {
 
     if (data.number !== undefined) {
       drizzle.update(episodesTable)
-        .set({ episode_number: data.number, updated_at: now as any })
+        .set({ episode_number: data.number, updated_at: now })
         .where("id = ?", [id])
         .run();
     }

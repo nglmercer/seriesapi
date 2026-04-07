@@ -54,7 +54,7 @@ export class CommentController {
       ip_hash,
       locale: commentLocale,
       body: text.trim(),
-      contains_spoilers: contains_spoilers as any
+      contains_spoilers: contains_spoilers
     }).run();
 
     const created = drizzle.select(commentsTable)

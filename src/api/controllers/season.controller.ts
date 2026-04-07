@@ -72,8 +72,8 @@ export class SeasonController {
     const res = drizzle.insert(seasonsTable).values({
       media_id: data.mediaId,
       season_number: data.seasonNumber,
-      created_at: now as any,
-      updated_at: now as any
+      created_at: now,
+      updated_at: now
     }).run();
     const seasonId = res.lastInsertRowid;
 
@@ -94,7 +94,7 @@ export class SeasonController {
 
     if (data.seasonNumber !== undefined) {
       drizzle.update(seasonsTable)
-        .set({ season_number: data.seasonNumber, updated_at: now as any })
+        .set({ season_number: data.seasonNumber, updated_at: now })
         .where("id = ?", [id])
         .run();
     }
