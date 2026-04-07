@@ -4,6 +4,7 @@ import {api, type MediaItem} from "../../services/api-service";
 import i18next from "../../utils/i18n";
 import "./wiki-infobox";
 import "../shared/empty-state";
+import "../shared/report-modal";
 
 interface SeasonData {
   id: number;
@@ -69,7 +70,7 @@ export class MediaDetail extends LitElement {
   @state() selectedSeason: number | null = null;
   @state() loading = true;
   @state() error = false;
-  @state() reported = false;
+  @state() showReportModal = false;
 
   override connectedCallback() {
     super.connectedCallback();
@@ -114,19 +115,6 @@ export class MediaDetail extends LitElement {
     this.dispatchEvent(new CustomEvent("season-select", {detail: {mediaId: this.mediaId, seasonId}, bubbles: true, composed: true}));
   }
 
-  private async reportMissingTranslation() {
-    if (this.reported || !this.media) return;
-    const res = await api.reportTranslation({
-      entity_type: "media",
-      entity_id: this.media.id,
-      locale: i18next.language
-    });
-    if (res.ok) {
-       this.reported = true;
-       alert(i18next.t("media.translation_requested") || "Translation request sent! Thank you.");
-    }
-  }
-
   override render() {
     if (this.loading) return html`<div class="loading">${i18next.t("media.loading") || "Loading..."}</div>`;
     if (this.error || !this.media) {
@@ -148,19 +136,19 @@ export class MediaDetail extends LitElement {
         </div>
         
         <div class="wiki-main">
-          <h1 class="page-title">${this.media.title}</h1>
-          ${!this.media.translation_id ? html`
-            <div style="background: var(--error-color); color: white; padding: 12px 20px; border-radius: 8px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
-              <span>${i18next.t("media.translation_fallback_notice") || "This content is shown in its original language. Help us translate it!"}</span>
-              <button 
-                ?disabled=${this.reported}
-                @click=${this.reportMissingTranslation} 
-                style="background: white; color: var(--error-color); border:none; padding: 6px 12px; border-radius: 4px; font-weight: 700; cursor: pointer; opacity: ${this.reported ? 0.7 : 1};"
-              >
-                ${this.reported ? (i18next.t("media.requested") || "Requested") : (i18next.t("media.request_translation") || "Request Translation")}
-              </button>
-            </div>
-          ` : ""}
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <h1 class="page-title">${this.media.title}</h1>
+            <button @click=${() => this.showReportModal = true} style="background: transparent; border: none; cursor: pointer; color: var(--text-secondary);" title="Report Issue">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+            </button>
+          </div>
+          
+          <report-modal 
+            .open=${this.showReportModal} 
+            entityType="media" 
+            .entityId=${this.media.id}
+            @closed=${() => this.showReportModal = false}
+          ></report-modal>
           
           ${this.media.synopsis ? html`
             <div class="section">

@@ -4,6 +4,7 @@ import { h } from "../../utils/dom";
 import { ui } from "../../utils/ui";
 import { AdminMediaForm } from "./admin-media-form";
 import "./admin-genres-view";
+import "./admin-reports-view";
 import "./admin-content-manager";
 import "../shared/search-box";
 import "../media/media-filters";
@@ -13,7 +14,7 @@ export class AdminView extends HTMLElement {
   private mediaList: MediaItem[] = [];
   private searchQuery = "";
   private filters: Partial<MediaFiltersState> = {};
-  private currentTab: "media" | "genres" = "media";
+  private currentTab: "media" | "genres" | "reports" = "media";
   private editingMediaId: number | null = null; // Used for Content Manager
   private showFilters = false;
 
@@ -95,7 +96,12 @@ export class AdminView extends HTMLElement {
         className: this.currentTab === 'genres' ? 'active' : '',
         onclick: () => { this.currentTab = 'genres'; this.render(); },
         style: `border-radius:0; border:none; background:transparent; cursor:pointer; padding: 10px; ${this.currentTab === 'genres' ? 'border-bottom: 3px solid var(--accent-color)' : ''}`
-      }, i18next.t("admin.genres"))
+      }, i18next.t("admin.genres")),
+      h("button", {
+        className: this.currentTab === 'reports' ? 'active' : '',
+        onclick: () => { this.currentTab = 'reports'; this.render(); },
+        style: `border-radius:0; border:none; background:transparent; cursor:pointer; padding: 10px; ${this.currentTab === 'reports' ? 'border-bottom: 3px solid var(--accent-color)' : ''}`
+      }, i18next.t("admin.reports", { defaultValue: "Reports" }))
     );
 
     let content;
@@ -149,12 +155,14 @@ export class AdminView extends HTMLElement {
           ))
         )
       );
-    } else {
+    } else if (this.currentTab === 'genres') {
       content = h("admin-genres-view");
+    } else if (this.currentTab === 'reports') {
+      content = document.createElement("admin-reports-view");
     }
 
     container.appendChild(nav);
-    container.appendChild(content);
+    if (content) container.appendChild(content);
     this.appendChild(container);
   }
 }

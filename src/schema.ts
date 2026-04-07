@@ -699,6 +699,7 @@ export const ALL_TABLES = [
   rateLimitsTable,
   apiLogsTable,
   translationRequestsTable,
+  contentReportsTable,
 
   // user accounts & auth
   usersTable,
