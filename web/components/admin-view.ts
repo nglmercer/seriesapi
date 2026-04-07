@@ -5,6 +5,7 @@ import { ui } from "../utils/ui";
 import { AdminMediaForm } from "./admin-media-form";
 import "./admin-genres-view";
 import "./admin-content-manager";
+import "./search-box";
 
 export class AdminView extends HTMLElement {
   private mediaList: MediaItem[] = [];
@@ -24,10 +25,8 @@ export class AdminView extends HTMLElement {
     }
   }
 
-  private async handleSearch(e: Event) {
-    e.preventDefault();
-    const query = (e.target as HTMLFormElement).querySelector("input")?.value || "";
-    this.searchQuery = query;
+  private async handleSearch(e: CustomEvent) {
+    this.searchQuery = e.detail || "";
     await this.fetchMedia();
     this.render();
   }
@@ -84,12 +83,16 @@ export class AdminView extends HTMLElement {
     let content;
     if (this.currentTab === 'media') {
       content = h("div", {},
-        h("div", { style: "display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px;" },
-          h("form", { onsubmit: (e: Event) => this.handleSearch(e), style: "display:flex; gap: 10px; width:100%; max-width:400px;" },
-            h("input", { type: "search", placeholder: i18next.t("admin.search_placeholder"), value: this.searchQuery }),
-            h("button", { type: "submit" }, i18next.t("admin.search"))
-          ),
-          h("button", { onclick: () => this.openEditMedia(null), className: "primary" }, i18next.t("admin.new_entry"))
+        h("div", { style: "display:flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 20px;" },
+          h("search-box", { 
+            placeholder: i18next.t("admin.search_placeholder"),
+            buttonText: i18next.t("admin.search"),
+            query: this.searchQuery,
+            showResults: false, // In admin list we just want to filter
+            onsearch: (e: CustomEvent) => this.handleSearch(e),
+            style: "flex: 1; max-width: 400px;"
+          }),
+          h("button", { onclick: () => this.openEditMedia(null), className: "primary", style: "height: 48px; border-radius: 10px; font-weight: 600;" }, i18next.t("admin.new_entry"))
         ),
         h("div", { className: "media-admin-list", style: "display: grid; gap: 10px;" },
           ...this.mediaList.map(item => h("div", { className: "card", style: "display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;" },
@@ -116,3 +119,4 @@ export class AdminView extends HTMLElement {
 }
 
 customElements.define("admin-view", AdminView);
+

@@ -1,8 +1,15 @@
 export function h(tag: string, props: Record<string, any> = {}, ...children: Array<string | Node | null | undefined | boolean>): HTMLElement {
   const el = document.createElement(tag);
-  Object.assign(el, props);
-  if (props.style && typeof props.style === 'object') {
-    Object.assign(el.style, props.style);
+  for (const [key, value] of Object.entries(props)) {
+    if (key.startsWith('on') && typeof value === 'function') {
+      el.addEventListener(key.substring(2).toLowerCase(), value);
+    } else if (key === 'style' && typeof value === 'object') {
+      Object.assign(el.style, value);
+    } else if (key === 'dataset' && typeof value === 'object') {
+      Object.assign(el.dataset, value);
+    } else {
+      (el as any)[key] = value;
+    }
   }
   if (props.dataset) {
     Object.assign(el.dataset, props.dataset);
