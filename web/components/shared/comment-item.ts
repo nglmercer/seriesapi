@@ -9,16 +9,9 @@ import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import i18next from "../../utils/i18n";
 import "./comment-avatar";
+import { type CommentItem as CommentData } from "../../services/api-service";
 
-export interface CommentData {
-  id: number;
-  display_name: string;
-  body: string;
-  contains_spoilers: boolean;
-  likes: number;
-  created_at: string;
-  replies?: CommentData[];
-}
+export { type CommentData };
 
 export function relativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();

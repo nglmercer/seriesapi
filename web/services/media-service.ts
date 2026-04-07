@@ -1,12 +1,5 @@
 import {api, type MediaItem, type EpisodeItem, type SeasonItem, type SeasonsResponse, type CommentsResponse} from "./api-service";
 
-interface SeasonData {
-  id: number;
-  season_number: number;
-  episode_count: number;
-  name: string;
-}
-
 class MediaService {
   async fetchMediaDetail(mediaId: number): Promise<MediaItem | null> {
     try {
@@ -51,7 +44,7 @@ class MediaService {
   async fetchSeason(seasonId: number): Promise<SeasonItem | null> {
     try {
       const response = await api.getSeason(seasonId);
-      return response.ok ? response.data as SeasonItem : null;
+      return response.ok ? response.data : null;
     } catch (error) {
       console.error("[media-service] fetchSeason error:", error);
       return null;
