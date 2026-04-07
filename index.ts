@@ -35,7 +35,7 @@ import { handleGenresList, handleGenreMedia } from "./src/api/routes/genres";
 import { handleCollectionsList, handleCollectionDetail } from "./src/api/routes/collections";
 import { handleSearch } from "./src/api/routes/search";
 import { handleCommentPost, handleCommentGet } from "./src/api/routes/comments";
-import { handleRegister, handleLogin, handleLogout, handleMe, getUserFromToken, handleVerifyCodeGenerate, handleVerifyCodeApply } from "./src/api/routes/auth";
+import { handleRegister, handleLogin, handleLogout, handleMe, getUserFromToken, handleVerifyCodeGenerate, handleVerifyCodeApply, handleUserUpdate } from "./src/api/routes/auth";
 import { handleReportCreate, handleReportList } from "./src/api/routes/reports";
 import { handleRatingPost, handleRatingGet } from "./src/api/routes/ratings";
 import admin_view from './web/admin.html'
@@ -248,6 +248,7 @@ function route(req: Request): Response | Promise<Response> {
     if (POST && p3 === "login") return handleLogin(req);
     if (POST && p3 === "logout") return handleLogout(req);
     if (GET && p3 === "me") return handleMe(req);
+    if (p3 === "update" && (req.method === "PUT" || req.method === "PATCH")) return handleUserUpdate(req);
     if (POST && p3 === "verify-code" && p4 === "generate") return handleVerifyCodeGenerate(req);
     if (POST && p3 === "verify-code" && p4 === "apply") return handleVerifyCodeApply(req);
     return json404();

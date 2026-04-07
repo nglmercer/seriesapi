@@ -1,22 +1,18 @@
 import { getDrizzle } from "../../init";
 import { corsHeaders } from "../../middleware/ratelimit";
+import { validateParams, registerSchema, loginSchema, userUpdateSchema } from "../validation";
+import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
 
-const DAILON_API_KEY = process.env.DAILON_API_KEY ?? "demo_key_123";
-
-function hashPassword(password: string): string {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password + DAILON_API_KEY);
-  let hash = 0;
-  for (let i = 0; i < data.length; i++) {
-    const char = data[i]!;
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return "sha256_" + Math.abs(hash).toString(16);
+async function hashPassword(password: string): Promise<string> {
+  return await Bun.password.hash(password, {
+    algorithm: "argon2id",
+    memoryCost: 65536,
+    timeCost: 2,
+  });
 }
 
-function verifyPassword(password: string, hash: string): boolean {
-  return hashPassword(password) === hash;
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  return await Bun.password.verify(password, hash);
 }
 
 export function getUserFromToken(req: Request): { id: number; role: string; username: string } | null {
@@ -84,6 +80,7 @@ function generateVerificationCode(targetRole: string, userId: number): string {
 }
 
 export async function handleRegister(req: Request): Promise<Response> {
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
   if (req.method !== "POST") {
     return new Response(
       JSON.stringify({ ok: false, error: "Method not allowed" }),
@@ -93,21 +90,10 @@ export async function handleRegister(req: Request): Promise<Response> {
 
   try {
     const body = await req.json();
-    const { username, email, password, display_name } = body;
+    const v = validateParams(registerSchema, body, locale);
+    if (!v.success) return v.error;
 
-    if (!username || !email || !password) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "Missing required fields: username, email, password" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders() } },
-      );
-    }
-
-    if (password.length < 6) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "Password must be at least 6 characters" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders() } },
-      );
-    }
+    const { username, email, password, display_name } = v.data;
 
     const drizzle = getDrizzle();
     const existing = drizzle.query<{id: number}>(
@@ -121,7 +107,7 @@ export async function handleRegister(req: Request): Promise<Response> {
       );
     }
 
-    const passwordHash = hashPassword(password);
+    const passwordHash = await hashPassword(password);
     const now = new Date().toISOString();
 
     const result = drizzle.query(
@@ -148,6 +134,7 @@ export async function handleRegister(req: Request): Promise<Response> {
 }
 
 export async function handleLogin(req: Request): Promise<Response> {
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
   if (req.method !== "POST") {
     return new Response(
       JSON.stringify({ ok: false, error: "Method not allowed" }),
@@ -157,14 +144,10 @@ export async function handleLogin(req: Request): Promise<Response> {
 
   try {
     const body = await req.json();
-    const { username, password } = body;
+    const v = validateParams(loginSchema, body, locale);
+    if (!v.success) return v.error;
 
-    if (!username || !password) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "Missing username or password" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders() } },
-      );
-    }
+    const { username, password } = v.data;
 
     const drizzle = getDrizzle();
     const users = drizzle.query<{
@@ -195,7 +178,7 @@ export async function handleLogin(req: Request): Promise<Response> {
       );
     }
 
-    const valid = verifyPassword(password, user.password_hash);
+    const valid = await verifyPassword(password, user.password_hash);
     if (!valid) {
       return new Response(
         JSON.stringify({ ok: false, error: "Invalid credentials" }),
@@ -482,6 +465,90 @@ export async function handleVerifyCodeApply(req: Request): Promise<Response> {
     );
   } catch (err) {
     console.error("[auth] verify code apply error:", err);
+    return new Response(
+      JSON.stringify({ ok: false, error: "Internal server error" }),
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders() } },
+    );
+  }
+}
+
+export async function handleUserUpdate(req: Request): Promise<Response> {
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+  if (req.method !== "PUT" && req.method !== "PATCH") {
+    return new Response(
+      JSON.stringify({ ok: false, error: "Method not allowed" }),
+      { status: 405, headers: { "Content-Type": "application/json", ...corsHeaders() } },
+    );
+  }
+
+  try {
+    const user = getUserFromToken(req);
+    if (!user) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Not authenticated" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders() } },
+      );
+    }
+
+    const body = await req.json();
+    const v = validateParams(userUpdateSchema, body, locale);
+    if (!v.success) return v.error;
+
+    const { display_name, email, password } = v.data;
+    const drizzle = getDrizzle();
+
+    const updates: string[] = [];
+    const params: unknown[] = [];
+
+    if (display_name !== undefined) {
+      updates.push("display_name = ?");
+      params.push(display_name);
+    }
+    if (email !== undefined) {
+      // Check if email already exists
+      const existing = drizzle.query<{id: number}>(
+        `SELECT id FROM users WHERE email = ? AND id != ?`,
+      ).all([email, user.id]);
+
+      if (existing.length > 0) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Email already exists" }),
+          { status: 409, headers: { "Content-Type": "application/json", ...corsHeaders() } },
+        );
+      }
+      updates.push("email = ?");
+      params.push(email);
+    }
+    if (password !== undefined) {
+      const passwordHash = await hashPassword(password);
+      updates.push("password_hash = ?");
+      params.push(passwordHash);
+    }
+
+    if (updates.length === 0) {
+      return new Response(
+        JSON.stringify({ ok: true, data: { message: "No changes to update" } }),
+        { headers: { "Content-Type": "application/json", ...corsHeaders() } },
+      );
+    }
+
+    updates.push("updated_at = ?");
+    params.push(new Date().toISOString());
+    params.push(user.id);
+
+    drizzle.query(
+      `UPDATE users SET ${updates.join(", ")} WHERE id = ?`,
+    ).run(params);
+
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        data: { message: "User updated successfully" },
+      }),
+      { headers: { "Content-Type": "application/json", ...corsHeaders() } },
+    );
+  } catch (err) {
+    console.error("[auth] user update error:", err);
     return new Response(
       JSON.stringify({ ok: false, error: "Internal server error" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders() } },

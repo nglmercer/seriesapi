@@ -113,3 +113,21 @@ export const commentCreateSchema = z.object({
   contains_spoilers: z.boolean().optional().default(false),
   parent_id: idSchema.optional().nullable(),
 });
+
+export const registerSchema = z.object({
+  username: z.string().trim().min(3).max(32),
+  email: z.email(),
+  password: z.string().min(6),
+  display_name: z.string().trim().min(2).max(64).optional(),
+});
+
+export const loginSchema = z.object({
+  username: z.string().trim(), // can be email too
+  password: z.string(),
+});
+
+export const userUpdateSchema = z.object({
+  display_name: z.string().trim().min(2).max(64).optional(),
+  email: z.email().optional(),
+  password: z.string().min(6).optional(),
+});
