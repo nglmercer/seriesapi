@@ -1,3 +1,4 @@
+import { peopleTable, peopleTranslationsTable, imagesTable, creditsTable, mediaTable, contentTypesTable, mediaTranslationsTable } from "../../schema";
 import { getDrizzle } from "../../init";
 import { parsePagination } from "../response";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
@@ -10,37 +11,32 @@ export class PersonController {
     const search = url.searchParams.get("q");
     const drizzle = getDrizzle();
 
-    const conditions: string[] = [];
-    const params: unknown[] = [];
+    const profileSubquery = `(SELECT url FROM images WHERE entity_type='person' AND entity_id=p.id AND image_type='profile' AND is_primary=1 LIMIT 1)`;
+
+    const itemsQuery = drizzle.select(peopleTable).as("p")
+      .distinct()
+      .selectRaw(`p.id, p.name, p.birth_date, p.birth_country, p.gender, COALESCE(pt.name, p.name) AS display_name, ${profileSubquery} AS profile_url`)
+      .leftJoin("people_translations pt", "pt.person_id = p.id AND pt.locale = ?", [locale]);
+
+    const totalQuery = drizzle.select(peopleTable).as("p")
+      .selectRaw("COUNT(DISTINCT p.id) as c")
+      .leftJoin("people_translations pt", "pt.person_id = p.id AND pt.locale = ?", [locale]);
 
     if (search) {
-      conditions.push("(p.name LIKE ? OR pt.name LIKE ?)");
-      params.push(`%${search}%`, `%${search}%`);
+      const cond = "(p.name LIKE ? OR pt.name LIKE ?)";
+      const params = [`%${search}%`, `%${search}%`];
+      itemsQuery.andWhere(cond, params);
+      totalQuery.andWhere(cond, params);
     }
 
-    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-
-    const totalRes = drizzle.query<{c: number}>(`
-      SELECT COUNT(DISTINCT p.id) as c
-      FROM people p
-      LEFT JOIN people_translations pt ON pt.person_id = p.id AND pt.locale = ?
-      ${where}
-    `).get([locale, ...params]);
+    const totalRes = totalQuery.get() as { c: number } | undefined;
     const total = totalRes ? totalRes.c : 0;
 
-    const rows = drizzle.query(`
-      SELECT DISTINCT
-        p.id, p.name, p.birth_date, p.birth_country, p.gender,
-        COALESCE(pt.name, p.name) AS display_name,
-        (SELECT url FROM images
-         WHERE entity_type='person' AND entity_id=p.id
-           AND image_type='profile' AND is_primary=1 LIMIT 1) AS profile_url
-       FROM people p
-       LEFT JOIN people_translations pt ON pt.person_id = p.id AND pt.locale = ?
-       ${where}
-       ORDER BY p.name ASC
-       LIMIT ? OFFSET ?
-    `).all([locale, ...params, pageSize, offset]);
+    const rows = itemsQuery
+      .orderBy("p.name", "asc")
+      .limit(pageSize)
+      .offset(offset)
+      .all();
 
     return { rows, params: { locale, page, pageSize, total } };
   }
@@ -49,19 +45,13 @@ export class PersonController {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     const drizzle = getDrizzle();
 
-    const row = drizzle.query(`
-      SELECT
-        p.id, p.birth_date, p.death_date, p.birth_country, p.gender,
-        p.also_known_as, p.external_ids,
-        COALESCE(pt.name, p.name) AS name,
-        pt.biography,
-        (SELECT url FROM images
-         WHERE entity_type='person' AND entity_id=p.id
-           AND image_type='profile' AND is_primary=1 LIMIT 1) AS profile_url
-       FROM people p
-       LEFT JOIN people_translations pt ON pt.person_id = p.id AND pt.locale = ?
-       WHERE p.id = ?
-    `).get([locale, id]);
+    const profileSubquery = `(SELECT url FROM images WHERE entity_type='person' AND entity_id=p.id AND image_type='profile' AND is_primary=1 LIMIT 1)`;
+
+    const row = drizzle.select(peopleTable).as("p")
+      .selectRaw(`p.id, p.birth_date, p.death_date, p.birth_country, p.gender, p.also_known_as, p.external_ids, COALESCE(pt.name, p.name) AS name, pt.biography, ${profileSubquery} AS profile_url`)
+      .leftJoin("people_translations pt", "pt.person_id = p.id AND pt.locale = ?", [locale])
+      .where("p.id = ?", [id])
+      .get();
 
     return { person: row, locale };
   }
@@ -70,22 +60,16 @@ export class PersonController {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     const drizzle = getDrizzle();
 
-    const rows = drizzle.query(`
-      SELECT
-        c.credit_type, c.role_name, c.department, c.job, c."order" AS billing_order,
-        m.id AS media_id, m.slug, ct.slug AS content_type,
-        COALESCE(mt.title, m.original_title) AS title,
-        m.score, m.release_date,
-        (SELECT url FROM images
-         WHERE entity_type='media' AND entity_id=m.id
-           AND image_type='poster' AND is_primary=1 LIMIT 1) AS poster_url
-       FROM credits c
-       JOIN media m ON m.id = c.media_id
-       JOIN content_types ct ON ct.id = m.content_type_id
-       LEFT JOIN media_translations mt ON mt.media_id = m.id AND mt.locale = ?
-       WHERE c.person_id = ?
-       ORDER BY m.release_date DESC NULLS LAST
-    `).all([locale, personId]);
+    const posterSubquery = `(SELECT url FROM images WHERE entity_type='media' AND entity_id=m.id AND image_type='poster' AND is_primary=1 LIMIT 1)`;
+
+    const rows = drizzle.select(creditsTable).as("c")
+      .selectRaw(`c.credit_type, c.role_name, c.department, c.job, c."order" AS billing_order, m.id AS media_id, m.slug, ct.slug AS content_type, COALESCE(mt.title, m.original_title) AS title, m.score, m.release_date, ${posterSubquery} AS poster_url`)
+      .join("media m", "m.id = c.media_id")
+      .join("content_types ct", "ct.id = m.content_type_id")
+      .leftJoin("media_translations mt", "mt.media_id = m.id AND mt.locale = ?", [locale])
+      .where("c.person_id = ?", [personId])
+      .orderBy("m.release_date", "desc")
+      .all();
 
     return { rows, locale, total: rows.length };
   }

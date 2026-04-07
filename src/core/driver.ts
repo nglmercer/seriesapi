@@ -54,6 +54,7 @@ class SelectBuilder<T> {
   private _columns: string = "*";
   private _distinct: boolean = false;
   private _joins: string[] = [];
+  private _joinParams: unknown[] = [];
   private _whereConditions: string[] = [];
   private _whereParams: unknown[] = [];
   private _orderBys: string[] = [];
@@ -92,13 +93,13 @@ class SelectBuilder<T> {
 
   join(tableContent: string, condition: string, params?: unknown[]): this {
     this._joins.push(`JOIN ${tableContent} ON ${condition}`);
-    if (params) this._whereParams.push(...params);
+    if (params) this._joinParams.push(...params);
     return this;
   }
 
   leftJoin(tableContent: string, condition: string, params?: unknown[]): this {
     this._joins.push(`LEFT JOIN ${tableContent} ON ${condition}`);
-    if (params) this._whereParams.push(...params);
+    if (params) this._joinParams.push(...params);
     return this;
   }
 
@@ -155,19 +156,20 @@ class SelectBuilder<T> {
     return sql;
   }
 
+  private getFinalParams(extra?: unknown[]): unknown[] {
+    return [...this._joinParams, ...this._whereParams, ...(extra || [])];
+  }
+
   all(params?: unknown[]): T[] {
-    const finalParams = params ? [...this._whereParams, ...params] : this._whereParams;
-    return this.db.query(this.build()).all(finalParams) as T[];
+    return this.db.query(this.build()).all(this.getFinalParams(params)) as T[];
   }
 
   get(params?: unknown[]): T | undefined {
-    const finalParams = params ? [...this._whereParams, ...params] : this._whereParams;
-    return this.db.query(this.build()).get(finalParams) as T | undefined;
+    return this.db.query(this.build()).get(this.getFinalParams(params)) as T | undefined;
   }
 
   run(params?: unknown[]): QueryResult {
-    const finalParams = params ? [...this._whereParams, ...params] : this._whereParams;
-    return this.db.run(this.build(), finalParams);
+    return this.db.run(this.build(), this.getFinalParams(params));
   }
 }
 

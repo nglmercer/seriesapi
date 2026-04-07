@@ -2,6 +2,7 @@ import { createHash } from "crypto";
 import { getDrizzle } from "../../init";
 import { getLocaleFromRequest, SUPPORTED_LOCALES, DEFAULT_LOCALE } from "../../i18n";
 import { badRequest } from "../response";
+import { commentsTable } from "../../schema";
 
 export interface CommentBody {
   entity_type: string;
@@ -55,20 +56,27 @@ export class CommentController {
     const drizzle = getDrizzle();
 
     if (parent_id !== null) {
-      const parent = drizzle.query("SELECT id FROM comments WHERE id = ? AND entity_type = ? AND entity_id = ?")
-        .get([parent_id, entity_type, entity_id]);
+      const parent = drizzle.select(commentsTable)
+        .select("id")
+        .where("id = ? AND entity_type = ? AND entity_id = ?", [parent_id, entity_type, entity_id])
+        .get();
       if (!parent) return { error: badRequest("parent_id does not exist or is in a different thread.", locale) };
     }
 
-    const result = drizzle.execute(
-      `INSERT INTO comments
-         (entity_type, entity_id, parent_id, display_name, ip_hash,
-          locale, body, contains_spoilers)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [entity_type, entity_id, parent_id, display_name.trim(), ip_hash, commentLocale, text.trim(), contains_spoilers]
-    );
+    const result = drizzle.insert(commentsTable).values({
+      entity_type,
+      entity_id,
+      parent_id,
+      display_name: display_name.trim(),
+      ip_hash,
+      locale: commentLocale,
+      body: text.trim(),
+      contains_spoilers: contains_spoilers as any
+    }).run();
 
-    const created = drizzle.query("SELECT * FROM comments WHERE id = ?").get([result.lastInsertRowid]);
+    const created = drizzle.select(commentsTable)
+      .where("id = ?", [result.lastInsertRowid])
+      .get();
     return { data: created, locale };
   }
 
@@ -76,20 +84,12 @@ export class CommentController {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     const drizzle = getDrizzle();
 
-    const comment = drizzle.query(`
-      SELECT
-        c.id, c.entity_type, c.entity_id, c.parent_id,
-        c.display_name, c.locale, c.body,
-        c.contains_spoilers, c.likes, c.dislikes, c.created_at,
-        (SELECT JSON_GROUP_ARRAY(JSON_OBJECT(
-           'id', r.id, 'display_name', r.display_name,
-           'body', r.body, 'likes', r.likes,
-           'contains_spoilers', r.contains_spoilers, 'created_at', r.created_at
-         )) FROM comments r
-         WHERE r.parent_id = c.id AND r.is_hidden = 0) AS replies
-       FROM comments c
-       WHERE c.id = ? AND c.is_hidden = 0
-    `).get([id]);
+    const repliesSubquery = `(SELECT JSON_GROUP_ARRAY(JSON_OBJECT('id', r.id, 'display_name', r.display_name, 'body', r.body, 'likes', r.likes, 'contains_spoilers', r.contains_spoilers, 'created_at', r.created_at)) FROM comments r WHERE r.parent_id = c.id AND r.is_hidden = 0)`;
+
+    const comment = drizzle.select(commentsTable).as("c")
+      .selectRaw(`c.id, c.entity_type, c.entity_id, c.parent_id, c.display_name, c.locale, c.body, c.contains_spoilers, c.likes, c.dislikes, c.created_at, ${repliesSubquery} AS replies`)
+      .where("c.id = ? AND c.is_hidden = 0", [id])
+      .get();
 
     return { comment, locale };
   }

@@ -1,3 +1,4 @@
+import { seasonsTable, seasonTranslationsTable, episodesTable, episodeTranslationsTable, imagesTable } from "../../schema";
 import { getDrizzle } from "../../init";
 import { parsePagination } from "../response";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
@@ -7,19 +8,13 @@ export class SeasonController {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     const drizzle = getDrizzle();
 
-    const row = drizzle.query(`
-      SELECT
-        s.id, s.media_id, s.season_number, s.episode_count,
-        s.air_date, s.end_date, s.score, s.score_count, s.external_ids,
-        COALESCE(st.name, 'Season ' || s.season_number) AS name,
-        st.synopsis,
-        (SELECT url FROM images
-         WHERE entity_type='season' AND entity_id=s.id
-           AND image_type='poster' AND is_primary=1 LIMIT 1) AS poster_url
-       FROM seasons s
-       LEFT JOIN season_translations st ON st.season_id = s.id AND st.locale = ?
-       WHERE s.id = ?
-    `).get([locale, id]);
+    const posterSubquery = `(SELECT url FROM images WHERE entity_type='season' AND entity_id=s.id AND image_type='poster' AND is_primary=1 LIMIT 1)`;
+
+    const row = drizzle.select(seasonsTable).as("s")
+      .selectRaw(`s.id, s.media_id, s.season_number, s.episode_count, s.air_date, s.end_date, s.score, s.score_count, s.external_ids, COALESCE(st.name, 'Season ' || s.season_number) AS name, st.synopsis, ${posterSubquery} AS poster_url`)
+      .leftJoin("season_translations st", "st.season_id = s.id AND st.locale = ?", [locale])
+      .where("s.id = ?", [id])
+      .get();
 
     return { season: row, locale };
   }
@@ -30,24 +25,22 @@ export class SeasonController {
     const { page, pageSize, offset } = parsePagination(url);
     const drizzle = getDrizzle();
 
-    const totalRes = drizzle.query<{c: number}>(`SELECT COUNT(*) as c FROM episodes WHERE season_id = ?`).get([seasonId]);
+    const totalRes = drizzle.select(episodesTable)
+      .selectRaw("COUNT(*) as c")
+      .where("season_id = ?", [seasonId])
+      .get() as { c: number } | undefined;
     const total = totalRes ? totalRes.c : 0;
 
-    const rows = drizzle.query(`
-      SELECT
-        e.id, e.episode_number, e.absolute_number, e.episode_type,
-        e.air_date, e.runtime_minutes, e.score,
-        COALESCE(et.title, 'Episode ' || e.episode_number) AS title,
-        et.synopsis,
-        (SELECT url FROM images
-         WHERE entity_type='episode' AND entity_id=e.id
-           AND image_type='still' AND is_primary=1 LIMIT 1) AS still_url
-       FROM episodes e
-       LEFT JOIN episode_translations et ON et.episode_id = e.id AND et.locale = ?
-       WHERE e.season_id = ?
-       ORDER BY e.episode_number ASC
-       LIMIT ? OFFSET ?
-    `).all([locale, seasonId, pageSize, offset]);
+    const stillSubquery = `(SELECT url FROM images WHERE entity_type='episode' AND entity_id=e.id AND image_type='still' AND is_primary=1 LIMIT 1)`;
+
+    const rows = drizzle.select(episodesTable).as("e")
+      .selectRaw(`e.id, e.episode_number, e.absolute_number, e.episode_type, e.air_date, e.runtime_minutes, e.score, COALESCE(et.title, 'Episode ' || e.episode_number) AS title, et.synopsis, ${stillSubquery} AS still_url`)
+      .leftJoin("episode_translations et", "et.episode_id = e.id AND et.locale = ?", [locale])
+      .where("e.season_id = ?", [seasonId])
+      .orderBy("e.episode_number", "asc")
+      .limit(pageSize)
+      .offset(offset)
+      .all();
 
     return { rows, locale, page, pageSize, total };
   }
@@ -56,12 +49,12 @@ export class SeasonController {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     const drizzle = getDrizzle();
 
-    const rows = drizzle.query(`
-      SELECT id, image_type, locale, url, width, height, is_primary, vote_average
-      FROM images
-      WHERE entity_type = 'season' AND entity_id = ?
-      ORDER BY is_primary DESC, vote_average DESC
-    `).all([seasonId]);
+    const rows = drizzle.select(imagesTable)
+      .where("entity_type = 'season'")
+      .andWhere("entity_id = ?", [seasonId])
+      .orderBy("is_primary", "desc")
+      .orderBy("vote_average", "desc")
+      .all();
 
     return { rows, locale, total: rows.length };
   }
@@ -70,16 +63,20 @@ export class SeasonController {
     const drizzle = getDrizzle();
     const now = new Date().toISOString();
 
-    const seasonId = drizzle.query(`
-      INSERT INTO seasons (media_id, season_number, created_at, updated_at)
-      VALUES (?, ?, ?, ?)
-    `).run([data.mediaId, data.seasonNumber, now, now]).lastInsertRowid;
+    const res = drizzle.insert(seasonsTable).values({
+      media_id: data.mediaId,
+      season_number: data.seasonNumber,
+      created_at: now as any,
+      updated_at: now as any
+    }).run();
+    const seasonId = res.lastInsertRowid;
 
     if (data.title) {
-      drizzle.query(`
-        INSERT INTO season_translations (season_id, locale, name)
-        VALUES (?, 'es', ?)
-      `).run([seasonId, data.title]);
+      drizzle.insert(seasonTranslationsTable).values({
+        season_id: Number(seasonId),
+        locale: 'es',
+        name: data.title
+      }).run();
     }
 
     return { id: seasonId };
@@ -90,19 +87,29 @@ export class SeasonController {
     const now = new Date().toISOString();
 
     if (data.seasonNumber !== undefined) {
-      drizzle.query(`UPDATE seasons SET season_number = ?, updated_at = ? WHERE id = ?`)
-        .run([data.seasonNumber, now, id]);
+      drizzle.update(seasonsTable)
+        .set({ season_number: data.seasonNumber, updated_at: now as any })
+        .where("id = ?", [id])
+        .run();
     }
 
     if (data.title !== undefined) {
-      // Upsert translation for 'es'
-      const existing = drizzle.query(`SELECT id FROM season_translations WHERE season_id = ? AND locale = 'es'`).get([id]);
+      const existing = drizzle.select(seasonTranslationsTable)
+        .select("id")
+        .where("season_id = ? AND locale = 'es'", [id])
+        .get();
+      
       if (existing) {
-        drizzle.query(`UPDATE season_translations SET name = ? WHERE season_id = ? AND locale = 'es'`)
-          .run([data.title, id]);
+        drizzle.update(seasonTranslationsTable)
+          .set({ name: data.title })
+          .where("season_id = ? AND locale = 'es'", [id])
+          .run();
       } else {
-        drizzle.query(`INSERT INTO season_translations (season_id, locale, name) VALUES (?, 'es', ?)`)
-          .run([id, data.title]);
+        drizzle.insert(seasonTranslationsTable).values({
+          season_id: id,
+          locale: 'es',
+          name: data.title
+        }).run();
       }
     }
 
@@ -111,9 +118,8 @@ export class SeasonController {
 
   static delete(id: number) {
     const drizzle = getDrizzle();
-    drizzle.query(`DELETE FROM seasons WHERE id = ?`).run([id]);
-    drizzle.query(`DELETE FROM season_translations WHERE season_id = ?`).run([id]);
-    // Note: Episodes should probably be deleted too, but we might want cascading for that in the schema.
+    drizzle.delete(seasonsTable).where("id = ?", [id]).run();
+    drizzle.delete(seasonTranslationsTable).where("season_id = ?", [id]).run();
     return { ok: true };
   }
 }

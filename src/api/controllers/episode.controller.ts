@@ -1,3 +1,4 @@
+import { episodesTable, episodeTranslationsTable, seasonsTable, imagesTable, commentsTable, peopleTable, episodeCreditsTable } from "../../schema";
 import { getDrizzle } from "../../init";
 import { parsePagination } from "../response";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
@@ -7,22 +8,14 @@ export class EpisodeController {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     const drizzle = getDrizzle();
 
-    const row = drizzle.query(`
-      SELECT
-        e.id, e.media_id, e.season_id, e.episode_number,
-        e.absolute_number, e.episode_type, e.air_date,
-        e.runtime_minutes, e.score, e.score_count, e.external_ids,
-        s.season_number,
-        COALESCE(et.title, 'Episode ' || e.episode_number) AS title,
-        et.synopsis,
-        (SELECT url FROM images
-         WHERE entity_type='episode' AND entity_id=e.id
-           AND image_type='still' AND is_primary=1 LIMIT 1) AS still_url
-       FROM episodes e
-       LEFT JOIN seasons s ON s.id = e.season_id
-       LEFT JOIN episode_translations et ON et.episode_id = e.id AND et.locale = ?
-       WHERE e.id = ?
-    `).get([locale, id]);
+    const stillSubquery = `(SELECT url FROM images WHERE entity_type='episode' AND entity_id=e.id AND image_type='still' AND is_primary=1 LIMIT 1)`;
+
+    const row = drizzle.select(episodesTable).as("e")
+      .selectRaw(`e.id, e.media_id, e.season_id, e.episode_number, e.absolute_number, e.episode_type, e.air_date, e.runtime_minutes, e.score, e.score_count, e.external_ids, s.season_number, COALESCE(et.title, 'Episode ' || e.episode_number) AS title, et.synopsis, ${stillSubquery} AS still_url`)
+      .leftJoin("seasons s", "s.id = e.season_id")
+      .leftJoin("episode_translations et", "et.episode_id = e.id AND et.locale = ?", [locale])
+      .where("e.id = ?", [id])
+      .get();
 
     return { episode: row, locale };
   }
@@ -31,16 +24,14 @@ export class EpisodeController {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     const drizzle = getDrizzle();
 
-    const rows = drizzle.query(`
-      SELECT p.id, p.name, ec.credit_type, ec.role_name,
-             (SELECT url FROM images
-              WHERE entity_type='person' AND entity_id=p.id
-                AND image_type='profile' AND is_primary=1 LIMIT 1) AS profile_url
-       FROM episode_credits ec
-       JOIN people p ON p.id = ec.person_id
-       WHERE ec.episode_id = ?
-       ORDER BY ec.credit_type ASC
-    `).all([episodeId]);
+    const profileSubquery = `(SELECT url FROM images WHERE entity_type='person' AND entity_id=p.id AND image_type='profile' AND is_primary=1 LIMIT 1)`;
+
+    const rows = drizzle.select(episodeCreditsTable).as("ec")
+      .selectRaw(`p.id, p.name, ec.credit_type, ec.role_name, ${profileSubquery} AS profile_url`)
+      .join("people p", "p.id = ec.person_id")
+      .where("ec.episode_id = ?", [episodeId])
+      .orderBy("ec.credit_type", "asc")
+      .all();
 
     return { rows, locale, total: rows.length };
   }
@@ -49,12 +40,12 @@ export class EpisodeController {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     const drizzle = getDrizzle();
 
-    const rows = drizzle.query(`
-      SELECT id, image_type, locale, url, width, height, is_primary, vote_average
-      FROM images
-      WHERE entity_type = 'episode' AND entity_id = ?
-      ORDER BY is_primary DESC, vote_average DESC
-    `).all([episodeId]);
+    const rows = drizzle.select(imagesTable)
+      .where("entity_type = 'episode'")
+      .andWhere("entity_id = ?", [episodeId])
+      .orderBy("is_primary", "desc")
+      .orderBy("vote_average", "desc")
+      .all();
 
     return { rows, locale, total: rows.length };
   }
@@ -65,27 +56,23 @@ export class EpisodeController {
     const { page, pageSize, offset } = parsePagination(url);
     const drizzle = getDrizzle();
 
-    const totalRes = drizzle.query<{c: number}>(`
-      SELECT COUNT(*) as c FROM comments
-      WHERE entity_type='episode' AND entity_id=? AND is_hidden=0 AND parent_id IS NULL
-    `).get([episodeId]);
+    const totalRes = drizzle.select(commentsTable)
+      .selectRaw("COUNT(*) as c")
+      .where("entity_type='episode' AND entity_id=? AND is_hidden=0 AND parent_id IS NULL", [episodeId])
+      .get() as { c: number } | undefined;
     const total = totalRes ? totalRes.c : 0;
 
-    const rows = drizzle.query(`
-      SELECT
-        c.id, c.parent_id, c.display_name, c.locale,
-        c.body, c.contains_spoilers, c.likes, c.dislikes, c.created_at,
-        (SELECT JSON_GROUP_ARRAY(JSON_OBJECT(
-           'id', r.id, 'display_name', r.display_name,
-           'body', r.body, 'likes', r.likes, 'created_at', r.created_at
-         )) FROM comments r
-         WHERE r.parent_id = c.id AND r.is_hidden = 0) AS replies
-       FROM comments c
-       WHERE c.entity_type='episode' AND c.entity_id=?
-         AND c.is_hidden=0 AND c.parent_id IS NULL
-       ORDER BY c.likes DESC, c.created_at DESC
-       LIMIT ? OFFSET ?
-    `).all([episodeId, pageSize, offset]);
+    const repliesSubquery = `(SELECT JSON_GROUP_ARRAY(JSON_OBJECT('id', r.id, 'display_name', r.display_name, 'body', r.body, 'likes', r.likes, 'created_at', r.created_at)) FROM comments r WHERE r.parent_id = c.id AND r.is_hidden = 0)`;
+
+    const rows = drizzle.select(commentsTable).as("c")
+      .selectRaw(`c.id, c.parent_id, c.display_name, c.locale, c.body, c.contains_spoilers, c.likes, c.dislikes, c.created_at, ${repliesSubquery} AS replies`)
+      .where("c.entity_type='episode' AND c.entity_id=?", [episodeId])
+      .andWhere("c.is_hidden=0 AND c.parent_id IS NULL")
+      .orderBy("c.likes", "desc")
+      .orderBy("c.created_at", "desc")
+      .limit(pageSize)
+      .offset(offset)
+      .all();
 
     return { rows, locale, page, pageSize, total };
   }
@@ -94,16 +81,22 @@ export class EpisodeController {
     const drizzle = getDrizzle();
     const now = new Date().toISOString();
 
-    const episodeId = drizzle.query(`
-      INSERT INTO episodes (media_id, season_id, episode_number, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?)
-    `).run([data.mediaId, data.seasonId, data.number, now, now]).lastInsertRowid;
+    const res = drizzle.insert(episodesTable).values({
+      media_id: data.mediaId,
+      season_id: data.seasonId,
+      episode_number: data.number,
+      created_at: now as any,
+      updated_at: now as any
+    }).run();
+    const episodeId = res.lastInsertRowid;
 
     if (data.title || data.synopsis) {
-      drizzle.query(`
-        INSERT INTO episode_translations (episode_id, locale, title, synopsis)
-        VALUES (?, 'es', ?, ?)
-      `).run([episodeId, data.title || null, data.synopsis || null]);
+      drizzle.insert(episodeTranslationsTable).values({
+        episode_id: Number(episodeId),
+        locale: 'es',
+        title: data.title || null,
+        synopsis: data.synopsis || null
+      }).run();
     }
 
     return { id: episodeId };
@@ -114,23 +107,34 @@ export class EpisodeController {
     const now = new Date().toISOString();
 
     if (data.number !== undefined) {
-      drizzle.query(`UPDATE episodes SET episode_number = ?, updated_at = ? WHERE id = ?`)
-        .run([data.number, now, id]);
+      drizzle.update(episodesTable)
+        .set({ episode_number: data.number, updated_at: now as any })
+        .where("id = ?", [id])
+        .run();
     }
 
     if (data.title !== undefined || data.synopsis !== undefined) {
-      const existing = drizzle.query(`SELECT id FROM episode_translations WHERE episode_id = ? AND locale = 'es'`).get([id]);
+      const existing = drizzle.select(episodeTranslationsTable)
+        .select("id")
+        .where("episode_id = ? AND locale = 'es'", [id])
+        .get();
+      
       if (existing) {
-        let updateSql = "UPDATE episode_translations SET";
-        const params = [];
-        if (data.title !== undefined) { updateSql += " title = ?,"; params.push(data.title); }
-        if (data.synopsis !== undefined) { updateSql += " synopsis = ?,"; params.push(data.synopsis); }
-        updateSql = updateSql.slice(0, -1) + " WHERE episode_id = ? AND locale = 'es'";
-        params.push(id);
-        drizzle.query(updateSql).run(params);
+        const updateData: any = {};
+        if (data.title !== undefined) updateData.title = data.title;
+        if (data.synopsis !== undefined) updateData.synopsis = data.synopsis;
+        
+        drizzle.update(episodeTranslationsTable)
+          .set(updateData)
+          .where("episode_id = ? AND locale = 'es'", [id])
+          .run();
       } else {
-        drizzle.query(`INSERT INTO episode_translations (episode_id, locale, title, synopsis) VALUES (?, 'es', ?, ?)`)
-          .run([id, data.title || null, data.synopsis || null]);
+        drizzle.insert(episodeTranslationsTable).values({
+          episode_id: id,
+          locale: 'es',
+          title: data.title || null,
+          synopsis: data.synopsis || null
+        }).run();
       }
     }
 
@@ -139,8 +143,8 @@ export class EpisodeController {
 
   static delete(id: number) {
     const drizzle = getDrizzle();
-    drizzle.query(`DELETE FROM episodes WHERE id = ?`).run([id]);
-    drizzle.query(`DELETE FROM episode_translations WHERE episode_id = ?`).run([id]);
+    drizzle.delete(episodesTable).where("id = ?", [id]).run();
+    drizzle.delete(episodeTranslationsTable).where("episode_id = ?", [id]).run();
     return { ok: true };
   }
 }
