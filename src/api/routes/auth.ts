@@ -64,6 +64,25 @@ function hashIp(ip: string): string {
   return "ip_" + Math.abs(hash).toString(16);
 }
 
+interface VerificationCode {
+  id: number;
+  code: string;
+  target_role: string;
+  user_id: number;
+  expires_at: string;
+  used: number;
+  created_at: string;
+}
+
+function generateVerificationCode(targetRole: string, userId: number): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "";
+  for (let i = 0; i < 8; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
 export async function handleRegister(req: Request): Promise<Response> {
   if (req.method !== "POST") {
     return new Response(
@@ -318,6 +337,151 @@ export async function handleMe(req: Request): Promise<Response> {
     );
   } catch (err) {
     console.error("[auth] me error:", err);
+    return new Response(
+      JSON.stringify({ ok: false, error: "Internal server error" }),
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders() } },
+    );
+  }
+}
+
+export async function handleVerifyCodeGenerate(req: Request): Promise<Response> {
+  if (req.method !== "POST") {
+    return new Response(
+      JSON.stringify({ ok: false, error: "Method not allowed" }),
+      { status: 405, headers: { "Content-Type": "application/json", ...corsHeaders() } },
+    );
+  }
+
+  try {
+    const user = getUserFromToken(req);
+    if (!user) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Not authenticated" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders() } },
+      );
+    }
+    if (user.role !== "admin") {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Admin only" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders() } },
+      );
+    }
+
+    const body = await req.json();
+    const { username, target_role } = body;
+
+    if (!username || !target_role) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Missing username or target_role" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders() } },
+      );
+    }
+
+    const drizzle = getDrizzle();
+    const users = drizzle.query<{ id: number }>(
+      `SELECT id FROM users WHERE username = ?`,
+    ).all([username]);
+
+    if (users.length === 0) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "User not found" }),
+        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders() } },
+      );
+    }
+
+    const userId = users[0]!.id;
+    const code = generateVerificationCode(target_role, userId);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    const now = new Date().toISOString();
+
+    drizzle.query(
+      `INSERT INTO verification_codes (code, target_role, user_id, expires_at, used, created_at) 
+       VALUES (?, ?, ?, ?, 0, ?)`,
+    ).run([code, target_role, userId, expiresAt, now]);
+
+    console.log(`[auth] Verification code generated: ${code} for user ${username} -> ${target_role}`);
+
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        data: { code, username, target_role, expires_at: expiresAt },
+      }),
+      { headers: { "Content-Type": "application/json", ...corsHeaders() } },
+    );
+  } catch (err) {
+    console.error("[auth] verify code generate error:", err);
+    return new Response(
+      JSON.stringify({ ok: false, error: "Internal server error" }),
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders() } },
+    );
+  }
+}
+
+export async function handleVerifyCodeApply(req: Request): Promise<Response> {
+  if (req.method !== "POST") {
+    return new Response(
+      JSON.stringify({ ok: false, error: "Method not allowed" }),
+      { status: 405, headers: { "Content-Type": "application/json", ...corsHeaders() } },
+    );
+  }
+
+  try {
+    const body = await req.json();
+    const { code } = body;
+
+    if (!code) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Missing code" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders() } },
+      );
+    }
+
+    const drizzle = getDrizzle();
+    const codes = drizzle.query<VerificationCode>(
+      `SELECT * FROM verification_codes WHERE code = ?`,
+    ).all([code]);
+
+    if (codes.length === 0) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Invalid code" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders() } },
+      );
+    }
+
+    const verifyCode = codes[0]!;
+
+    if (verifyCode.used) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Code already used" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders() } },
+      );
+    }
+
+    if (new Date(verifyCode.expires_at) < new Date()) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Code expired" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders() } },
+      );
+    }
+
+    drizzle.query(`UPDATE users SET role = ?, updated_at = ? WHERE id = ?`).run([verifyCode.target_role, new Date().toISOString(), verifyCode.user_id]);
+    drizzle.query(`UPDATE verification_codes SET used = 1 WHERE id = ?`).run([verifyCode.id]);
+
+    const users = drizzle.query<{ username: string; role: string }>(
+      `SELECT username, role FROM users WHERE id = ?`,
+    ).all([verifyCode.user_id]);
+
+    console.log(`[auth] Verification code applied: ${code} -> user ${users[0]?.username} is now ${verifyCode.target_role}`);
+
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        data: { message: `Role changed to ${verifyCode.target_role}`, username: users[0]?.username, role: verifyCode.target_role },
+      }),
+      { headers: { "Content-Type": "application/json", ...corsHeaders() } },
+    );
+  } catch (err) {
+    console.error("[auth] verify code apply error:", err);
     return new Response(
       JSON.stringify({ ok: false, error: "Internal server error" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders() } },

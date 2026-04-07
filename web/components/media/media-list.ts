@@ -21,9 +21,16 @@ export class MediaList extends HTMLElement {
   async load() {
     this.loading = true;
     this.render();
-    const res = await api.getMedia(this.page, 20, this.filters);
-    if (res.ok) {
-      this.items = res.data;
+    try {
+      const res = await api.getMedia(this.page, 20, this.filters);
+      if (res.ok && res.data) {
+        this.items = res.data;
+      } else {
+        this.items = [];
+      }
+    } catch (err) {
+      console.error("[media-list] load error:", err);
+      this.items = [];
     }
     this.loading = false;
     this.render();
