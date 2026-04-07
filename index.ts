@@ -37,7 +37,7 @@ import { handleSearch } from "./src/api/routes/search";
 import { handleCommentPost, handleCommentGet } from "./src/api/routes/comments";
 import { handleRegister, handleLogin, handleLogout, handleMe, getUserFromToken, handleVerifyCodeGenerate, handleVerifyCodeApply, handleUserUpdate, handleAuthRouter } from "./src/api/routes/auth";
 import { handleReportCreate, handleReportList } from "./src/api/routes/reports";
-import { handleRatingPost, handleRatingGet } from "./src/api/routes/ratings";
+import { handleRatingPost, handleRatingGet, handleTopRatings } from "./src/api/routes/ratings";
 import { ok, badRequest, unauthorized, forbidden, notFound, methodNotAllowed, serverError } from "./src/api/response";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "./src/i18n";
 import admin_view from './web/admin.html'

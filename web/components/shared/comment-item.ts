@@ -143,8 +143,9 @@ export class CommentItem extends LitElement {
       /* ── Nested replies ── */
       .replies {
         margin-top: 12px;
+        /*
         padding-left: 16px;
-        border-left: 3px solid var(--border-color);
+        border-left: 3px solid var(--border-color);*/
         display: flex; flex-direction: column; gap: 8px;
       }
       .reply-post {

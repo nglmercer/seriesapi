@@ -49,6 +49,10 @@ export class WikiInfobox extends LitElement {
       color: var(--text-secondary);
     }
     .infobox-section-content { font-size: 14px; line-height: 1.6; color: var(--text-secondary); }
+
+    @media (max-width: 900px) {
+      .infobox-image img { max-height: 400px; width: auto; margin: 0 auto; }
+    }
   `;
 
   @property({type: Object}) media: MediaItem | null = null;

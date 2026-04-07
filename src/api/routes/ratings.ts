@@ -130,3 +130,41 @@ export async function handleRatingGet(req: Request) {
     return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
   }
 }
+
+export async function handleTopRatings(req: Request) {
+  try {
+    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+    const url = new URL(req.url);
+    const entity_type = url.searchParams.get("entity_type") || "media";
+    const limit = parseInt(url.searchParams.get("limit") || "10", 10);
+    const min_votes = parseInt(url.searchParams.get("min_votes") || "5", 10);
+
+    const drizzle = getDrizzle();
+
+    let results: any[] = [];
+
+    if (entity_type === "media") {
+      results = drizzle.query(`
+        SELECT m.id, m.slug, m.score, m.score_count, m.content_type_id, mt.title, mt.synopsis_short
+        FROM media m
+        JOIN media_translations mt ON m.id = mt.media_id AND mt.locale = ?
+        WHERE m.score_count >= ?
+        ORDER BY m.score DESC, m.score_count DESC
+        LIMIT ?
+      `).all([locale, min_votes, limit]);
+    } else if (entity_type === "episode") {
+      results = drizzle.query(`
+        SELECT e.id, e.media_id, e.season_id, e.episode_number, e.score, e.score_count, et.title
+        FROM episodes e
+        JOIN episode_translations et ON e.id = et.episode_id AND et.locale = ?
+        WHERE e.score_count >= ?
+        ORDER BY e.score DESC, e.score_count DESC
+        LIMIT ?
+      `).all([locale, min_votes, limit]);
+    }
+
+    return ok(results, { locale });
+  } catch (err) {
+    return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
+  }
+}

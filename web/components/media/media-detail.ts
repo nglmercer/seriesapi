@@ -63,6 +63,15 @@ export class MediaDetail extends LitElement {
       outline: none;
     }
     .filter-bar select:focus { border-color: var(--accent); }
+
+    /* ── Mobile Layout ── */
+    @media (max-width: 900px) {
+      .container { flex-direction: column; gap: 24px; padding: 16px 0; }
+      .wiki-sidebar { width: 100%; order: -1; }
+      .page-title { font-size: 32px; margin-bottom: 16px; }
+      .section { margin-bottom: 32px; }
+      .seasons-grid { grid-template-columns: 1fr; }
+    }
   `;
 
   @property({type: Number}) mediaId = 0;

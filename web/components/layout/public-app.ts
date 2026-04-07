@@ -16,7 +16,7 @@ export interface SeasonData {
   id: number;
   season_number: number;
   episode_count: number;
-  name: string;
+  name?: string | null;
 }
 
 /**
