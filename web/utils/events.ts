@@ -1,5 +1,14 @@
 type Listener = (...args: any[]) => void;
 
+interface EventTypes {
+  "media-select": { id: number };
+  "search-result": { id: number; entity_type: string };
+  "filters-change": Record<string, any>;
+  "season-select": { mediaId: number; seasonId: number };
+  "back": undefined;
+  "auth-close": undefined;
+}
+
 class EventEmitter<T extends Record<string, any>> {
   private events: Map<keyof T, Listener[]> = new Map();
 
@@ -71,4 +80,4 @@ class EventEmitter<T extends Record<string, any>> {
     return this.events.get(event)?.length || 0;
   }
 }
-export const eventBus = new EventEmitter();
+export const eventBus = new EventEmitter<EventTypes>();

@@ -2,7 +2,7 @@ import { type MediaItem } from "../../services/api-service";
 import { mediaService } from "../../services/media-service";
 import { h } from "../../utils/dom";
 import i18next from "../../utils/i18n";
-
+import { eventBus } from "../../utils/events";
 export class MediaList extends HTMLElement {
   private items: MediaItem[] = [];
   private filters: Record<string, string> = {};
@@ -53,7 +53,7 @@ export class MediaList extends HTMLElement {
     }, ...this.items.map(item => h("div", { 
         className: "card", 
         style: "cursor: pointer; transition: transform 0.2s;",
-        onclick: () => this.dispatchEvent(new CustomEvent("media-select", { detail: item, bubbles: true }))
+        onclick: () => eventBus.emit("media-select", { id: item.id })
       },
       h("img", { 
         src: item.poster_url, 

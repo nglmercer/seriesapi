@@ -332,7 +332,7 @@ const resources = {
 
 i18next.use(initLitI18n).init({
   resources,
-  lng: localStorage.getItem("lang") || "es",
+  lng: (typeof localStorage !== "undefined" && localStorage.getItem("lang")) || "es",
   fallbackLng: "en",
   interpolation: {
     escapeValue: false
