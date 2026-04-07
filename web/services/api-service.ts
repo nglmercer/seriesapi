@@ -346,11 +346,15 @@ class ApiClient {
     });
   }
   
-  reportTranslation(data: { entity_type: string; entity_id: number; locale: string }): Promise<ApiResponse<void>> {
-    return this.request("/translations/request", {
+  reportIssue(data: { entity_type: string; entity_id: number; report_type: string; locale?: string; message?: string }): Promise<ApiResponse<void>> {
+    return this.request("/reports", {
       method: "POST",
       body: JSON.stringify(data),
     });
+  }
+
+  getReports(): Promise<ApiResponse<any[]>> {
+    return this.request("/reports");
   }
 }
 

@@ -36,7 +36,7 @@ import { handleCollectionsList, handleCollectionDetail } from "./src/api/routes/
 import { handleSearch } from "./src/api/routes/search";
 import { handleCommentPost, handleCommentGet } from "./src/api/routes/comments";
 import { handleRegister, handleLogin, handleLogout, handleMe } from "./src/api/routes/auth";
-import { handleTranslationRequest } from "./src/api/routes/translations";
+import { handleReportCreate, handleReportList } from "./src/api/routes/reports";
 import admin_view from './web/admin.html'
 import public_view from './web/index.html'
 // ── config ────────────────────────────────────────────────────────────────────
@@ -176,9 +176,10 @@ function route(req: Request): Response | Promise<Response> {
     return GET ? json404() : json405();
   }
 
-  // ── /api/v1/translations ───────────────────────────────────────────────────
-  if (resource === "translations") {
-    if (p3 === "request" && POST) return handleTranslationRequest(req);
+  // ── /api/v1/reports ────────────────────────────────────────────────────────
+  if (resource === "reports") {
+    if (POST) return handleReportCreate(req);
+    if (GET) return handleReportList(req);
     return json404();
   }
 

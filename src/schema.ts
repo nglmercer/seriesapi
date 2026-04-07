@@ -584,6 +584,17 @@ export const translationRequestsTable = sqliteTable("translation_requests", {
   last_requested_at: default_(text("last_requested_at"), NOW),
 });
 
+export const contentReportsTable = sqliteTable("content_reports", {
+  id: primaryKey(integer("id")),
+  entity_type: notNull(text("entity_type")),    // "media"|"season"|"episode"|"person"
+  entity_id: notNull(integer("entity_id")),
+  report_type: notNull(text("report_type")),    // "missing_translation", "incorrect_info", "missing_fields", "other"
+  locale: text("locale"),                       // Relevant if report is about translation
+  message: text("message"),                     // Optional user message describing the issue
+  status: default_(text("status"), "pending"),  // "pending", "resolved", "ignored"
+  created_at: default_(text("created_at"), NOW),
+});
+
 // ─────────────────────────────────────────────────────────────
 // §18  USER ACCOUNTS & AUTHENTICATION
 // ─────────────────────────────────────────────────────────────
