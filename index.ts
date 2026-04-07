@@ -35,7 +35,7 @@ import { handleGenresList, handleGenreMedia } from "./src/api/routes/genres";
 import { handleCollectionsList, handleCollectionDetail } from "./src/api/routes/collections";
 import { handleSearch } from "./src/api/routes/search";
 import { handleCommentPost, handleCommentGet } from "./src/api/routes/comments";
-import { handleRegister, handleLogin, handleLogout, handleMe } from "./src/api/routes/auth";
+import { handleRegister, handleLogin, handleLogout, handleMe, getUserFromToken } from "./src/api/routes/auth";
 import { handleReportCreate, handleReportList } from "./src/api/routes/reports";
 import { handleRatingPost } from "./src/api/routes/ratings";
 import admin_view from './web/admin.html'
@@ -63,6 +63,26 @@ function json405(): Response {
     JSON.stringify({ ok: false, data: null, error: "Method Not Allowed" }),
     {
       status: 405,
+      headers: { "Content-Type": "application/json", ...corsHeaders() },
+    },
+  );
+}
+
+function json401(message = "Unauthorized"): Response {
+  return new Response(
+    JSON.stringify({ ok: false, data: null, error: message }),
+    {
+      status: 401,
+      headers: { "Content-Type": "application/json", ...corsHeaders() },
+    },
+  );
+}
+
+function json403(message = "Forbidden"): Response {
+  return new Response(
+    JSON.stringify({ ok: false, data: null, error: message }),
+    {
+      status: 403,
       headers: { "Content-Type": "application/json", ...corsHeaders() },
     },
   );
@@ -123,7 +143,12 @@ function route(req: Request): Response | Promise<Response> {
 
   // ── /api/v1/media ──────────────────────────────────────────────────────────
   if (resource === "media") {
-    if (!GET) return json405();
+    if (!GET) {
+      const user = getUserFromToken(req);
+      if (!user) return json401();
+      if (user.role !== "admin") return json403();
+      // Handle modification routes for media here if they existed
+    }
     if (!p3) return handleMediaList(req, db);
     const id = seg(parts, 3);
     if (isNaN(id)) return json404();
@@ -140,12 +165,21 @@ function route(req: Request): Response | Promise<Response> {
 
   // ── /api/v1/seasons ────────────────────────────────────────────────────────
   if (resource === "seasons") {
-    if (req.method === "POST") return handleSeasonCreate(req);
+    if (!GET) {
+      const user = getUserFromToken(req);
+      if (!user) return json401();
+      if (user.role !== "admin") return json403();
+      if (req.method === "POST") return handleSeasonCreate(req);
+      const id = seg(parts, 3);
+      if (isNaN(id)) return json404();
+      if (req.method === "PUT") return handleSeasonUpdate(req, db, id);
+      if (req.method === "DELETE") return handleSeasonDelete(req, db, id);
+      return json405();
+    }
+    
+    // GET logic
     const id = seg(parts, 3);
     if (isNaN(id)) return json404();
-    if (req.method === "PUT") return handleSeasonUpdate(req, db, id);
-    if (req.method === "DELETE") return handleSeasonDelete(req, db, id);
-    if (!GET) return json405();
     if (!p4) return handleSeasonDetail(req, db, id);
     if (p4 === "episodes") return handleSeasonEpisodes(req, db, id);
     if (p4 === "images")   return handleSeasonImages(req, db, id);
@@ -154,12 +188,20 @@ function route(req: Request): Response | Promise<Response> {
 
   // ── /api/v1/episodes ───────────────────────────────────────────────────────
   if (resource === "episodes") {
-    if (req.method === "POST") return handleEpisodeCreate(req);
+    if (!GET) {
+      const user = getUserFromToken(req);
+      if (!user) return json401();
+      if (user.role !== "admin") return json403();
+      if (req.method === "POST") return handleEpisodeCreate(req);
+      const id = seg(parts, 3);
+      if (isNaN(id)) return json404();
+      if (req.method === "PUT") return handleEpisodeUpdate(req, db, id);
+      if (req.method === "DELETE") return handleEpisodeDelete(req, db, id);
+      return json405();
+    }
+
     const id = seg(parts, 3);
     if (isNaN(id)) return json404();
-    if (req.method === "PUT") return handleEpisodeUpdate(req, db, id);
-    if (req.method === "DELETE") return handleEpisodeDelete(req, db, id);
-    if (!GET) return json405();
     if (!p4) return handleEpisodeDetail(req, db, id);
     if (p4 === "credits")  return handleEpisodeCredits(req, db, id);
     if (p4 === "images")   return handleEpisodeImages(req, db, id);
@@ -169,7 +211,11 @@ function route(req: Request): Response | Promise<Response> {
 
   // ── /api/v1/comments ───────────────────────────────────────────────────────
   if (resource === "comments") {
-    if (POST && !p3) return handleCommentPost(req, db);
+    if (POST && !p3) {
+      const user = getUserFromToken(req);
+      if (!user) return json401("You must log in to post a comment");
+      return handleCommentPost(req, db);
+    }
     if (GET && p3) {
       const id = seg(parts, 3);
       if (!isNaN(id)) return handleCommentGet(req, db, id);
@@ -180,7 +226,12 @@ function route(req: Request): Response | Promise<Response> {
   // ── /api/v1/reports ────────────────────────────────────────────────────────
   if (resource === "reports") {
     if (POST) return handleReportCreate(req);
-    if (GET) return handleReportList(req);
+    if (GET) {
+      const user = getUserFromToken(req);
+      if (!user) return json401();
+      if (user.role !== "admin") return json403();
+      return handleReportList(req);
+    }
     return json404();
   }
 

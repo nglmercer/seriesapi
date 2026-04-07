@@ -1,154 +1,243 @@
+/**
+ * comments-section.ts
+ * Thin orchestrator: manages data fetching, auth state, and wires sub-components.
+ *
+ * Sub-components used:
+ *   <comment-compose>  — new top-level post / login gate
+ *   <comment-item>     — single comment thread (with replies)
+ *   <auth-modal>       — login/register overlay
+ */
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { authStore, type AuthUser } from "../../services/auth-store";
 import { api } from "../../services/api-service";
 import i18next from "../../utils/i18n";
+import type { CommentData } from "./comment-item";
+import "./comment-compose";
+import "./comment-item";
+import "./auth-modal";
 
 @customElement("comments-section")
 export class CommentsSection extends LitElement {
   static override styles = css`
-    :host { display: block; }
-    .container { margin-top: 32px; background: var(--bg-primary); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); }
-    h3 { margin-top: 0; margin-bottom: 20px; font-size: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 12px; }
-    
-    .comment-form { display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px; }
-    .row { display: flex; gap: 12px; }
-    input, textarea { 
-      padding: 12px; border-radius: 8px; background: var(--bg-secondary); 
-      color: var(--text-primary); border: 1px solid var(--border-color);
-      font-family: inherit; font-size: 14px;
-    }
-    textarea { min-height: 80px; resize: vertical; }
-    input { width: 200px; }
-    .actions { display: flex; justify-content: space-between; align-items: center; }
-    .btn-submit { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-    
-    .spoilers-check { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--error-color); font-weight: 500; cursor: pointer; }
+    :host { display: block; font-family: inherit; }
 
-    .comment-list { display: flex; flex-direction: column; gap: 16px; }
-    .comment { 
-      background: var(--bg-secondary); padding: 16px; border-radius: 8px; 
-      border-left: 4px solid var(--border-color);
+    .section {
+      margin-top: 40px;
+      border-top: 1px solid var(--border-color);
+      padding-top: 32px;
     }
-    .comment.has-spoilers .comment-body { filter: blur(8px); cursor: pointer; transition: filter 0.3s; }
-    .comment.has-spoilers:hover .comment-body { filter: blur(0); }
-    .meta { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; color: var(--text-secondary); }
-    .author { font-weight: bold; color: var(--text-primary); font-size: 14px; }
-    .comment-body { font-size: 15px; color: var(--text-primary); white-space: pre-wrap; line-height: 1.5; }
-    .empty { text-align: center; color: var(--text-secondary); padding: 20px; }
+
+    /* ── Header ── */
+    .head {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 24px;
+    }
+    .head h3 {
+      margin: 0;
+      font-size: 20px; font-weight: 800; color: var(--text-primary);
+    }
+    .badge {
+      background: var(--accent); color: #fff;
+      font-size: 12px; font-weight: 700;
+      padding: 2px 9px; border-radius: 20px;
+    }
+
+    /* ── List ── */
+    .list { margin-top: 28px; }
+
+    /* ── States ── */
+    .empty {
+      text-align: center; padding: 40px 20px;
+      color: var(--text-secondary);
+    }
+    .empty-icon { font-size: 36px; margin-bottom: 10px; }
+    .empty p    { margin: 0; font-size: 15px; }
+
+    .load-more {
+      text-align: center; padding: 20px 0 4px;
+    }
+    .btn-more {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      padding: 10px 28px; border-radius: 8px;
+      font-size: 14px; font-family: inherit; cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-more:hover { background: var(--border-color); color: var(--text-primary); }
   `;
 
   @property({ type: String }) entityType = "";
   @property({ type: Number }) entityId = 0;
 
-  @state() comments: any[] = [];
-  @state() total = 0;
-  @state() page = 1;
-  @state() loading = true;
-  
-  // Form state
-  @state() authorName = "";
-  @state() newComment = "";
-  @state() containsSpoilers = false;
-  @state() posting = false;
+  @state() private comments: CommentData[] = [];
+  @state() private total = 0;
+  @state() private page = 1;
+  @state() private loading = true;
+
+  @state() private posting = false;
+  @state() private postingReply = false;
+
+  @state() private user: AuthUser | null = null;
+  @state() private showAuth = false;
+
+  private unsub?: () => void;
+
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
 
   override connectedCallback() {
     super.connectedCallback();
-    this.authorName = localStorage.getItem("comment_author") || "";
-    this.loadComments();
+    this.user = authStore.user;
+    this.unsub = authStore.subscribe(u => { this.user = u; });
+    // initialise auth (no-op if already done by another component)
+    authStore.init().then(() => { this.user = authStore.user; });
+    this.fetchComments();
   }
 
-  async loadComments() {
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    this.unsub?.();
+  }
+
+  // ── Data ──────────────────────────────────────────────────────────────────
+
+  private async fetchComments(append = false) {
     if (!this.entityType || !this.entityId) return;
-    this.loading = true;
+    if (!append) this.loading = true;
+
     const res = await api.getComments(this.entityType, this.entityId, this.page);
     if (res.ok && res.data) {
-      if (typeof res.data === "object" && !Array.isArray(res.data)) {
-         this.comments = res.data.rows || [];
-         this.total = res.data.total || this.comments.length;
-      } else {
-         this.comments = res.data;
-         this.total = this.comments.length;
-      }
+      const rows: CommentData[] = Array.isArray(res.data)
+        ? res.data
+        : ((res.data as any).rows ?? []);
+      this.total = Array.isArray(res.data)
+        ? rows.length
+        : ((res.data as any).total ?? rows.length);
+      this.comments = append ? [...this.comments, ...rows] : rows;
     }
     this.loading = false;
   }
 
-  async submitComment(e: Event) {
-    e.preventDefault();
-    if (!this.authorName.trim() || !this.newComment.trim() || this.posting) return;
-    
-    this.posting = true;
-    localStorage.setItem("comment_author", this.authorName.trim());
+  private async loadMore() {
+    this.page += 1;
+    await this.fetchComments(true);
+  }
 
+  // ── Post handlers ──────────────────────────────────────────────────────────
+
+  private async handleCommentSubmit(e: CustomEvent) {
+    if (!this.user) return;
+    this.posting = true;
+
+    const { text, containsSpoilers } = e.detail as { text: string; containsSpoilers: boolean };
     const res = await api.postComment({
       entity_type: this.entityType,
       entity_id: this.entityId,
-      display_name: this.authorName.trim(),
-      body: this.newComment.trim(),
-      contains_spoilers: this.containsSpoilers
+      display_name: this.user.display_name,
+      body: text,
+      contains_spoilers: containsSpoilers,
     });
 
     if (res.ok) {
-      this.newComment = "";
-      this.containsSpoilers = false;
       this.page = 1;
-      await this.loadComments();
-    } else {
-      alert("Error posting comment.");
+      await this.fetchComments();
     }
     this.posting = false;
   }
 
+  private async handleReplySubmit(e: CustomEvent) {
+    if (!this.user) return;
+    this.postingReply = true;
+
+    const { parentId, text } = e.detail as { parentId: number; text: string };
+    await api.postComment({
+      entity_type: this.entityType,
+      entity_id: this.entityId,
+      display_name: this.user.display_name,
+      body: text,
+      parent_id: parentId,
+    });
+
+    this.page = 1;
+    await this.fetchComments();
+    this.postingReply = false;
+  }
+
+  private handleNeedLogin() {
+    this.showAuth = true;
+  }
+
+  private onAuthClose() {
+    this.showAuth = false;
+    this.user = authStore.user;
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
   override render() {
+    const remaining = this.total - this.comments.length;
+
     return html`
-      <div class="container">
-        <h3>${i18next.t("comments.title", { defaultValue: "Comments" })} (${this.total})</h3>
-        
-        <form class="comment-form" @submit=${this.submitComment}>
-          <div class="row">
-            <input 
-              type="text" 
-              placeholder=${i18next.t("comments.name_placeholder", { defaultValue: "Your Name" })}
-              .value=${this.authorName}
-              @input=${(e: any) => this.authorName = e.target.value}
-              required
-              maxlength="50"
-            />
-          </div>
-          <textarea 
-            placeholder=${i18next.t("comments.body_placeholder", { defaultValue: "Write your comment here..." })}
-            .value=${this.newComment}
-            @input=${(e: any) => this.newComment = e.target.value}
-            required
-            maxlength="1000"
-          ></textarea>
-          <div class="actions">
-            <label class="spoilers-check">
-              <input type="checkbox" .checked=${this.containsSpoilers} @change=${(e: any) => this.containsSpoilers = e.target.checked} />
-              ${i18next.t("comments.contains_spoilers", { defaultValue: "Contains Spoilers" })}
-            </label>
-            <button type="submit" class="btn-submit" ?disabled=${this.posting || !this.authorName.trim() || !this.newComment.trim()}>
-              ${this.posting ? i18next.t("comments.posting", { defaultValue: "Posting..." }) : i18next.t("comments.post_button", { defaultValue: "Post Comment" })}
+      <!-- Auth modal overlay -->
+      ${this.showAuth ? html`
+        <auth-modal @auth-close=${this.onAuthClose}></auth-modal>
+      ` : ""}
+
+      <div class="section">
+        <!-- Section header -->
+        <div class="head">
+          <h3>${i18next.t("comments.title", { defaultValue: "Community" })}</h3>
+          ${this.total > 0 ? html`<span class="badge">${this.total}</span>` : ""}
+        </div>
+
+        <!-- Compose / login gate -->
+        <comment-compose
+          .user=${this.user}
+          .posting=${this.posting}
+          @comment-submit=${this.handleCommentSubmit}
+          @need-login=${this.handleNeedLogin}
+        ></comment-compose>
+
+        <!-- Comment list -->
+        <div class="list">
+          ${this.loading ? html`
+            <div class="empty">
+              <div class="empty-icon">💬</div>
+              <p>${i18next.t("common.loading", { defaultValue: "Loading…" })}</p>
+            </div>
+          ` : this.comments.length === 0 ? html`
+            <div class="empty">
+              <div class="empty-icon">💬</div>
+              <p>${i18next.t("comments.empty", { defaultValue: "No comments yet. Be the first!" })}</p>
+            </div>
+          ` : html`
+            ${this.comments.map(c => html`
+              <comment-item
+                .comment=${c}
+                .isLoggedIn=${this.user !== null}
+                .isPosting=${this.postingReply}
+                @reply-submit=${this.handleReplySubmit}
+                @need-login=${this.handleNeedLogin}
+              ></comment-item>
+            `)}
+          `}
+        </div>
+
+        <!-- Load-more button -->
+        ${remaining > 0 ? html`
+          <div class="load-more">
+            <button class="btn-more" @click=${this.loadMore}>
+              ${i18next.t("comments.load_more", { defaultValue: "Load more" })}
+              (${remaining})
             </button>
           </div>
-        </form>
-
-        <div class="comment-list">
-          ${this.loading ? html`<div class="empty">Loading comments...</div>` : ''}
-          ${!this.loading && this.comments.length === 0 ? html`<div class="empty">${i18next.t("comments.empty", { defaultValue: "Be the first to comment!" })}</div>` : ''}
-          ${this.comments.map(c => html`
-            <div class="comment ${c.contains_spoilers ? 'has-spoilers' : ''}">
-              <div class="meta">
-                <span class="author">${c.display_name}</span>
-                <span>${new Date(c.created_at).toLocaleDateString()}</span>
-              </div>
-              <div class="comment-body">${c.body}</div>
-              ${c.contains_spoilers ? html`<div style="font-size: 11px; color: var(--error-color); margin-top: 5px;">Hover to reveal spoilers</div>` : ''}
-            </div>
-          `)}
-        </div>
+        ` : ""}
       </div>
     `;
   }
+}
+
+declare global {
+  interface HTMLElementTagNameMap { "comments-section": CommentsSection; }
 }
