@@ -1,6 +1,8 @@
 import { initializeDatabase, getDrizzle } from "../src/init";
 import { DbManager } from "./lib/db-manager";
 import { MalService } from "./lib/mal-service";
+import fs from "fs";
+import path from "path";
 
 /**
  * Script to import anime info from MyAnimeList into the database.
@@ -10,11 +12,17 @@ import { MalService } from "./lib/mal-service";
  *   bun run import:mal search <query> [limit]
  *   bun run import:mal season <year> <season> [type]
  *   bun run import:mal bulk <name1,name2,id1,id2...>
+ *   bun run import:mal bulk-file <path_to_txt_file>
  */
 
 class MalImporter {
   // Track already processed MAL IDs in this session to avoid redundant work
   private processedMalIds = new Set<number>();
+  private results = {
+    success: [] as string[],
+    skipped: [] as string[],
+    failed: [] as string[]
+  };
 
   constructor(
     private dbManager: DbManager,
@@ -24,96 +32,113 @@ class MalImporter {
   /**
    * Import a single anime by name, URL, or MAL ID.
    */
-  async importSingle(target: string | number): Promise<number | null> {
+  async importSingle(target: string | number, silent = false): Promise<number | null> {
     const targetStr = target.toString();
-    const isUrl = targetStr.startsWith("http");
-    const isId = !isNaN(Number(targetStr)) && !isUrl;
-    
-    // If it's a MAL ID, check if we already have it in DB before fetching
-    if (isId) {
-        const malId = Number(targetStr);
-        if (this.processedMalIds.has(malId)) {
-            console.log(`[mal] Already processed in this session: MAL ID ${malId}`);
-            return null;
-        }
-        const existingId = await this.dbManager.getMediaIdByMalId(malId);
-        if (existingId) {
-            console.log(`[mal] Already exists in DB: MAL ID ${malId} (Media ID: ${existingId})`);
-            this.processedMalIds.add(malId);
-            return existingId;
-        }
-    }
 
-    // Fetch data
-    let malData;
-    if (isId) {
-        // mal-scraper's getInfoFromURL also handles IDs if passed correctly, 
-        // but it's safer to construct the URL or use search if needed.
-        // Actually getInfoFromURL works with just the ID if we provide the base URL.
-        malData = await this.malService.fetchInfo(`https://myanimelist.net/anime/${targetStr}`);
-    } else {
-        malData = await this.malService.fetchInfo(targetStr);
-    }
-    
-    if (!malData || !malData.id) {
-      console.error(`[mal] No anime found for: ${targetStr}`);
-      return null;
-    }
+    try {
+      // Fetch data
+      const malData = await this.malService.fetchInfo(targetStr);
+      
+      if (!malData || !malData.id) {
+        if (!silent) console.error(`[mal] No anime found for: ${targetStr}`);
+        this.results.failed.push(targetStr);
+        return null;
+      }
 
-    if (this.processedMalIds.has(malData.id)) {
-      console.log(`[mal] Already processed in this session: ${malData.title}`);
-      return null;
-    }
+      const title = malData.title || targetStr;
 
-    const existingId = await this.dbManager.getMediaIdByMalId(malData.id);
-    if (existingId) {
-      console.log(`[mal] Already exists in DB: ${malData.title} (ID: ${existingId})`);
+      if (this.processedMalIds.has(malData.id)) {
+        if (!silent) console.log(`[mal] Already processed in this session: ${title}`);
+        this.results.skipped.push(title);
+        return null;
+      }
+
+      const existingId = await this.dbManager.getMediaIdByMalId(malData.id);
+      if (existingId) {
+        if (!silent) console.log(`[mal] Already exists in DB: ${title} (ID: ${existingId})`);
+        this.processedMalIds.add(malData.id);
+        this.results.skipped.push(title);
+        return existingId;
+      }
+
+      if (!silent) console.log(`[mal] Indexing: ${title}...`);
+      const mediaId = await this.dbManager.saveMedia(malData);
+      
       this.processedMalIds.add(malData.id);
-      return existingId;
+      if (!silent) console.log(`[mal] Indexed: ${title} (Media ID: ${mediaId})`);
+      this.results.success.push(title);
+      return mediaId;
+    } catch (err: any) {
+      if (!silent) console.error(`[mal] Error importing ${targetStr}: ${err.message}`);
+      this.results.failed.push(targetStr);
+      return null;
     }
-
-    console.log(`[mal] Indexing: ${malData.title}...`);
-    const mediaId = await this.dbManager.saveMedia(malData);
-    
-    this.processedMalIds.add(malData.id);
-    console.log(`[mal] Indexed: ${malData.title} (Media ID: ${mediaId})`);
-    return mediaId;
   }
 
   /**
-   * Import from an array of strings or numbers.
+   * Import from an array of strings or numbers with concurrency control.
    */
-  async importBatch(targets: (string | number)[]): Promise<void> {
-    console.log(`[mal] Batch importing ${targets.length} items...`);
+  async importBatch(targets: (string | number)[], concurrency = 3): Promise<void> {
+    console.log(`[mal] Batch importing ${targets.length} items (concurrency: ${concurrency})...`);
+    
+    const total = targets.length;
+    let current = 0;
+
+    const worker = async (target: string | number) => {
+      const index = ++current;
+      const targetStr = target.toString().length > 30 
+        ? target.toString().substring(0, 27) + "..." 
+        : target.toString();
+      
+      console.log(`[mal] [${index}/${total}] Processing: ${targetStr}`);
+      await this.importSingle(target, true);
+    };
+
+    // Simple concurrency pool
+    const pool: Promise<void>[] = [];
     for (const target of targets) {
-        await this.importSingle(target);
+      const p = worker(target).then(() => {
+        pool.splice(pool.indexOf(p), 1);
+      });
+      pool.push(p);
+      if (pool.length >= concurrency) {
+        await Promise.race(pool);
+      }
     }
+    await Promise.all(pool);
+
+    this.printSummary();
+  }
+
+  private printSummary() {
+    console.log("\n" + "=".repeat(40));
+    console.log("IMPORT SUMMARY");
+    console.log("=".repeat(40));
+    console.log(`✅ Success: ${this.results.success.length}`);
+    console.log(`⏭️  Skipped: ${this.results.skipped.length}`);
+    console.log(`❌ Failed:  ${this.results.failed.length}`);
+    
+    if (this.results.failed.length > 0) {
+      console.log("\nFailed items:");
+      this.results.failed.forEach(f => console.log(` - ${f}`));
+    }
+    console.log("=".repeat(40) + "\n");
   }
 
   /**
    * Search and import top results.
    */
-  async importSearch(query: string, limit: number = 5): Promise<void> {
-    console.log(`[mal] Searching for: ${query} (limit ${limit})...`);
+  async importSearch(query: string, limit: number = 20): Promise<void> {
     const results = await this.malService.search(query, limit);
+    console.log(`[mal] Searching for: ${query} (limit ${limit})...`, results);
     
-    for (const res of results) {
-      const malId = parseInt(res.id, 10);
-      
-      if (this.processedMalIds.has(malId)) {
-        console.log(`[mal] Skipping (already processed): ${res.name}`);
-        continue;
-      }
-
-      const existingId = await this.dbManager.getMediaIdByMalId(malId);
-      if (existingId) {
-        console.log(`[mal] Skipping (already exists): ${res.name}`);
-        this.processedMalIds.add(malId);
-        continue;
-      }
-      
-      await this.importSingle(res.name);
+    if (results.length === 0) {
+      console.log("[mal] No results found.");
+      return;
     }
+
+    const targets = results.map(res => res.name);
+    await this.importBatch(targets, 1); // Search results are often related, process one by one
   }
 
   /**
@@ -125,26 +150,11 @@ class MalImporter {
 
     console.log(`[mal] Found ${allAnime.length} anime in this season.`);
     
-    for (const anime of allAnime) {
-      if (!anime.link) continue;
+    const targets = allAnime
+      .filter(a => !!a.link)
+      .map(a => a.link!);
 
-      const idMatch = anime.link.match(/\/anime\/(\d+)/);
-      if (idMatch) {
-        const malId = parseInt(idMatch[1]!, 10);
-        if (this.processedMalIds.has(malId)) {
-            console.log(`[mal] Skipping (already processed): ${anime.title}`);
-            continue;
-        }
-        const existingId = await this.dbManager.getMediaIdByMalId(malId);
-        if (existingId) {
-            console.log(`[mal] Skipping (already exists): ${anime.title}`);
-            this.processedMalIds.add(malId);
-            continue;
-        }
-      }
-      // Import by URL to be precise
-      await this.importSingle(anime.link!);
-    }
+    await this.importBatch(targets, 3);
   }
 }
 
@@ -180,11 +190,18 @@ async function main() {
       case "bulk": {
         const input = args[1];
         if (!input) throw new Error("Missing comma-separated list of targets");
-        const targets = input.split(",").map(t => {
+        const inputs = input.split(",").map(t => {
             const trimmed = t.trim();
             return isNaN(Number(trimmed)) ? trimmed : Number(trimmed);
         });
-        await importer.importBatch(targets);
+        //let targets: (string | number)[] = []
+        const results = inputs.map(async t => {
+          const data = await importer.importSearch(t.toString());
+          return data;
+        });
+        await Promise.all(results);
+        //await Promise.all(results);
+        //await importer.importBatch(targets);
         break;
       }
       case "search": {
