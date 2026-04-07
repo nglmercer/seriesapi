@@ -1,7 +1,8 @@
 import { api, type MediaItem } from "./api-service";
+import i18next from "../utils/i18n";
 import { h } from "../utils/dom";
 import { ui } from "../utils/ui";
-import "./admin-media-form";
+import { AdminMediaForm } from "./admin-media-form";
 import "./admin-genres-view";
 import "./admin-content-manager";
 
@@ -32,13 +33,10 @@ export class AdminView extends HTMLElement {
   }
 
   private openEditMedia(media: MediaItem | null) {
-    const form = document.createElement("admin-media-form") as any;
-    form.setMedia(media);
-    form.addEventListener("saved", async () => {
+    AdminMediaForm.open(media, async () => {
       await this.fetchMedia();
       this.render();
     });
-    document.body.appendChild(form);
   }
 
   private openContentManager(id: number) {
@@ -47,7 +45,7 @@ export class AdminView extends HTMLElement {
   }
 
   private async handleDeleteMedia(id: number) {
-    if (await ui.confirm("Delete this media forever?")) {
+    if (await ui.confirm(i18next.t("admin.delete_confirm"))) {
       await api.deleteMedia(id);
       await this.fetchMedia();
       this.render();
@@ -75,12 +73,12 @@ export class AdminView extends HTMLElement {
         className: this.currentTab === 'media' ? 'active' : '',
         onclick: () => { this.currentTab = 'media'; this.render(); },
         style: `border-radius:0; border:none; background:transparent; cursor:pointer; padding: 10px; ${this.currentTab === 'media' ? 'border-bottom: 3px solid var(--accent-color)' : ''}`
-      }, "Media"),
+      }, i18next.t("admin.media")),
       h("button", {
         className: this.currentTab === 'genres' ? 'active' : '',
         onclick: () => { this.currentTab = 'genres'; this.render(); },
         style: `border-radius:0; border:none; background:transparent; cursor:pointer; padding: 10px; ${this.currentTab === 'genres' ? 'border-bottom: 3px solid var(--accent-color)' : ''}`
-      }, "Genres")
+      }, i18next.t("admin.genres"))
     );
 
     let content;
@@ -88,10 +86,10 @@ export class AdminView extends HTMLElement {
       content = h("div", {},
         h("div", { style: "display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px;" },
           h("form", { onsubmit: (e: Event) => this.handleSearch(e), style: "display:flex; gap: 10px; width:100%; max-width:400px;" },
-            h("input", { type: "search", placeholder: "Search Title / ID...", value: this.searchQuery }),
-            h("button", { type: "submit" }, "Search")
+            h("input", { type: "search", placeholder: i18next.t("admin.search_placeholder"), value: this.searchQuery }),
+            h("button", { type: "submit" }, i18next.t("admin.search"))
           ),
-          h("button", { onclick: () => this.openEditMedia(null), className: "primary" }, "+ New Entry")
+          h("button", { onclick: () => this.openEditMedia(null), className: "primary" }, i18next.t("admin.new_entry"))
         ),
         h("div", { className: "media-admin-list", style: "display: grid; gap: 10px;" },
           ...this.mediaList.map(item => h("div", { className: "card", style: "display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;" },
@@ -100,9 +98,9 @@ export class AdminView extends HTMLElement {
               h("div", { style: "color:var(--text-secondary); font-size:12px;" }, `${item.content_type} | ID: ${item.id} | Slug: ${item.slug}`)
             ),
             h("div", { style: "display: flex; gap: 8px;" },
-              h("button", { onclick: () => this.openContentManager(item.id) }, "Content (S/E)"),
-              h("button", { onclick: () => this.openEditMedia(item) }, "Info"),
-              h("button", { onclick: () => this.handleDeleteMedia(item.id), className: "danger", style: "background: var(--error-color); color:white;" }, "Del")
+              h("button", { onclick: () => this.openContentManager(item.id) }, i18next.t("admin.content_mgr")),
+              h("button", { onclick: () => this.openEditMedia(item) }, i18next.t("admin.edit")),
+              h("button", { onclick: () => this.handleDeleteMedia(item.id), className: "danger", style: "background: var(--error-color); color:white;" }, i18next.t("admin.delete"))
             )
           ))
         )

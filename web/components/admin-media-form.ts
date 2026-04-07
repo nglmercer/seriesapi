@@ -1,135 +1,72 @@
 import { api, type MediaItem, type Genres } from "./api-service";
-import { h } from "../utils/dom";
+import i18next from "../utils/i18n";
 import { ui } from "../utils/ui";
 
-export class AdminMediaForm extends HTMLElement {
-  private media: Partial<MediaItem> | null = null;
-  private allGenres: Genres[] = [];
-  private selectedGenres: Set<string | number> = new Set();
-
-  async setMedia(media: Partial<MediaItem> | null) {
-    this.media = media;
-    const res = await api.getGenres();
-    if (res.ok) {
-      this.allGenres = res.data as Genres[];
-    }
+export class AdminMediaForm {
+  static async open(media: Partial<MediaItem> | null, onSaved: () => void) {
+    const resGenres = await api.getGenres();
+    const allGenres = (resGenres.ok ? resGenres.data : []) as Genres[];
     
-    if (this.media?.id) {
-       // Assuming the media object has genres as an array of objects or IDs
-       const detail = await api.getMediaDetail(this.media.id);
+    let selectedGenreIds: number[] = [];
+    if (media?.id) {
+       const detail = await api.getMediaDetail(media.id);
        if(detail.ok && Array.isArray(detail.data.genres)) {
-           detail.data.genres.forEach((g: any) => this.selectedGenres.add(g.id));
+           selectedGenreIds = (detail.data.genres as any).map((g: any) => g.id);
        }
     }
-    this.render();
-  }
 
-  connectedCallback() {
-    this.render();
-  }
+    const data = await ui.form<Partial<MediaItem>>(
+      media?.id ? i18next.t("admin.edit_title", { title: media.title }) : i18next.t("admin.new_media_entry"),
+      [
+        { label: i18next.t("admin.form_title"), name: "title", type: "text", value: media?.title, width: "100%" },
+        { label: i18next.t("admin.form_original_title"), name: "original_title", type: "text", value: media?.original_title, width: "50%" },
+        { label: i18next.t("admin.form_slug"), name: "slug", type: "text", value: media?.slug, width: "50%" },
+        { 
+          label: i18next.t("admin.form_type"), name: "content_type", type: "select", value: media?.content_type || "anime", width: "33.3%",
+          options: [
+            { label: "Anime", value: "anime" },
+            { label: "Series", value: "series" },
+            { label: i18next.language === 'es' ? "Película" : "Movie", value: "movie" },
+            { label: "OVA", value: "ova" },
+            { label: i18next.language === 'es' ? "Especial" : "Special", value: "special" },
+            { label: i18next.language === 'es' ? "Corto" : "Short", value: "short" },
+            { label: i18next.language === 'es' ? "Documental" : "Documentary", value: "documentary" }
+          ]
+        },
+        { 
+          label: i18next.t("admin.form_status"), name: "status", type: "select", value: media?.status || "ongoing", width: "33.3%",
+          options: [
+            { label: i18next.language === 'es' ? "En emisión" : "Ongoing", value: "ongoing" },
+            { label: i18next.language === 'es' ? "Finalizado" : "Completed", value: "completed" },
+            { label: i18next.language === 'es' ? "Próximamente" : "Upcoming", value: "upcoming" },
+            { label: i18next.language === 'es' ? "Cancelado" : "Cancelled", value: "cancelled" }
+          ]
+        },
+        { label: i18next.language === 'es' ? "Clasificación" : "Age Rating", name: "age_rating", type: "text", value: media?.age_rating, width: "33.3%" },
+        { label: i18next.language === 'es' ? "Fecha Estreno" : "Release Date", name: "release_date", type: "date", value: media?.release_date, width: "50%" },
+        { label: i18next.language === 'es' ? "Fecha Fin" : "End Date", name: "end_date", type: "date", value: media?.end_date, width: "50%" },
+        { label: i18next.language === 'es' ? "Duración (min)" : "Runtime (min)", name: "runtime_minutes", type: "number", value: media?.runtime_minutes, width: "33.3%" },
+        { label: i18next.language === 'es' ? "Total Episodios" : "Total Episodes", name: "total_episodes", type: "number", value: media?.total_episodes, width: "33.3%" },
+        { label: i18next.language === 'es' ? "Total Temporadas" : "Total Seasons", name: "total_seasons", type: "number", value: media?.total_seasons, width: "33.3%" },
+        { label: i18next.language === 'es' ? "Es Adulto" : "Is Adult", name: "is_adult", type: "checkbox", value: media?.is_adult, width: "100%" },
+        { label: i18next.language === 'es' ? "Eslogan" : "Tagline", name: "tagline", type: "text", value: media?.tagline, width: "100%" },
+        { label: i18next.t("admin.form_synopsis"), name: "synopsis", type: "textarea", value: media?.synopsis, width: "100%" },
+        { label: i18next.language === 'es' ? "Resumen Corto" : "Short Synopsis", name: "synopsis_short", type: "textarea", value: media?.synopsis_short, width: "100%" },
+        { label: i18next.t("admin.form_poster_url"), name: "poster_url", type: "text", value: media?.poster_url, width: "100%" },
+      ]
+    );
 
-  private async handleSubmit(e: Event) {
-    e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
-    const data: Partial<MediaItem> = {
-      title: formData.get("title") as string,
-      original_title: formData.get("original_title") as string,
-      content_type: formData.get("content_type") as string,
-      status: formData.get("status") as string,
-      slug: formData.get("slug") as string,
-      synopsis: formData.get("synopsis") as string,
-      poster_url: formData.get("poster_url") as string,
-    };
-
-    try {
-      let mediaId: number;
-      if (this.media?.id) {
-        await api.updateMedia(this.media.id, data);
-        mediaId = this.media.id;
-      } else {
-        const res = await api.createMedia(data);
-        mediaId = res.data.id;
-      }
-      
-      // Update genres assignments (naive approach: clear and re-add)
-      // Note: Ideally the backend handles this in one go, but we use the methods we added
-      // This part might need backend support for bulk assignment or similar.
-      
-      this.dispatchEvent(new CustomEvent("saved", { bubbles: true }));
-      this.remove();
-    } catch (err) {
-      await ui.alert("Error saving media");
+    if (data) {
+        try {
+            if (media?.id) {
+                await api.updateMedia(media.id, data);
+            } else {
+                await api.createMedia(data);
+            }
+            onSaved();
+        } catch (err) {
+            await ui.alert(i18next.t("admin.error_saving"));
+        }
     }
   }
-
-  private toggleGenre(id: string | number) {
-      if (this.selectedGenres.has(id)) {
-          this.selectedGenres.delete(id);
-      } else {
-          this.selectedGenres.add(id);
-      }
-      this.render();
-  }
-
-  render() {
-    this.innerHTML = "";
-    const isEdit = !!this.media?.id;
-
-    const genreList = h("div", { style: "display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;" },
-        ...this.allGenres.map(g => h("span", {
-            onclick: () => this.toggleGenre(g.id),
-            style: `cursor:pointer; padding: 4px 8px; border-radius: 4px; font-size: 12px; border: 1px solid var(--border-color); ${this.selectedGenres.has(g.id) ? 'background: var(--accent-color); color: white;' : ''}`
-        }, g.name))
-    );
-
-    const form = h("form", { onsubmit: (e: Event) => this.handleSubmit(e) },
-      h("h2", {}, isEdit ? `Edit: ${this.media?.title}` : "New Media Entry"),
-      h("label", {}, "Title"),
-      h("input", { name: "title", value: this.media?.title || "", required: true }),
-      h("label", {}, "Original Title"),
-      h("input", { name: "original_title", value: this.media?.original_title || "" }),
-      h("label", {}, "Slug"),
-      h("input", { name: "slug", value: this.media?.slug || "" }),
-      h("div", { style: "display: grid; grid-template-columns: 1fr 1fr; gap: 10px;" },
-          h("div", {},
-            h("label", {}, "Type"),
-            h("select", { name: "content_type" },
-                h("option", { value: "anime", selected: this.media?.content_type === "anime" }, "Anime"),
-                h("option", { value: "series", selected: this.media?.content_type === "series" }, "Series"),
-                h("option", { value: "movie", selected: this.media?.content_type === "movie" }, "Movie")
-            )
-          ),
-          h("div", {},
-            h("label", {}, "Status"),
-            h("select", { name: "status" },
-                h("option", { value: "ongoing", selected: this.media?.status === "ongoing" }, "Ongoing"),
-                h("option", { value: "completed", selected: this.media?.status === "completed" }, "Completed"),
-                h("option", { value: "upcoming", selected: this.media?.status === "upcoming" }, "Upcoming")
-            )
-          )
-      ),
-      h("label", {}, "Genres"),
-      genreList,
-      h("label", { style: "display:block; margin-top:10px;" }, "Synopsis"),
-      h("textarea", { name: "synopsis", rows: 4 }, this.media?.synopsis || ""),
-      h("label", {}, "Poster URL"),
-      h("input", { name: "poster_url", value: this.media?.poster_url || "" }),
-      h("div", { className: "form-actions", style: "display: flex; gap: 10px; margin-top: 20px;" },
-        h("button", { type: "submit", className: "primary" }, "Save"),
-        h("button", { type: "button", onclick: () => this.remove() }, "Cancel")
-      )
-    );
-
-    const overlay = h("div", {
-      className: "modal-overlay",
-      style: "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;"
-    }, h("div", {
-      className: "card",
-      style: "width: 100%; max-width: 500px; max-height: 94vh; overflow-y: auto;"
-    }, form));
-
-    this.appendChild(overlay);
-  }
 }
-
-customElements.define("admin-media-form", AdminMediaForm);

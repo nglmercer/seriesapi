@@ -23,21 +23,34 @@ export interface MediaItem {
   slug: string;
   content_type: string;
   original_title: string;
+  original_language?: string;
   status: string;
   release_date: string | null;
-  title: string;
-  synopsis_short: string | null;
+  end_date: string | null;
+  runtime_minutes: number | null;
+  total_episodes: number | null;
+  total_seasons: number | null;
   score: number;
+  score_count: number;
   popularity: number;
+  age_rating: string | null;
+  is_adult: boolean;
   poster_url: string;
+  
+  // Localized fields
+  title: string;
+  tagline: string | null;
+  synopsis: string | null;
+  synopsis_short: string | null;
+
+  genres?: (Genres | string)[];
+  
   // Legacy fields for compatibility
   type?: string;
   year?: number;
   poster?: string;
   banner?: string;
   rating?: number;
-  genres?: string[] | Genres;
-  synopsis?: string;
   episodes?: number;
   duration?: number;
   originalTitle?: string;
@@ -51,17 +64,37 @@ export interface PeopleItem {
   occupation?: string;
 }
 
+export interface SeasonItem {
+  id: number;
+  media_id: number;
+  season_number: number;
+  episode_count: number;
+  air_date: string | null;
+  end_date: string | null;
+  score: number;
+  score_count: number;
+  
+  // Localized fields
+  name: string | null;
+  synopsis: string | null;
+}
+
 export interface EpisodeItem {
   id: number;
   media_id: number;
-  season_id: number;
+  season_id: number | null;
   episode_number: number;
-  absolute_number?: number;
-  episode_type?: string;
-  title: string;
-  synopsis?: string;
-  air_date?: string;
-  runtime_minutes?: number;
+  absolute_number: number | null;
+  episode_type: string;
+  air_date: string | null;
+  runtime_minutes: number | null;
+  score: number;
+  score_count: number;
+  
+  // Localized fields
+  title: string | null;
+  synopsis: string | null;
+  
   still_url?: string;
 }
 

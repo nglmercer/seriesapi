@@ -1,5 +1,5 @@
 import { h } from "./dom";
-
+import i18next from "i18next";
 /**
  * Premium UI Utilities for async alerts and prompts.
  */
@@ -120,42 +120,57 @@ class UI {
     });
   }
 
-  static form<T>(title: string, fields: { label: string; name: string; type: string; value?: any; options?: { label: string; value: any }[] }[]): Promise<T | null> {
+  static form<T>(title: string, fields: { label: string; name: string; type: string; value?: any; options?: { label: string; value: any }[]; width?: string }[]): Promise<T | null> {
     return new Promise((resolve) => {
       const inputs: Record<string, any> = {};
-      const formContent = h("div", { className: "ui-form", style: "display: flex; flex-direction: column; gap: 12px;" },
-        h("h3", { style: "margin-top:0;" }, title),
-        ...fields.map(f => {
-          let input;
-          if (f.type === "textarea") {
-            input = h("textarea", { name: f.name, rows: 4 }, f.value || "");
-          } else if (f.type === "select") {
-            input = h("select", { name: f.name }, 
-              ...(f.options || []).map(opt => h("option", { value: opt.value, selected: opt.value === f.value }, opt.label))
-            );
-          } else {
-            input = h("input", { type: f.type, name: f.name, value: f.value || "" });
-          }
-          inputs[f.name] = input;
-          return h("div", {},
-            h("label", { style: "font-size: 13px; font-weight: 600;" }, f.label),
-            input
+      
+      const fieldElements = fields.map(f => {
+        let input;
+        const style = `width: 100%; ${f.type === 'checkbox' ? 'width: auto;' : ''}`;
+        
+        if (f.type === "textarea") {
+          input = h("textarea", { name: f.name, rows: 4, style }, f.value || "");
+        } else if (f.type === "select") {
+          input = h("select", { name: f.name, style }, 
+            ...(f.options || []).map(opt => h("option", { value: opt.value, selected: opt.value === f.value }, opt.label))
           );
-        }),
-        h("div", { style: "display:flex; justify-content: flex-end; gap: 10px; margin-top: 10px;" },
-          h("button", { onclick: () => { close(); resolve(null); } }, "Cancel"),
+        } else if (f.type === "checkbox") {
+          input = h("input", { type: "checkbox", name: f.name, checked: !!f.value });
+        } else {
+          input = h("input", { type: f.type, name: f.name, value: f.value || "", style });
+        }
+        
+        inputs[f.name] = input;
+        
+        const containerStyle = `display: flex; flex-direction: ${f.type === 'checkbox' ? 'row-reverse' : 'column'}; gap: 6px; ${f.type === 'checkbox' ? 'justify-content: flex-end; align-items: center;' : ''} flex: 1 1 ${f.width || '100%'};`;
+        
+        return h("div", { style: containerStyle },
+          h("label", { style: `font-size: 13px; font-weight: 600; ${f.type === 'checkbox' ? 'margin: 0;' : ''}` }, f.label),
+          input
+        );
+      });
+
+      const formContent = h("div", { className: "ui-form", style: "display: flex; flex-direction: column; gap: 20px;" },
+        h("h3", { style: "margin-top:0; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;" }, title),
+        h("div", { style: "display: flex; flex-wrap: wrap; gap: 16px;" }, ...fieldElements),
+        h("div", { style: "display:flex; justify-content: flex-end; gap: 10px; margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 16px;" },
+          h("button", { onclick: () => { close(); resolve(null); } }, i18next.language === 'es' ? "Cancelar" : "Cancel"),
           h("button", { 
             className: "primary", 
             onclick: () => {
               const res: any = {};
               fields.forEach(f => {
-                res[f.name] = inputs[f.name].value;
-                if (f.type === "number") res[f.name] = parseFloat(res[f.name]);
+                if (f.type === "checkbox") {
+                    res[f.name] = (inputs[f.name] as HTMLInputElement).checked;
+                } else {
+                    res[f.name] = inputs[f.name].value;
+                    if (f.type === "number") res[f.name] = parseFloat(res[f.name] || '0');
+                }
               });
               close();
               resolve(res);
             }
-          }, "Save")
+          }, i18next.language === 'es' ? "Guardar" : "Save")
         )
       );
       const { close } = this.createModal(formContent, true);
