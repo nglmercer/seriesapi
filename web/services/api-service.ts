@@ -233,10 +233,10 @@ class ApiClient {
     return this.request(`/collections/${slug}`);
   }
 
-  search(query: string, type?: string): Promise<ApiResponse<unknown[]>> {
+  search<T=unknown>(query: string, type?: string): Promise<ApiResponse<T[]>> {
     const params = new URLSearchParams({ q: query, locale: this.getLocale() });
     if (type) params.set("type", type);
-    return this.request(`/search?${params}`);
+    return this.request<T[]>(`/search?${params}`);
   }
 
   getEpisode(id: number): Promise<ApiResponse<EpisodeItem>> {

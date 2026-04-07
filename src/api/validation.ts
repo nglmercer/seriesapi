@@ -13,7 +13,7 @@ export const paginationSchema = z.object({
 
 export const localeSchema = z.enum([...SUPPORTED_LOCALES] as [string, ...string[]]).optional();
 
-export const searchSchema = z.string().trim().min(2, "Search query must be at least 2 characters");
+export const searchSchema = z.string().trim().min(1, "Search query must be at least 1 characters");
 
 export const idSchema = z.coerce.number().int().positive();
 

@@ -9,6 +9,11 @@ export class MediaList extends HTMLElement {
   private loading = false;
   private page = 1;
 
+  set list(newList: MediaItem[]) {
+    this.items = newList;
+    this.render();
+  }
+
   async connectedCallback() {
     this.load();
   }
@@ -56,11 +61,11 @@ export class MediaList extends HTMLElement {
         onclick: () => eventBus.emit("media-select", { id: item.id })
       },
       h("img", { 
-        src: item.poster_url, 
+        src: item.poster_url || (item as any).image_url, 
         style: "width: 100%; height: 260px; object-fit: cover; border-radius: 4px;" 
       }),
       h("div", { style: "margin-top: 10px; font-weight: bold;" }, item.title),
-      h("div", { style: "font-size: 12px; color: var(--text-secondary);" }, `${item.content_type} | ${item.status}`)
+      h("div", { style: "font-size: 12px; color: var(--text-secondary);" }, `${item.content_type || (item as any).entity_type} | ${item.status || ""}`)
     )));
 
     this.appendChild(grid);

@@ -1,5 +1,3 @@
-import type { Catalogo, Capitulo, Temporada, Categoria, Asignacion } from "./types";
-
 function splitCSV(row: string): string[] {
 	const result: string[] = [];
 	let current = "",
@@ -75,61 +73,4 @@ function cleanValue(val: string | undefined): string {
 	if (val.startsWith("'") && val.endsWith("'")) val = val.slice(1, -1);
 	return val.replace(/''/g, "'");
 }
-
-export function parseSQLFile(sql: string) {
-	const catalogos: Catalogo[] = [];
-	const capitulos: Capitulo[] = [];
-	const temporadas: Temporada[] = [];
-	const categorias: Categoria[] = [];
-	const asignaciones: Asignacion[] = [];
-
-	for (const vals of extractValues(sql, "catalogos")) {
-		if (vals.length >= 8)
-			catalogos.push({
-				idCatalogo: parseInt(cleanValue(vals[0])) || 0,
-				nombreCatalogo: cleanValue(vals[1]),
-				tipoCatalogo: parseInt(cleanValue(vals[2])) || 1,
-				estadoCatalogo: parseInt(cleanValue(vals[3])) || 2,
-				imagenPortadaCatalogo: cleanValue(vals[4]),
-				imagenFondoCatalogo: cleanValue(vals[5]),
-				descripcionCatalogo: cleanValue(vals[6]),
-				nsfwCatalogo: parseInt(cleanValue(vals[7])) || 0,
-				trailerCatalogo: cleanValue(vals[9]) || null,
-			});
-	}
-	for (const vals of extractValues(sql, "capitulos")) {
-		if (vals.length >= 6)
-			capitulos.push({
-				idCapitulo: parseInt(cleanValue(vals[0])) || 0,
-				idAnime: parseInt(cleanValue(vals[1])) || 0,
-				idTemporada: parseInt(cleanValue(vals[2])) || 0,
-				titulo: cleanValue(vals[3]),
-				numero: parseInt(cleanValue(vals[4])) || 0,
-				descripcion: cleanValue(vals[5]),
-			});
-	}
-	for (const vals of extractValues(sql, "temporadas")) {
-		if (vals.length >= 4)
-			temporadas.push({
-				idTemporada: parseInt(cleanValue(vals[0])) || 0,
-				idAnime: parseInt(cleanValue(vals[1])) || 0,
-				numero: parseInt(cleanValue(vals[2])) || 0,
-				titulo: cleanValue(vals[3]),
-			});
-	}
-	for (const vals of extractValues(sql, "categorias")) {
-		if (vals.length >= 2)
-			categorias.push({
-				idCategoria: parseInt(cleanValue(vals[0])) || 0,
-				nombreCategoria: cleanValue(vals[1]),
-			});
-	}
-	for (const vals of extractValues(sql, "asignacionescategorias")) {
-		if (vals.length >= 3)
-			asignaciones.push({
-				catalogoAsignacionCategoria: parseInt(cleanValue(vals[1])) || 0,
-				categoriaAsignacionCategoria: parseInt(cleanValue(vals[2])) || 0,
-			});
-	}
-	return { catalogos, capitulos, temporadas, categorias, asignaciones };
-}
+export { extractValues, cleanValue };

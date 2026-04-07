@@ -3,7 +3,17 @@ import { customElement, property, state } from "lit/decorators.js";
 import { api } from "../../services/api-service";
 import i18next from "../../utils/i18n";
 import { eventBus } from "../../utils/events";
+//  { id: number; entity_type: string; title: string; content_type?: string; image_url?: string }> = [];
 
+export type SearchResult = {
+  id: number;
+  entity_type?: string;
+  title?: string;
+  content_type?: string;
+  image_url?: string;
+  created_at?: string;
+  updated_at?: string;
+};
 @customElement("search-box")
 export class SearchBox extends LitElement {
   static override styles = css`
@@ -178,11 +188,11 @@ export class SearchBox extends LitElement {
 
   @property({ type: String }) placeholder = "";
   @property({ type: String }) buttonText = "";
-  @property({ type: Boolean }) showResults = true;
+  @property({ type: Boolean }) showResults = false;
   @property({ type: Boolean, reflect: true }) minimal = false;
 
   @property({ type: String }) query = "";
-  @state() results: Array<{ id: number; entity_type: string; title: string; content_type?: string; image_url?: string }> = [];
+  @state() results: SearchResult[] = [];
   @state() loading = false;
 
   private handleInput(e: Event) {
@@ -210,17 +220,18 @@ export class SearchBox extends LitElement {
       composed: true
     }));
 
-    if (this.showResults && this.query.trim()) {
+    if (this.query.trim()) {
       this.loading = true;
-      const res = await api.search(this.query);
+      const res = await api.search<SearchResult>(this.query);
       if (res.ok) {
-        this.results = res.data as any[];
+          this.results = res.data;
+          eventBus.emit("media-list", this.results);
       }
       this.loading = false;
     }
   }
 
-  private handleResultClick(result: any) {
+  private handleResultClick(result: SearchResult) {
     eventBus.emit("search-result", result);
     this.results = [];
     this.query = "";

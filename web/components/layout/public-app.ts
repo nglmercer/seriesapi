@@ -3,6 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { translate } from "lit-i18n";
 import { type AuthUser } from "../../services/auth-store";
 import { type MediaItem } from "../../services/api-service";
+import { type SearchResult } from "../shared/search-box";
 import { mediaService } from "../../services/media-service";
 import { initials, avatarColor } from "../shared/comment-avatar";
 import { toggleTheme } from "../../utils/dom";
@@ -328,6 +329,11 @@ export class PublicApp extends LitElement {
   @state() private currentSeasons: SeasonData[] = [];
 
   /**
+   * Loaded media list for search or filters.
+   */
+  @state() private mediaList: SearchResult[] = [];
+
+  /**
    * Loading state for media details.
    */
   @state() private mediaLoading = false;
@@ -378,7 +384,7 @@ export class PublicApp extends LitElement {
 
       eventBus.on("search-result", (data) => {
         if (data.entity_type === "media") {
-          this.selectedMediaId = data.id;
+          this.selectedMediaId = data.id || null;
           this.selectedSeasonId = null;
           this.currentMedia = null;
           this.currentSeasons = [];
@@ -413,6 +419,15 @@ export class PublicApp extends LitElement {
 
       eventBus.on("auth-close", () => {
         this.showAuthModal = false;
+      }),
+
+      eventBus.on("media-list", (data) => {
+        this.mediaList = data;
+        this.selectedMediaId = null;
+        this.selectedSeasonId = null;
+        this.currentMedia = null;
+        this.currentSeasons = [];
+        this.showProfile = false;
       })
     ];
 
@@ -582,10 +597,15 @@ export class PublicApp extends LitElement {
         <div class="media-grid">
           <div>
             <div class="section-header">
-              <h2>${translate("media.explore_contents", "Explore Contents")}</h2>
-              <span class="section-subtitle">${translate("media.personalized_for_you", "Personalized for you")}</span>
+              <div>
+                <h2>${translate("media.explore_contents", "Explore Contents")}</h2>
+                <span class="section-subtitle">${translate("media.personalized_for_you", "Personalized for you")}</span>
+              </div>
+              <div style="width: 300px;">
+                <search-box minimal></search-box>
+              </div>
             </div>
-            <media-list .filters=${this.currentFilters}></media-list>
+            <media-list .filters=${this.currentFilters} .list=${this.mediaList}></media-list>
           </div>
         </div>
       </main>
