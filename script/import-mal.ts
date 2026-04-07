@@ -1,25 +1,6 @@
-import malScraper  from "mal-scraper";
-import type { 
-  AnimeDataModel, 
-  SearchResultsDataModel, 
-  SeasonDataModel, 
-  SeasonalDataModel 
-} from "mal-scraper";
-import { 
-  mediaTable, 
-  mediaTranslationsTable, 
-  imagesTable, 
-  genresTable, 
-  mediaGenresTable,
-  genreTranslationsTable,
-  studiosTable,
-  mediaStudiosTable,
-  contentTypesTable,
-  languagesTable
-} from "../src/schema";
 import { initializeDatabase, getDrizzle } from "../src/init";
-import { toSlug } from "../migrations/utils";
-import type { SqliteNapiAdapter } from "../src/core/driver";
+import { DbManager } from "./lib/db-manager";
+import { MalService } from "./lib/mal-service";
 
 /**
  * Script to import anime info from MyAnimeList into the database.
@@ -28,231 +9,109 @@ import type { SqliteNapiAdapter } from "../src/core/driver";
  *   bun run import:mal single <name|url>
  *   bun run import:mal search <query> [limit]
  *   bun run import:mal season <year> <season> [type]
+ *   bun run import:mal bulk <name1,name2,id1,id2...>
  */
 
 class MalImporter {
-  constructor(private drizzle: SqliteNapiAdapter) {}
+  // Track already processed MAL IDs in this session to avoid redundant work
+  private processedMalIds = new Set<number>();
+
+  constructor(
+    private dbManager: DbManager,
+    private malService: MalService
+  ) {}
 
   /**
-   * Ensure lookup tables are seeded.
+   * Import a single anime by name, URL, or MAL ID.
    */
-  async seedLookups() {
-    const types = this.drizzle.select(contentTypesTable).all();
-    if (types.length === 0) {
-      console.log("[mal] Seeding content types...");
-      const defaultTypes = [
-        { id: 1, slug: "movie", label: "Movie" },
-        { id: 2, slug: "series", label: "Series" },
-        { id: 3, slug: "anime", label: "Anime" },
-        { id: 4, slug: "manga", label: "Manga" },
-        { id: 5, slug: "ova", label: "OVA" },
-        { id: 6, slug: "special", label: "Special" },
-        { id: 7, slug: "ona", label: "ONA" },
-      ];
-      for (const t of defaultTypes) this.drizzle.insert(contentTypesTable).values(t).run();
+  async importSingle(target: string | number): Promise<number | null> {
+    const targetStr = target.toString();
+    const isUrl = targetStr.startsWith("http");
+    const isId = !isNaN(Number(targetStr)) && !isUrl;
+    
+    // If it's a MAL ID, check if we already have it in DB before fetching
+    if (isId) {
+        const malId = Number(targetStr);
+        if (this.processedMalIds.has(malId)) {
+            console.log(`[mal] Already processed in this session: MAL ID ${malId}`);
+            return null;
+        }
+        const existingId = await this.dbManager.getMediaIdByMalId(malId);
+        if (existingId) {
+            console.log(`[mal] Already exists in DB: MAL ID ${malId} (Media ID: ${existingId})`);
+            this.processedMalIds.add(malId);
+            return existingId;
+        }
     }
 
-    const langs = this.drizzle.select(languagesTable).all();
-    if (langs.length === 0) {
-      console.log("[mal] Seeding languages...");
-      const defaultLangs = [
-        { id: 1, code: "en", name: "English", native_name: "English" },
-        { id: 2, code: "es", name: "Spanish", native_name: "Español" },
-        { id: 3, code: "ja", name: "Japanese", native_name: "日本語" },
-        { id: 4, code: "pt", name: "Portuguese", native_name: "Português" },
-      ];
-      for (const l of defaultLangs) this.drizzle.insert(languagesTable).values(l).run();
+    // Fetch data
+    let malData;
+    if (isId) {
+        // mal-scraper's getInfoFromURL also handles IDs if passed correctly, 
+        // but it's safer to construct the URL or use search if needed.
+        // Actually getInfoFromURL works with just the ID if we provide the base URL.
+        malData = await this.malService.fetchInfo(`https://myanimelist.net/anime/${targetStr}`);
+    } else {
+        malData = await this.malService.fetchInfo(targetStr);
     }
-  }
-
-  /**
-   * Check if an anime exists in the DB.
-   */
-  async exists(malId: number): Promise<number | null> {
-    const existing = this.drizzle.select(mediaTable)
-      .where("external_ids LIKE ?", [`%"mal":${malId}%`])
-      .get() as { id: number } | undefined;
-    return existing?.id ?? null;
-  }
-
-  /**
-   * Import a single anime by name or URL.
-   */
-  async importSingle(nameOrUrl: string): Promise<number | null> {
-    console.log(`[mal] Fetching info for: ${nameOrUrl}...`);
-    let malData: AnimeDataModel;
-    try {
-      if (nameOrUrl.startsWith("http")) {
-        malData = await malScraper.getInfoFromURL(nameOrUrl);
-      } else {
-        malData = await malScraper.getInfoFromName(nameOrUrl);
-      }
-    } catch (err) {
-      console.error(`[mal] Error fetching ${nameOrUrl}:`, err);
-      return null;
-    }
-
+    
     if (!malData || !malData.id) {
-      console.error(`[mal] No anime found for: ${nameOrUrl}`);
+      console.error(`[mal] No anime found for: ${targetStr}`);
       return null;
     }
 
-    const existingId = await this.exists(malData.id);
+    if (this.processedMalIds.has(malData.id)) {
+      console.log(`[mal] Already processed in this session: ${malData.title}`);
+      return null;
+    }
+
+    const existingId = await this.dbManager.getMediaIdByMalId(malData.id);
     if (existingId) {
-      console.log(`[mal] Already exists: ${malData.title} (ID: ${existingId})`);
+      console.log(`[mal] Already exists in DB: ${malData.title} (ID: ${existingId})`);
+      this.processedMalIds.add(malData.id);
       return existingId;
     }
 
-    return this.saveToDb(malData);
-  }
-
-  /**
-   * Save a fully-fetched anime data model to the DB.
-   */
-  private async saveToDb(malData: AnimeDataModel): Promise<number> {
-    const now = new Date().toISOString();
-    const slug = toSlug(malData.title);
-
-    // 1. Content type
-    const animeType = this.drizzle.select(contentTypesTable)
-      .where("slug = ?", ["anime"])
-      .get() as { id: number } | undefined;
-    const contentTypeId = animeType?.id ?? 3;
-
-    // 2. Parse status
-    let status = "unknown";
-    if (malData.status?.toLowerCase().includes("finished")) status = "completed";
-    else if (malData.status?.toLowerCase().includes("currently airing")) status = "ongoing";
-    else if (malData.status?.toLowerCase().includes("not yet aired")) status = "upcoming";
-
-    // 3. Parse dates
-    let releaseDate = null;
-    let endDate = null;
-    if (malData.aired) {
-      const dates = malData.aired.split(" to ");
-      if (dates[0]) {
-        try { releaseDate = new Date(dates[0]).toISOString().split('T')[0]; } catch {}
-      }
-      if (dates[1] && dates[1] !== "?") {
-        try { endDate = new Date(dates[1]).toISOString().split('T')[0]; } catch {}
-      }
-    }
-
-    // 4. Insert Media
-    const res = this.drizzle.insert(mediaTable).values({
-      content_type_id: contentTypeId,
-      slug: `${slug}-${malData.id}`,
-      original_title: malData.title,
-      original_language: "ja",
-      status,
-      release_date: releaseDate,
-      end_date: endDate,
-      runtime_minutes: parseInt(malData.duration?.match(/\d+/)?.[0] ?? "0", 10),
-      total_episodes: parseInt(malData.episodes ?? "0", 10),
-      score: parseFloat(malData.score ?? "0"),
-      popularity: parseFloat(malData.popularity?.match(/\d+/)?.[0] ?? "0"),
-      age_rating: malData.rating,
-      external_ids: JSON.stringify({ mal: malData.id }),
-      created_at: now,
-      updated_at: now,
-    }).run();
-
-    const mediaId = Number(res.lastInsertRowid);
-
-    // 5. Translations
-    this.drizzle.insert(mediaTranslationsTable).values({
-      media_id: mediaId,
-      locale: "en",
-      title: malData.title,
-      synopsis: malData.synopsis ?? null,
-      synopsis_short: malData.synopsis?.substring(0, 280) ?? null,
-    }).run();
-
-    // 6. Image
-    if (malData.picture) {
-      this.drizzle.insert(imagesTable).values({
-        entity_type: "media",
-        entity_id: mediaId,
-        image_type: "poster",
-        url: malData.picture,
-        is_primary: 1,
-        source: "mal",
-        source_id: malData.id.toString(),
-        created_at: now,
-      }).run();
-    }
-
-    // 7. Genres
-    if (malData.genres && Array.isArray(malData.genres)) {
-      for (const genreName of malData.genres) {
-        const gSlug = toSlug(genreName);
-        let genre = this.drizzle.select(genresTable).where("slug = ?", [gSlug]).get() as { id: number } | undefined;
-        
-        if (!genre) {
-          const gRes = this.drizzle.insert(genresTable).values({ slug: gSlug }).run();
-          const gId = Number(gRes.lastInsertRowid);
-          this.drizzle.insert(genreTranslationsTable).values({
-            genre_id: gId,
-            locale: "en",
-            name: genreName,
-          }).run();
-          genre = { id: gId };
-        }
-
-        const existingAss = this.drizzle.select(mediaGenresTable)
-            .where("media_id = ? AND genre_id = ?", [mediaId, genre.id])
-            .get();
-        if (!existingAss) {
-            this.drizzle.insert(mediaGenresTable).values({
-                media_id: mediaId,
-                genre_id: genre.id,
-            }).run();
-        }
-      }
-    }
-
-    // 8. Studios
-    if (malData.studios && Array.isArray(malData.studios)) {
-      for (const studioName of malData.studios) {
-        let studio = this.drizzle.select(studiosTable).where("name = ?", [studioName]).get() as { id: number } | undefined;
-        
-        if (!studio) {
-          const sRes = this.drizzle.insert(studiosTable).values({ name: studioName }).run();
-          studio = { id: Number(sRes.lastInsertRowid) };
-        }
-
-        const existingAss = this.drizzle.select(mediaStudiosTable)
-            .where("media_id = ? AND studio_id = ?", [mediaId, studio.id])
-            .get();
-        if (!existingAss) {
-            this.drizzle.insert(mediaStudiosTable).values({
-                media_id: mediaId,
-                studio_id: studio.id,
-                is_main: 1,
-            }).run();
-        }
-      }
-    }
-
+    console.log(`[mal] Indexing: ${malData.title}...`);
+    const mediaId = await this.dbManager.saveMedia(malData);
+    
+    this.processedMalIds.add(malData.id);
     console.log(`[mal] Indexed: ${malData.title} (Media ID: ${mediaId})`);
     return mediaId;
   }
 
   /**
+   * Import from an array of strings or numbers.
+   */
+  async importBatch(targets: (string | number)[]): Promise<void> {
+    console.log(`[mal] Batch importing ${targets.length} items...`);
+    for (const target of targets) {
+        await this.importSingle(target);
+    }
+  }
+
+  /**
    * Search and import top results.
    */
-  async importSearch(query: string, limit: number = 5) {
+  async importSearch(query: string, limit: number = 5): Promise<void> {
     console.log(`[mal] Searching for: ${query} (limit ${limit})...`);
-    const results: SearchResultsDataModel[] = await malScraper.getResultsFromSearch(query);
+    const results = await this.malService.search(query, limit);
     
-    const toImport = results.slice(0, limit);
-    for (const res of toImport) {
+    for (const res of results) {
       const malId = parseInt(res.id, 10);
-      const existingId = await this.exists(malId);
-      if (existingId) {
-        console.log(`[mal] Skipping (already exists): ${res.name}`);
+      
+      if (this.processedMalIds.has(malId)) {
+        console.log(`[mal] Skipping (already processed): ${res.name}`);
         continue;
       }
+
+      const existingId = await this.dbManager.getMediaIdByMalId(malId);
+      if (existingId) {
+        console.log(`[mal] Skipping (already exists): ${res.name}`);
+        this.processedMalIds.add(malId);
+        continue;
+      }
+      
       await this.importSingle(res.name);
     }
   }
@@ -260,37 +119,26 @@ class MalImporter {
   /**
    * Import all anime from a specific season.
    */
-  async importSeason(year: number, season: string, type?: string) {
+  async importSeason(year: number, season: string, type?: string): Promise<void> {
     console.log(`[mal] Fetching season: ${year} ${season}...`);
-    // Need to cast season string to valid Seasons type
-    const seasonData: SeasonDataModel = await malScraper.getSeason(year, season as any, type as any);
-    
-    // SeasonDataModel has keys like TV, Movies, OVAs, etc.
-    const allAnime: SeasonalDataModel[] = [];
-    if (type) {
-        // If type specified, seasonData is actually an array
-        allAnime.push(...(seasonData as unknown as SeasonalDataModel[]));
-    } else {
-        // Otherwise it's an object with arrays
-        const data = seasonData as Record<string, SeasonalDataModel[]>;
-        if (data.TV) allAnime.push(...data.TV);
-        if (data.Movies) allAnime.push(...data.Movies);
-        if (data.OVAs) allAnime.push(...data.OVAs);
-        if (data.ONAs) allAnime.push(...data.ONAs);
-    }
+    const allAnime = await this.malService.fetchSeason(year, season, type);
 
     console.log(`[mal] Found ${allAnime.length} anime in this season.`);
     
     for (const anime of allAnime) {
       if (!anime.link) continue;
-      // SeasonalDataModel doesn't have an ID, we use the link
-      // Link looks like: https://myanimelist.net/anime/54595/Mushoku_Tensei_II__Isekai_Ittara_Honki_Dasu
+
       const idMatch = anime.link.match(/\/anime\/(\d+)/);
       if (idMatch) {
         const malId = parseInt(idMatch[1]!, 10);
-        const existingId = await this.exists(malId);
+        if (this.processedMalIds.has(malId)) {
+            console.log(`[mal] Skipping (already processed): ${anime.title}`);
+            continue;
+        }
+        const existingId = await this.dbManager.getMediaIdByMalId(malId);
         if (existingId) {
             console.log(`[mal] Skipping (already exists): ${anime.title}`);
+            this.processedMalIds.add(malId);
             continue;
         }
       }
@@ -305,20 +153,38 @@ async function main() {
   const command = args[0];
 
   if (!command) {
-    console.error("Usage: bun run import:mal <single|search|season> [args...]");
+    console.error("Usage: bun run import:mal <single|search|season|bulk> [args...]");
     process.exit(1);
   }
 
   await initializeDatabase();
-  const importer = new MalImporter(getDrizzle());
-  await importer.seedLookups();
+  const drizzle = getDrizzle();
+  
+  const dbManager = new DbManager(drizzle);
+  const malService = new MalService();
+
+  // Load existing lookups and initialize caches
+  await dbManager.initCaches();
+  await dbManager.seedLookups();
+
+  const importer = new MalImporter(dbManager, malService);
 
   try {
     switch (command) {
       case "single": {
         const target = args[1];
-        if (!target) throw new Error("Missing name or URL");
+        if (!target) throw new Error("Missing name, URL, or ID");
         await importer.importSingle(target);
+        break;
+      }
+      case "bulk": {
+        const input = args[1];
+        if (!input) throw new Error("Missing comma-separated list of targets");
+        const targets = input.split(",").map(t => {
+            const trimmed = t.trim();
+            return isNaN(Number(trimmed)) ? trimmed : Number(trimmed);
+        });
+        await importer.importBatch(targets);
         break;
       }
       case "search": {

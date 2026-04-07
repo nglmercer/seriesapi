@@ -297,12 +297,6 @@ export class PublicApp extends LitElement {
    * Currently selected season ID.
    */
   @property({ type: Number }) selectedSeasonId: number | null = null;
-
-  /**
-   * Current active filters for media exploration.
-   */
-  @property({ type: Object }) currentFilters: Record<string, unknown> = {};
-
   /**
    * Current authenticated user.
    */
@@ -391,18 +385,6 @@ export class PublicApp extends LitElement {
           this.showProfile = false;
         }
       }),
-
-      eventBus.on("filters-change", (data) => {
-        this.currentFilters = { ...data };
-        if (this.selectedMediaId || this.showProfile) {
-          this.selectedMediaId = null;
-          this.selectedSeasonId = null;
-          this.currentMedia = null;
-          this.currentSeasons = [];
-          this.showProfile = false;
-        }
-      }),
-
       eventBus.on("season-select", (data) => {
         this.selectedSeasonId = data.seasonId;
       }),
@@ -586,10 +568,6 @@ export class PublicApp extends LitElement {
         <div class="container">
           <h1>${translate("hero.title")}</h1>
           <p>${translate("hero.subtitle")}</p>
-          <div class="hero-content">
-            <search-box></search-box>
-            <media-filters .filters=${this.currentFilters}></media-filters>
-          </div>
         </div>
       </section>
 
@@ -605,7 +583,7 @@ export class PublicApp extends LitElement {
                 <search-box minimal></search-box>
               </div>
             </div>
-            <media-list .filters=${this.currentFilters} .list=${this.mediaList}></media-list>
+            <media-list .list=${this.mediaList}></media-list>
           </div>
         </div>
       </main>
