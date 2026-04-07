@@ -7,7 +7,7 @@ import "./admin-genres-view";
 import "./admin-content-manager";
 import "../shared/search-box";
 import "../media/media-filters";
-import type { MediaFiltersState } from "../media-filters";
+import type { MediaFiltersState } from "../media/media-filters";
 
 export class AdminView extends HTMLElement {
   private mediaList: MediaItem[] = [];
@@ -130,9 +130,16 @@ export class AdminView extends HTMLElement {
         ) : null,
         h("div", { className: "media-admin-list", style: "display: grid; gap: 10px;" },
           ...this.mediaList.map(item => h("div", { className: "card", style: "display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;" },
-            h("div", {},
-              h("strong", {}, item.title),
-              h("div", { style: "color:var(--text-secondary); font-size:12px;" }, `${item.content_type} | ID: ${item.id} | Slug: ${item.slug}`)
+            h("div", { style: "display: flex; align-items: center; gap: 12px;" },
+              h("div", {},
+                h("div", { style: "display:flex; align-items:center; gap:8px;" },
+                  h("strong", {}, item.title),
+                  !item.translation_id ? h("span", { 
+                    style: "background: var(--error-color); color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase;" 
+                  }, i18next.t("admin.missing_translation", { defaultValue: "MISSING " + i18next.language.toUpperCase() })) : null
+                ),
+                h("div", { style: "color:var(--text-secondary); font-size:12px;" }, `${item.content_type} | ID: ${item.id} | Slug: ${item.slug}`)
+              )
             ),
             h("div", { style: "display: flex; gap: 8px;" },
               h("button", { onclick: () => this.openContentManager(item.id) }, i18next.t("admin.content_mgr")),

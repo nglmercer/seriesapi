@@ -69,6 +69,7 @@ export class MediaDetail extends LitElement {
   @state() selectedSeason: number | null = null;
   @state() loading = true;
   @state() error = false;
+  @state() reported = false;
 
   override connectedCallback() {
     super.connectedCallback();
@@ -113,6 +114,19 @@ export class MediaDetail extends LitElement {
     this.dispatchEvent(new CustomEvent("season-select", {detail: {mediaId: this.mediaId, seasonId}, bubbles: true, composed: true}));
   }
 
+  private async reportMissingTranslation() {
+    if (this.reported || !this.media) return;
+    const res = await api.reportTranslation({
+      entity_type: "media",
+      entity_id: this.media.id,
+      locale: i18next.language
+    });
+    if (res.ok) {
+       this.reported = true;
+       alert(i18next.t("media.translation_requested") || "Translation request sent! Thank you.");
+    }
+  }
+
   override render() {
     if (this.loading) return html`<div class="loading">${i18next.t("media.loading") || "Loading..."}</div>`;
     if (this.error || !this.media) {
@@ -135,6 +149,18 @@ export class MediaDetail extends LitElement {
         
         <div class="wiki-main">
           <h1 class="page-title">${this.media.title}</h1>
+          ${!this.media.translation_id ? html`
+            <div style="background: var(--error-color); color: white; padding: 12px 20px; border-radius: 8px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+              <span>${i18next.t("media.translation_fallback_notice") || "This content is shown in its original language. Help us translate it!"}</span>
+              <button 
+                ?disabled=${this.reported}
+                @click=${this.reportMissingTranslation} 
+                style="background: white; color: var(--error-color); border:none; padding: 6px 12px; border-radius: 4px; font-weight: 700; cursor: pointer; opacity: ${this.reported ? 0.7 : 1};"
+              >
+                ${this.reported ? (i18next.t("media.requested") || "Requested") : (i18next.t("media.request_translation") || "Request Translation")}
+              </button>
+            </div>
+          ` : ""}
           
           ${this.media.synopsis ? html`
             <div class="section">

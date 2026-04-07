@@ -36,6 +36,7 @@ import { handleCollectionsList, handleCollectionDetail } from "./src/api/routes/
 import { handleSearch } from "./src/api/routes/search";
 import { handleCommentPost, handleCommentGet } from "./src/api/routes/comments";
 import { handleRegister, handleLogin, handleLogout, handleMe } from "./src/api/routes/auth";
+import { handleTranslationRequest } from "./src/api/routes/translations";
 import admin_view from './web/admin.html'
 import public_view from './web/index.html'
 // ── config ────────────────────────────────────────────────────────────────────
@@ -173,6 +174,12 @@ function route(req: Request): Response | Promise<Response> {
       if (!isNaN(id)) return handleCommentGet(req, db, id);
     }
     return GET ? json404() : json405();
+  }
+
+  // ── /api/v1/translations ───────────────────────────────────────────────────
+  if (resource === "translations") {
+    if (p3 === "request" && POST) return handleTranslationRequest(req);
+    return json404();
   }
 
   // ── /api/v1/auth ───────────────────────────────────────────────────────────

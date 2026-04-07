@@ -28,9 +28,13 @@ const BASE_HEADERS = {
 
 export function ok<T>(data: T, meta: ApiMeta, status = 200): Response {
   const body: ApiResponse<T> = { ok: true, data, meta };
+  const headers = new Headers(BASE_HEADERS);
+  if (meta.locale) {
+    headers.set("Content-Language", meta.locale);
+  }
   return new Response(JSON.stringify(body), {
     status,
-    headers: BASE_HEADERS,
+    headers,
   });
 }
 
@@ -41,9 +45,11 @@ export function notFound(resource: string, locale: string): Response {
     error: `${resource} not found`,
     meta: { locale },
   };
+  const headers = new Headers({ ...BASE_HEADERS, "Cache-Control": "no-store" });
+  if (locale) headers.set("Content-Language", locale);
   return new Response(JSON.stringify(body), {
     status: 404,
-    headers: { ...BASE_HEADERS, "Cache-Control": "no-store" },
+    headers,
   });
 }
 

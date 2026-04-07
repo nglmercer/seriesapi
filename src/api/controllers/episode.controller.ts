@@ -1,7 +1,7 @@
 import { episodesTable, episodeTranslationsTable, seasonsTable, imagesTable, commentsTable, peopleTable, episodeCreditsTable } from "../../schema";
 import { getDrizzle } from "../../init";
 import { validateParams, paginationSchema } from "../validation";
-import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
+import { getLocaleFromRequest, SUPPORTED_LOCALES, DEFAULT_LOCALE } from "../../i18n";
 
 export class EpisodeController {
   static getDetail(req: Request, id: number) {
@@ -11,7 +11,7 @@ export class EpisodeController {
     const stillSubquery = `(SELECT url FROM images WHERE entity_type='episode' AND entity_id=e.id AND image_type='still' AND is_primary=1 LIMIT 1)`;
 
     const row = drizzle.select(episodesTable).as("e")
-      .selectRaw(`e.id, e.media_id, e.season_id, e.episode_number, e.absolute_number, e.episode_type, e.air_date, e.runtime_minutes, e.score, e.score_count, e.external_ids, s.season_number, COALESCE(et.title, 'Episode ' || e.episode_number) AS title, et.synopsis, ${stillSubquery} AS still_url`)
+      .selectRaw(`e.id, e.media_id, e.season_id, e.episode_number, e.absolute_number, e.episode_type, e.air_date, e.runtime_minutes, e.score, e.score_count, e.external_ids, s.season_number, COALESCE(et.title, 'Episode ' || e.episode_number) AS title, et.synopsis, ${stillSubquery} AS still_url, et.id AS translation_id`)
       .leftJoin("seasons s", "s.id = e.season_id")
       .leftJoin("episode_translations et", "et.episode_id = e.id AND et.locale = ?", [locale])
       .where("e.id = ?", [id])
@@ -83,7 +83,7 @@ export class EpisodeController {
     return { rows, locale, page, pageSize, total };
   }
 
-  static create(data: { mediaId: number; seasonId: number; number: number; title?: string; synopsis?: string }) {
+  static create(data: { mediaId: number; seasonId: number; number: number; title?: string; synopsis?: string }, locale = DEFAULT_LOCALE) {
     const drizzle = getDrizzle();
     const now = new Date().toISOString();
 
@@ -99,7 +99,7 @@ export class EpisodeController {
     if (data.title || data.synopsis) {
       drizzle.insert(episodeTranslationsTable).values({
         episode_id: Number(episodeId),
-        locale: 'es',
+        locale,
         title: data.title || null,
         synopsis: data.synopsis || null
       }).run();
@@ -108,7 +108,7 @@ export class EpisodeController {
     return { id: episodeId };
   }
 
-  static update(id: number, data: { number?: number; title?: string; synopsis?: string }) {
+  static update(id: number, data: { number?: number; title?: string; synopsis?: string }, locale = DEFAULT_LOCALE) {
     const drizzle = getDrizzle();
     const now = new Date().toISOString();
 
@@ -122,7 +122,7 @@ export class EpisodeController {
     if (data.title !== undefined || data.synopsis !== undefined) {
       const existing = drizzle.select(episodeTranslationsTable)
         .select("id")
-        .where("episode_id = ? AND locale = 'es'", [id])
+        .where("episode_id = ? AND locale = ?", [id, locale])
         .get();
       
       if (existing) {
@@ -132,12 +132,12 @@ export class EpisodeController {
         
         drizzle.update(episodeTranslationsTable)
           .set(updateData)
-          .where("episode_id = ? AND locale = 'es'", [id])
+          .where("episode_id = ? AND locale = ?", [id, locale])
           .run();
       } else {
         drizzle.insert(episodeTranslationsTable).values({
           episode_id: id,
-          locale: 'es',
+          locale,
           title: data.title || null,
           synopsis: data.synopsis || null
         }).run();

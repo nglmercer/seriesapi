@@ -42,6 +42,7 @@ export interface MediaItem {
   tagline: string | null;
   synopsis: string | null;
   synopsis_short: string | null;
+  translation_id?: number | null;
 
   genres?: (Genres | string)[];
   
@@ -77,6 +78,7 @@ export interface SeasonItem {
   // Localized fields
   name: string | null;
   synopsis: string | null;
+  translation_id?: number | null;
 }
 
 export interface EpisodeItem {
@@ -94,6 +96,7 @@ export interface EpisodeItem {
   // Localized fields
   title: string | null;
   synopsis: string | null;
+  translation_id?: number | null;
   
   still_url?: string;
 }
@@ -338,6 +341,13 @@ class ApiClient {
 
   createEpisode(data: { mediaId: number; seasonId: number; number: number; title?: string; synopsis?: string }): Promise<ApiResponse<void>> {
     return this.request("/episodes", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+  
+  reportTranslation(data: { entity_type: string; entity_id: number; locale: string }): Promise<ApiResponse<void>> {
+    return this.request("/translations/request", {
       method: "POST",
       body: JSON.stringify(data),
     });

@@ -39,7 +39,7 @@ export class MediaController {
 
     const itemsQuery = drizzle.select(mediaTable).as("m")
       .distinct()
-      .selectRaw(`m.id, m.slug, ct.slug AS content_type, m.original_title, m.status, m.release_date, m.score, m.popularity, COALESCE(mt.title, m.original_title) AS title, mt.synopsis_short, ${posterSubquery} AS poster_url`)
+      .selectRaw(`m.id, m.slug, ct.slug AS content_type, m.original_title, m.status, m.release_date, m.score, m.popularity, COALESCE(mt.title, m.original_title) AS title, mt.synopsis_short, ${posterSubquery} AS poster_url, mt.id AS translation_id`)
       .join("content_types ct", "ct.id = m.content_type_id")
       .leftJoin("media_translations mt", "mt.media_id = m.id AND mt.locale = ?", [locale]);
 
@@ -104,7 +104,7 @@ export class MediaController {
     const posterSubquery = `(SELECT url FROM images WHERE entity_type='media' AND entity_id=m.id AND image_type='poster' AND is_primary=1 LIMIT 1)`;
 
     const row = drizzle.select(mediaTable).as("m")
-      .selectRaw(`m.id, m.slug, ct.slug AS content_type, m.original_title, m.original_language, m.status, m.release_date, m.end_date, m.runtime_minutes, m.total_episodes, m.total_seasons, m.score, m.score_count, m.popularity, m.age_rating, m.is_adult, m.external_ids, COALESCE(mt.title, m.original_title) AS title, mt.tagline, mt.synopsis, mt.synopsis_short, ${posterSubquery} AS poster_url`)
+      .selectRaw(`m.id, m.slug, ct.slug AS content_type, m.original_title, m.original_language, m.status, m.release_date, m.end_date, m.runtime_minutes, m.total_episodes, m.total_seasons, m.score, m.score_count, m.popularity, m.age_rating, m.is_adult, m.external_ids, COALESCE(mt.title, m.original_title) AS title, mt.tagline, mt.synopsis, mt.synopsis_short, ${posterSubquery} AS poster_url, mt.id AS translation_id`)
       .join("content_types ct", "ct.id = m.content_type_id")
       .leftJoin("media_translations mt", "mt.media_id = m.id AND mt.locale = ?", [locale])
       .where("m.id = ?", [id])

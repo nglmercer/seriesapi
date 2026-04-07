@@ -10,6 +10,7 @@ import type { Database } from "sqlite-napi";
 import { ok, notFound, serverError } from "../response";
 import { SeasonController } from "../controllers/season.controller";
 import { SeasonView } from "../views/season.view";
+import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
 
 export function handleSeasonDetail(req: Request, _db: Database, id: number): Response {
   try {
@@ -17,7 +18,7 @@ export function handleSeasonDetail(req: Request, _db: Database, id: number): Res
     if (!season) return notFound("Season", locale);
     return ok(SeasonView.formatDetail(season), { locale });
   } catch (err) {
-    return serverError(err, "en");
+    return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
   }
 }
 
@@ -29,7 +30,7 @@ export function handleSeasonEpisodes(req: Request, _db: Database, seasonId: numb
     const { rows, locale, page, pageSize, total } = result;
     return ok(SeasonView.formatEpisodes(rows), { locale, page, pageSize, total });
   } catch (err) {
-    return serverError(err, "en");
+    return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
   }
 }
 
@@ -38,35 +39,38 @@ export function handleSeasonImages(req: Request, _db: Database, seasonId: number
     const { rows, locale, total } = SeasonController.getImages(req, seasonId);
     return ok(SeasonView.formatImages(rows), { locale, total });
   } catch (err) {
-    return serverError(err, "en");
+    return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
   }
 }
 
 export async function handleSeasonCreate(req: Request): Promise<Response> {
   try {
+    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     const body = await req.json();
-    const result = SeasonController.create(body);
-    return ok(result, { locale: "es" });
+    const result = SeasonController.create(body, locale);
+    return ok(result, { locale });
   } catch (err) {
-    return serverError(err, "en");
+    return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
   }
 }
 
 export async function handleSeasonUpdate(req: Request, _db: Database, id: number): Promise<Response> {
   try {
+    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     const body = await req.json();
-    const result = SeasonController.update(id, body);
-    return ok(result, { locale: "es" });
+    const result = SeasonController.update(id, body, locale);
+    return ok(result, { locale });
   } catch (err) {
-    return serverError(err, "en");
+    return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
   }
 }
 
 export async function handleSeasonDelete(req: Request, _db: Database, id: number): Promise<Response> {
   try {
+    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     const result = SeasonController.delete(id);
-    return ok(result, { locale: "es" });
+    return ok(result, { locale });
   } catch (err) {
-    return serverError(err, "en");
+    return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
   }
 }
