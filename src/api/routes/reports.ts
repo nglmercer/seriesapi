@@ -1,17 +1,19 @@
 import { getDrizzle } from "../../init";
 import { contentReportsTable } from "../../schema";
+import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
+import { validateParams, reportCreateSchema } from "../validation";
+import { ok, badRequest, methodNotAllowed, serverError } from "../response";
 
 export async function handleReportCreate(req: Request) {
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ ok: false, error: "Method Not Allowed" }), { status: 405 });
-  }
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+  if (req.method !== "POST") return methodNotAllowed(locale);
 
   try {
-    const { entity_type, entity_id, report_type, locale, message } = await req.json() as any;
-    
-    if (!entity_type || !entity_id || !report_type) {
-      return new Response(JSON.stringify({ ok: false, error: "Missing required fields" }), { status: 400 });
-    }
+    const body = await req.json();
+    const v = validateParams(reportCreateSchema, body, locale);
+    if (!v.success) return v.error;
+
+    const { entity_type, entity_id, report_type, locale: reportLocale, message } = v.data;
 
     const drizzle = getDrizzle();
     const now = new Date().toISOString();
@@ -20,22 +22,21 @@ export async function handleReportCreate(req: Request) {
       entity_type,
       entity_id,
       report_type,
-      locale: locale || null,
+      locale: reportLocale || null,
       message: message || null,
       status: "pending",
       created_at: now
     }).run();
 
-    return new Response(JSON.stringify({ ok: true, message: "Report submitted successfully" }), { status: 200 });
+    return ok({ message: "Report submitted successfully" }, { locale });
   } catch (err) {
-    return new Response(JSON.stringify({ ok: false, error: "Internal Server Error" }), { status: 500 });
+    return serverError(err, locale);
   }
 }
 
 export async function handleReportList(req: Request) {
-  if (req.method !== "GET") {
-    return new Response(JSON.stringify({ ok: false, error: "Method Not Allowed" }), { status: 405 });
-  }
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+  if (req.method !== "GET") return methodNotAllowed(locale);
 
   try {
     const drizzle = getDrizzle();
@@ -45,11 +46,8 @@ export async function handleReportList(req: Request) {
       .limit(50)
       .all();
 
-    return new Response(JSON.stringify({ ok: true, data: reports }), { 
-      status: 200,
-      headers: { "Content-Type": "application/json" }
-    });
+    return ok(reports, { locale });
   } catch (err) {
-    return new Response(JSON.stringify({ ok: false, error: "Internal Server Error" }), { status: 500 });
+    return serverError(err, locale);
   }
 }

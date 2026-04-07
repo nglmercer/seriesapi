@@ -131,3 +131,17 @@ export const userUpdateSchema = z.object({
   email: z.email().optional(),
   password: z.string().min(6).optional(),
 });
+
+export const reportCreateSchema = z.object({
+  entity_type: z.string().trim(),
+  entity_id: idSchema,
+  report_type: z.string().trim(),
+  locale: localeSchema.nullable().optional(),
+  message: z.string().trim().max(1000).nullable().optional(),
+});
+
+export const translationRequestSchema = z.object({
+  entity_type: z.string().trim(),
+  entity_id: idSchema,
+  locale: z.string().trim(),
+});

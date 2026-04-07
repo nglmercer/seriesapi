@@ -66,6 +66,45 @@ export function badRequest(message: string, locale: string): Response {
   });
 }
 
+export function forbidden(message: string, locale: string): Response {
+  const body: ApiResponse<null> = {
+    ok: false,
+    data: null,
+    error: message,
+    meta: { locale },
+  };
+  return new Response(JSON.stringify(body), {
+    status: 403,
+    headers: { ...BASE_HEADERS, "Cache-Control": "no-store" },
+  });
+}
+
+export function methodNotAllowed(locale: string): Response {
+  const body: ApiResponse<null> = {
+    ok: false,
+    data: null,
+    error: "Method not allowed",
+    meta: { locale },
+  };
+  return new Response(JSON.stringify(body), {
+    status: 405,
+    headers: { ...BASE_HEADERS, "Cache-Control": "no-store" },
+  });
+}
+
+export function conflict(message: string, locale: string): Response {
+  const body: ApiResponse<null> = {
+    ok: false,
+    data: null,
+    error: message,
+    meta: { locale },
+  };
+  return new Response(JSON.stringify(body), {
+    status: 409,
+    headers: { ...BASE_HEADERS, "Cache-Control": "no-store" },
+  });
+}
+
 export function unauthorized(message: string, locale: string): Response {
   const body: ApiResponse<null> = {
     ok: false,
