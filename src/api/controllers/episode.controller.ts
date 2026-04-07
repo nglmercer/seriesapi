@@ -17,7 +17,19 @@ export class EpisodeController {
       .where("e.id = ?", [id])
       .get();
 
-    return { episode: row, locale };
+    if (!row) return { episode: null, locale };
+
+    const ratingInfo = drizzle.query<{ avgScore: number, count: number }>(
+      "SELECT avg(score) as avgScore, count(id) as count FROM ratings WHERE entity_type = 'episode' AND entity_id = ?"
+    ).get([id]);
+
+    const episode = {
+      ...row as any,
+      rating_average: ratingInfo?.avgScore || 0,
+      rating_count: ratingInfo?.count || 0
+    };
+
+    return { episode, locale };
   }
 
   static getCredits(req: Request, episodeId: number) {

@@ -40,8 +40,9 @@ export class SeasonController {
     const stillSubquery = `(SELECT url FROM images WHERE entity_type='episode' AND entity_id=e.id AND image_type='still' AND is_primary=1 LIMIT 1)`;
 
     const rows = drizzle.select(episodesTable).as("e")
-      .selectRaw(`e.id, e.episode_number, e.absolute_number, e.episode_type, e.air_date, e.runtime_minutes, e.score, COALESCE(et.title, 'Episode ' || e.episode_number) AS title, et.synopsis, ${stillSubquery} AS still_url, et.id AS translation_id`)
+      .selectRaw(`e.id, e.episode_number, e.absolute_number, e.episode_type, e.air_date, e.runtime_minutes, e.score, COALESCE(et.title, 'Episode ' || e.episode_number) AS title, et.synopsis, ${stillSubquery} AS still_url, et.id AS translation_id, COALESCE(r.rating_average, 0) AS rating_average, COALESCE(r.rating_count, 0) AS rating_count`)
       .leftJoin("episode_translations et", "et.episode_id = e.id AND et.locale = ?", [locale])
+      .leftJoin("(SELECT entity_id, avg(score) as rating_average, count(id) as rating_count FROM ratings WHERE entity_type='episode' GROUP BY entity_id) r", "r.entity_id = e.id")
       .where("e.season_id = ?", [seasonId])
       .orderBy("e.episode_number", "asc")
       .limit(pageSize)

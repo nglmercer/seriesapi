@@ -46,6 +46,9 @@ export interface MediaItem {
 
   genres?: (Genres | string)[];
   
+  rating_average?: number;
+  rating_count?: number;
+
   // Legacy fields for compatibility
   type?: string;
   year?: number;
@@ -99,6 +102,8 @@ export interface EpisodeItem {
   translation_id?: number | null;
   
   still_url?: string;
+  rating_average?: number;
+  rating_count?: number;
 }
 
 class ApiClient {
@@ -107,10 +112,18 @@ class ApiClient {
   }
 
   private async request<T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> {
+    const token = localStorage.getItem("token");
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const res = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
       headers: {
-        "Content-Type": "application/json",
+        ...headers,
         ...options?.headers,
       },
     });
@@ -355,6 +368,25 @@ class ApiClient {
 
   getReports(): Promise<ApiResponse<any[]>> {
     return this.request("/reports");
+  }
+
+
+  getComments(entityType: string, entityId: number, page: number = 1): Promise<ApiResponse<any>> {
+    // Media and Episodes have their own nested routes for comments
+    const path = entityType === 'media' ? `/media/${entityId}/comments?page=${page}` : `/episodes/${entityId}/comments?page=${page}`;
+    return this.request(path);
+  }
+
+  postRating(data: { entity_type: string; entity_id: number; score: number }): Promise<ApiResponse<{average: number; count: number}>> {
+    let session_id = localStorage.getItem("rating_session_id");
+    if (!session_id) {
+       session_id = crypto.randomUUID();
+       localStorage.setItem("rating_session_id", session_id);
+    }
+    return this.request("/ratings", {
+      method: "POST",
+      body: JSON.stringify({...data, session_id})
+    });
   }
 }
 

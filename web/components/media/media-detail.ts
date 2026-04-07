@@ -5,6 +5,8 @@ import i18next from "../../utils/i18n";
 import "./wiki-infobox";
 import "../shared/empty-state";
 import "../shared/report-modal";
+import "../shared/rating-widget";
+import "../shared/comments-section";
 
 interface SeasonData {
   id: number;
@@ -136,11 +138,22 @@ export class MediaDetail extends LitElement {
         </div>
         
         <div class="wiki-main">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <h1 class="page-title">${this.media.title}</h1>
-            <button @click=${() => this.showReportModal = true} style="background: transparent; border: none; cursor: pointer; color: var(--text-secondary);" title="Report Issue">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
-            </button>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+            <h1 class="page-title" style="margin-bottom: 0;">${this.media.title}</h1>
+            <div style="display: flex; align-items: center; gap: 16px;">
+              <button @click=${() => this.showReportModal = true} style="background: transparent; border: none; cursor: pointer; color: var(--text-secondary);" title="Report Issue">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+              </button>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 30px;">
+            <rating-widget 
+              entityType="media" 
+              .entityId=${this.media.id}
+              .average=${this.media.rating_average || 0}
+              .count=${this.media.rating_count || 0}
+            ></rating-widget>
           </div>
           
           <report-modal 
@@ -178,6 +191,9 @@ export class MediaDetail extends LitElement {
               </div>
             </div>
           ` : ""}
+          
+          <comments-section entityType="media" .entityId=${this.media.id}></comments-section>
+
         </div>
       </div>
     `;

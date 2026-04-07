@@ -19,6 +19,27 @@ function verifyPassword(password: string, hash: string): boolean {
   return hashPassword(password) === hash;
 }
 
+export function getUserFromToken(req: Request): { id: number; role: string; username: string } | null {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return null;
+  const token = authHeader.slice(7);
+  
+  const drizzle = getDrizzle();
+  const res = drizzle.query<{ user_id: number; role: string; username: string; expires_at: string; is_active: number }>(
+    `SELECT s.user_id, u.role, u.username, s.expires_at, u.is_active 
+     FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ?`
+  ).get([token]);
+  
+  if (!res || !res.is_active || new Date(res.expires_at) < new Date()) {
+    if (res && new Date(res.expires_at) < new Date()) {
+      drizzle.query(`DELETE FROM sessions WHERE token = ?`).run([token]);
+    }
+    return null;
+  }
+  
+  return { id: res.user_id, role: res.role, username: res.username };
+}
+
 function generateToken(): string {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let token = "";

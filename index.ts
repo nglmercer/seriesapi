@@ -37,6 +37,7 @@ import { handleSearch } from "./src/api/routes/search";
 import { handleCommentPost, handleCommentGet } from "./src/api/routes/comments";
 import { handleRegister, handleLogin, handleLogout, handleMe } from "./src/api/routes/auth";
 import { handleReportCreate, handleReportList } from "./src/api/routes/reports";
+import { handleRatingPost } from "./src/api/routes/ratings";
 import admin_view from './web/admin.html'
 import public_view from './web/index.html'
 // ── config ────────────────────────────────────────────────────────────────────
@@ -180,6 +181,12 @@ function route(req: Request): Response | Promise<Response> {
   if (resource === "reports") {
     if (POST) return handleReportCreate(req);
     if (GET) return handleReportList(req);
+    return json404();
+  }
+
+  // ── /api/v1/ratings ───────────────────────────────────────────────────
+  if (resource === "ratings") {
+    if (POST) return handleRatingPost(req);
     return json404();
   }
 

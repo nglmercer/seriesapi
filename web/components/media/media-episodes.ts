@@ -3,6 +3,8 @@ import { customElement, property, state } from "lit/decorators.js";
 import { api, type EpisodeItem, type MediaItem } from "../../services/api-service";
 import i18next from "../../utils/i18n";
 import "../shared/empty-state";
+import "../shared/rating-widget";
+import "../shared/comments-section";
 
 @customElement("media-episodes")
 export class MediaEpisodes extends LitElement {
@@ -108,6 +110,24 @@ export class MediaEpisodes extends LitElement {
                 ${ep.runtime_minutes ? html`<span> • ${i18next.t("episodes.min", { count: ep.runtime_minutes })}</span>` : ""}
               </div>
               <div class="episode-synopsis">${ep.synopsis || i18next.t("episodes.no_synopsis")}</div>
+              
+              <div style="margin-top: 16px;">
+                <rating-widget 
+                  entityType="episode" 
+                  .entityId=${ep.id}
+                  .average=${ep.rating_average || 0}
+                  .count=${ep.rating_count || 0}
+                ></rating-widget>
+              </div>
+
+              <details style="margin-top: 16px; background: var(--bg-primary); border-radius: 8px; border: 1px solid var(--border-color); padding: 12px;">
+                <summary style="cursor: pointer; font-weight: 600; color: var(--text-primary); user-select: none;">
+                  ${i18next.t("comments.show_comments", { defaultValue: "Show Comments & Chat" })}
+                </summary>
+                <div style="margin-top: 12px;">
+                  <comments-section entityType="episode" .entityId=${ep.id}></comments-section>
+                </div>
+              </details>
             </div>
           </div>
         `)}
