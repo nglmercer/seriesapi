@@ -91,7 +91,7 @@ export interface SeasonsResponse {
   seasons: SeasonItem[];
 }
 
-export interface CommentItem {
+export interface Comment_Item {
   id: number;
   parent_id: number | null;
   display_name: string;
@@ -100,11 +100,11 @@ export interface CommentItem {
   likes: number;
   dislikes: number;
   created_at: string;
-  replies?: CommentItem[];
+  replies?: Comment_Item[];
 }
 
 export interface CommentsResponse {
-  comments: CommentItem[];
+  comments: Comment_Item[];
   total: number;
   page: number;
   pages: number;
@@ -200,7 +200,7 @@ class ApiClient {
     return this.request(`/media/${mediaId}/related?locale=${this.getLocale()}`);
   }
 
-  getMediaComments(mediaId: number, page: number = 1): Promise<ApiResponse<CommentItem[]>> {
+  getMediaComments(mediaId: number, page: number = 1): Promise<ApiResponse<Comment_Item[]>> {
     return this.request(`/media/${mediaId}/comments?page=${page}&locale=${this.getLocale()}`);
   }
 
@@ -403,7 +403,7 @@ class ApiClient {
   }
 
 
-  getComments(entityType: string, entityId: number, page: number = 1): Promise<ApiResponse<CommentItem[]>> {
+  getComments(entityType: string, entityId: number, page: number = 1): Promise<ApiResponse<Comment_Item[]>> {
     // Media and Episodes have their own nested routes for comments
     const path = entityType === 'media' ? `/media/${entityId}/comments?page=${page}` : `/episodes/${entityId}/comments?page=${page}`;
     return this.request(path);

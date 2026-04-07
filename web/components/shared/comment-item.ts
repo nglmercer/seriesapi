@@ -9,7 +9,7 @@ import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import i18next from "../../utils/i18n";
 import "./comment-avatar";
-import { type CommentItem as CommentData } from "../../services/api-service";
+import { type Comment_Item as CommentData } from "../../services/api-service";
 
 export { type CommentData };
 
