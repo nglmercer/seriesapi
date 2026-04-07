@@ -87,6 +87,29 @@ export interface SeasonItem {
   translation_id?: number | null;
 }
 
+export interface SeasonsResponse {
+  seasons: SeasonItem[];
+}
+
+export interface CommentItem {
+  id: number;
+  parent_id: number | null;
+  display_name: string;
+  body: string;
+  contains_spoilers: boolean;
+  likes: number;
+  dislikes: number;
+  created_at: string;
+  replies?: CommentItem[];
+}
+
+export interface CommentsResponse {
+  comments: CommentItem[];
+  total: number;
+  page: number;
+  pages: number;
+}
+
 export interface EpisodeItem {
   id: number;
   media_id: number;
@@ -151,17 +174,17 @@ class ApiClient {
     return this.request(`/media/${id}?locale=${this.getLocale()}`);
   }
 
-  getMediaSeasons(mediaId: number): Promise<ApiResponse<unknown>> {
+  getMediaSeasons(mediaId: number): Promise<ApiResponse<SeasonsResponse>> {
     return this.request(`/media/${mediaId}/seasons?locale=${this.getLocale()}`);
   }
 
-  getMediaEpisodes(mediaId: number, season?: number): Promise<ApiResponse<unknown>> {
+  getMediaEpisodes(mediaId: number, season?: number): Promise<ApiResponse<EpisodeItem[]>> {
     const params = new URLSearchParams({ locale: this.getLocale() });
     if (season !== undefined) params.set("season", String(season));
     return this.request(`/media/${mediaId}/episodes?${params}`);
   }
 
-  getMediaCredits(mediaId: number): Promise<ApiResponse<unknown>> {
+  getMediaCredits(mediaId: number): Promise<ApiResponse<PeopleItem[]>> {
     return this.request(`/media/${mediaId}/credits?locale=${this.getLocale()}`);
   }
 
@@ -173,12 +196,12 @@ class ApiClient {
     return this.request(`/media/${mediaId}/videos?locale=${this.getLocale()}`);
   }
 
-  getMediaRelated(mediaId: number): Promise<ApiResponse<unknown>> {
+  getMediaRelated(mediaId: number): Promise<ApiResponse<MediaItem[]>> {
     return this.request(`/media/${mediaId}/related?locale=${this.getLocale()}`);
   }
 
-  getMediaComments(mediaId: number): Promise<ApiResponse<unknown>> {
-    return this.request(`/media/${mediaId}/comments?locale=${this.getLocale()}`);
+  getMediaComments(mediaId: number, page: number = 1): Promise<ApiResponse<CommentItem[]>> {
+    return this.request(`/media/${mediaId}/comments?page=${page}&locale=${this.getLocale()}`);
   }
 
   getPeople(page = 1, pageSize = 20): Promise<ApiResponse<PeopleItem[]>> {
@@ -228,7 +251,7 @@ class ApiClient {
     return this.request(`/episodes/${episodeId}/images`);
   }
 
-  getSeason(id: number): Promise<ApiResponse<unknown>> {
+  getSeason(id: number): Promise<ApiResponse<SeasonItem>> {
     return this.request(`/seasons/${id}`);
   }
 
@@ -380,7 +403,7 @@ class ApiClient {
   }
 
 
-  getComments(entityType: string, entityId: number, page: number = 1): Promise<ApiResponse<any>> {
+  getComments(entityType: string, entityId: number, page: number = 1): Promise<ApiResponse<CommentItem[]>> {
     // Media and Episodes have their own nested routes for comments
     const path = entityType === 'media' ? `/media/${entityId}/comments?page=${page}` : `/episodes/${entityId}/comments?page=${page}`;
     return this.request(path);
