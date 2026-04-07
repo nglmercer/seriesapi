@@ -9,6 +9,7 @@ export * from "./shared/comment-avatar";
 export * from "./shared/comment-item";
 export * from "./shared/comment-compose";
 export * from "./shared/comments-section";
+export * from "./shared/user-profile";
 
 // Media components
 export * from "./media/media-list";

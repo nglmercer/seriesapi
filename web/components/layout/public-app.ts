@@ -464,6 +464,15 @@ export class PublicApp extends LitElement {
     this.selectedSeasonId = null;
     this.currentMedia = null;
     this.currentSeasons = [];
+    this.showProfile = false;
+  }
+
+  private handleProfileClick() {
+    this.showProfile = true;
+    this.selectedMediaId = null;
+    this.selectedSeasonId = null;
+    this.currentMedia = null;
+    this.currentSeasons = [];
   }
 
   override render() {
@@ -504,7 +513,7 @@ export class PublicApp extends LitElement {
       const color = avatarColor(this.user.display_name);
       const init = initials(this.user.display_name);
       return html`
-        <div class="auth-chip">
+        <div class="auth-chip" @click=${this.handleProfileClick}>
           <div class="avatar" style="background: ${color};">${init}</div>
           <span class="user-name">${this.user.display_name}</span>
           <button class="sign-out-btn" @click=${(e: Event) => { e.stopPropagation(); this.doLogout(); }}>
@@ -521,6 +530,14 @@ export class PublicApp extends LitElement {
   }
 
   private renderContent() {
+    if (this.showProfile) {
+      return html`
+        <div class="container" style="padding: 40px 0;">
+          <user-profile></user-profile>
+        </div>
+      `;
+    }
+
     if (this.selectedSeasonId) {
       return html`
         <div class="container" style="padding: 40px 0;">
