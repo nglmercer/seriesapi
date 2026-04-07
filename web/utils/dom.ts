@@ -7,6 +7,8 @@ export function h(tag: string, props: Record<string, any> = {}, ...children: Arr
       Object.assign(el.style, value);
     } else if (key === 'dataset' && typeof value === 'object') {
       Object.assign(el.dataset, value);
+    } else if (key === 'className') {
+      el.className = value as string;
     } else {
       (el as any)[key] = value;
     }

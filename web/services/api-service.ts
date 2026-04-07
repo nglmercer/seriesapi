@@ -1,9 +1,11 @@
 import i18next from "../utils/i18n";
+import { mediaStore } from "./media-store";
 const API_BASE = "/api/v1";
 
 export interface ApiResponse<T> {
   ok: boolean;
   data: T;
+  error?: string;
   meta?: Record<string, unknown>;
   params?: Record<string, unknown>;
 }
@@ -12,6 +14,7 @@ export interface Genres {
   name:string,
   slug:string
 }
+export { mediaStore };
 /*
 id: 47
 name: "Acción"
@@ -120,14 +123,20 @@ class ApiClient {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    const res = await fetch(`${API_BASE}${endpoint}`, {
-      ...options,
-      headers: {
-        ...headers,
-        ...options?.headers,
-      },
-    });
-    return res.json() as Promise<ApiResponse<T>>;
+    try {
+      const res = await fetch(`${API_BASE}${endpoint}`, {
+        ...options,
+        headers: {
+          ...headers,
+          ...options?.headers,
+        },
+      });
+      const json = await res.json();
+      return json as ApiResponse<T>;
+    } catch (err) {
+      console.error("[api] request error:", endpoint, err);
+      return { ok: false, data: null as T, error: String(err) };
+    }
   }
 
   getMedia(page = 1, pageSize = 20, filters?: Record<string, string>): Promise<ApiResponse<MediaItem[]>> {

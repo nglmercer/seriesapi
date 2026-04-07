@@ -1,4 +1,4 @@
-import { api,type MediaItem } from "../../services/api-service";
+import { mediaStore, type MediaItem } from "../../services/api-service";
 import { h } from "../../utils/dom";
 import i18next from "../../utils/i18n";
 
@@ -7,33 +7,41 @@ export class MediaList extends HTMLElement {
   private filters: Record<string, string> = {};
   private loading = false;
   private page = 1;
+  private unsub: (() => void) | null = null;
 
   async connectedCallback() {
-    await this.load();
+    this.load();
   }
 
-  public async setFilters(newFilters: Record<string, string>) {
+  disconnectedCallback() {
+    if (this.unsub) {
+      this.unsub();
+      this.unsub = null;
+    }
+  }
+
+  public setFilters(newFilters: Record<string, string>) {
+    if (this.unsub) {
+      this.unsub();
+      this.unsub = null;
+    }
     this.filters = newFilters;
     this.page = 1;
-    await this.load();
+    this.load();
   }
 
-  async load() {
+  load() {
+    if (this.unsub) {
+      this.unsub();
+    }
     this.loading = true;
     this.render();
-    try {
-      const res = await api.getMedia(this.page, 20, this.filters);
-      if (res.ok && res.data) {
-        this.items = res.data;
-      } else {
-        this.items = [];
-      }
-    } catch (err) {
-      console.error("[media-list] load error:", err);
-      this.items = [];
-    }
-    this.loading = false;
-    this.render();
+    
+    this.unsub = mediaStore.subscribeList(this.page, 20, this.filters, (items) => {
+      this.items = items;
+      this.loading = false;
+      this.render();
+    });
   }
 
   render() {

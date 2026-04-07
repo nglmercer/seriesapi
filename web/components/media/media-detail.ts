@@ -1,6 +1,6 @@
 import {LitElement, html, css} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
-import {api, type MediaItem} from "../../services/api-service";
+import {api, mediaStore, type MediaItem} from "../../services/api-service";
 import i18next from "../../utils/i18n";
 import "./wiki-infobox";
 import "../shared/empty-state";
@@ -71,37 +71,45 @@ export class MediaDetail extends LitElement {
   @state() allSeasons: SeasonData[] = [];
   @state() selectedSeason: number | null = null;
   @state() loading = true;
-  @state() error = false;
   @state() showReportModal = false;
+  private unsubStore: (() => void) | null = null;
 
   override connectedCallback() {
     super.connectedCallback();
-    this.load();
+  }
+
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this.unsubStore) {
+      this.unsubStore();
+      this.unsubStore = null;
+    }
+  }
+  
+  override updated(changedProperties: Map<string, unknown>) {
+    if (changedProperties.has("mediaId") && this.mediaId > 0) {
+      this.load();
+    }
   }
 
   async load() {
-    if (!this.mediaId) {
-      this.error = true;
-      this.loading = false;
-      return;
-    }
+    if (!this.mediaId) return;
+    
     this.loading = true;
-    this.error = false;
     
-    const [detailRes, seasonsRes] = await Promise.all([
-      api.getMediaDetail(this.mediaId),
-      api.getMediaSeasons(this.mediaId)
-    ]);
+    this.unsubStore = mediaStore.subscribeDetail(this.mediaId, (media) => {
+      this.media = media;
+      this.loading = false;
+    });
     
-    if (detailRes.ok && detailRes.data) {
-      this.media = detailRes.data;
-    } else {
-      this.error = true;
+    try {
+      const seasonsRes = await api.getMediaSeasons(this.mediaId);
+      if (seasonsRes.ok && seasonsRes.data) {
+        this.allSeasons = seasonsRes.data as SeasonData[];
+      }
+    } catch (err) {
+      console.error("[media-detail] load error:", err);
     }
-    if (seasonsRes.ok && seasonsRes.data) {
-      this.allSeasons = seasonsRes.data as SeasonData[];
-    }
-    this.loading = false;
   }
 
   private handleBack() {
@@ -119,8 +127,8 @@ export class MediaDetail extends LitElement {
 
   override render() {
     if (this.loading) return html`<div class="loading">${i18next.t("media.loading") || "Loading..."}</div>`;
-    if (this.error || !this.media) {
-      return html`<empty-state title="Page not found" message="This page does not exist or has been removed."></empty-state>`;
+    if (!this.media) {
+      return html`<div class="loading">${i18next.t("media.loading") || "Loading..."}</div>`;
     }
 
     const uniqueSeasons = this.allSeasons.filter((s, i, arr) => 
