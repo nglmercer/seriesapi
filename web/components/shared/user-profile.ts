@@ -227,6 +227,23 @@ export class UserProfile extends LitElement {
       font-size: 14px; font-family: inherit;
       margin-bottom: 12px;
     }
+
+    .challenge-section {
+      margin-top: 40px;
+      padding-top: 32px;
+      border-top: 1px dashed var(--border-color);
+    }
+
+    .challenge-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      align-items: end;
+    }
+
+    @media (max-width: 600px) {
+      .challenge-grid { grid-template-columns: 1fr; }
+    }
   `;
 
   @state() private user: AuthUser | null = authStore.user;
@@ -242,6 +259,11 @@ export class UserProfile extends LitElement {
   @state() private email = "";
   @state() private password = "";
   @state() private confirmPassword = "";
+
+  // Challenge states
+  @state() private challengeCode = "";
+  @state() private targetRole: 'editor' | 'admin' = 'editor';
+  @state() private challengeLoading = false;
 
   // Admin states
   @state() private usersList: AuthUser[] = [];
@@ -285,6 +307,37 @@ export class UserProfile extends LitElement {
     this.errorMsg = "";
     this.successMsg = "";
     this.editingUser = null;
+    this.challengeCode = "";
+  }
+
+  private async handleRequestChallenge() {
+    this.challengeLoading = true;
+    this.errorMsg = "";
+    this.successMsg = "";
+
+    const res = await authStore.requestRoleChallenge(this.targetRole);
+    if (res.ok) {
+      this.successMsg = res.message || "Challenge initiated. Check server logs.";
+    } else {
+      this.errorMsg = res.error || "Failed to initiate challenge.";
+    }
+    this.challengeLoading = false;
+  }
+
+  private async handleApplyChallenge() {
+    if (!this.challengeCode) return;
+    this.challengeLoading = true;
+    this.errorMsg = "";
+    this.successMsg = "";
+
+    const res = await authStore.applyRoleChallenge(this.challengeCode);
+    if (res.ok) {
+      this.successMsg = res.message || "Role updated successfully!";
+      this.challengeCode = "";
+    } else {
+      this.errorMsg = res.error || "Invalid or expired challenge code.";
+    }
+    this.challengeLoading = false;
   }
 
   private async handleSubmit(e: Event) {
@@ -363,6 +416,9 @@ export class UserProfile extends LitElement {
   }
 
   private renderProfileTab() {
+    const user = this.user;
+    if (!user) return html``;
+
     return html`
       <form @submit=${this.handleSubmit}>
         <div class="form-grid">
@@ -397,6 +453,42 @@ export class UserProfile extends LitElement {
           </button>
         </div>
       </form>
+
+      ${user.role !== 'admin' ? html`
+        <div class="challenge-section">
+          <div class="section-title">
+            ${i18next.t("profile.role_upgrade", { defaultValue: "Role Upgrade" })}
+          </div>
+          <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px;">
+            Request a role upgrade by entering a verification code generated on the server console.
+          </p>
+          
+          <div class="challenge-grid">
+            <div class="field">
+              <label>Target Role</label>
+              <select @change=${(e: any) => this.targetRole = e.target.value} ?disabled=${this.challengeLoading}>
+                <option value="editor" ?selected=${this.targetRole === 'editor'}>Editor</option>
+                <option value="admin" ?selected=${this.targetRole === 'admin'}>Admin</option>
+              </select>
+              <button class="btn btn-secondary" style="width: 100%;" 
+                @click=${this.handleRequestChallenge} ?disabled=${this.challengeLoading}>
+                Request Challenge
+              </button>
+            </div>
+            
+            <div class="field">
+              <label>Verification Code</label>
+              <input type="text" .value=${this.challengeCode} 
+                @input=${(e: any) => this.challengeCode = e.target.value}
+                placeholder="ABC12345" ?disabled=${this.challengeLoading} />
+              <button class="btn btn-primary" style="width: 100%; margin-top: 12px;" 
+                @click=${this.handleApplyChallenge} ?disabled=${this.challengeLoading || !this.challengeCode}>
+                Apply Code
+              </button>
+            </div>
+          </div>
+        </div>
+      ` : ""}
     `;
   }
 

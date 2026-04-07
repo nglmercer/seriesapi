@@ -145,3 +145,7 @@ export const translationRequestSchema = z.object({
   entity_id: idSchema,
   locale: z.string().trim(),
 });
+
+export const roleChallengeSchema = z.object({
+  target_role: z.enum(["user", "editor", "admin"]),
+});

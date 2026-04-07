@@ -1,6 +1,6 @@
 import { getDrizzle } from "../../init";
 import { corsHeaders } from "../../middleware/ratelimit";
-import { validateParams, registerSchema, loginSchema, userUpdateSchema } from "../validation";
+import { validateParams, registerSchema, loginSchema, userUpdateSchema, roleChallengeSchema } from "../validation";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
 import { usersTable, sessionsTable, verificationCodesTable } from "../../schema";
 import { ok, badRequest, unauthorized, forbidden, notFound, methodNotAllowed, conflict, serverError } from "../response";
@@ -315,6 +315,49 @@ export const handleVerifyCodeGenerate = withAdmin(async (req: Request) => {
   }
 });
 
+/**
+ * Public route for a user to request a role change challenge.
+ * The verification code is only logged to the console by default.
+ */
+export const handleRoleChallengeRequest = withAuth(async (req: Request, user) => {
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+  
+  try {
+    const body = await req.json();
+    const v = validateParams(roleChallengeSchema, body, locale);
+    if (!v.success) return v.error;
+
+    const { target_role } = v.data;
+
+    const drizzle = getDrizzle();
+    const code = generateVerificationCode();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    const now = new Date().toISOString();
+
+    drizzle.insert(verificationCodesTable).values({
+      code,
+      target_role,
+      user_id: user.id,
+      expires_at: expiresAt,
+      used: 0,
+      created_at: now
+    }).run();
+
+    // Security: Only log to console, do not return to user
+    console.log("================================================================================");
+    console.log(`[SECURITY] Role Challenge Generated for ${user.username} -> ${target_role}`);
+    console.log(`[SECURITY] CHALLENGE CODE: ${code}`);
+    console.log("================================================================================");
+
+    return ok({ 
+      message: "Challenge initiated. Please check server logs for verification code.",
+      expires_at: expiresAt 
+    }, { locale });
+  } catch (err) {
+    return serverError(err, locale);
+  }
+});
+
 export async function handleVerifyCodeApply(req: Request): Promise<Response> {
   const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
   if (req.method !== "POST") return methodNotAllowed(locale);
@@ -523,6 +566,8 @@ export async function handleAuthRouter(req: Request, parts: string[]): Promise<R
     if (p4 === "apply" && POST) return handleVerifyCodeApply(req);
     return notFound("Verification code route", locale);
   }
+
+  if (p3 === "role-challenge" && POST) return handleRoleChallengeRequest(req);
 
   return notFound("Auth route", locale);
 }

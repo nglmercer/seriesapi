@@ -169,6 +169,49 @@ class AuthStore {
       return { ok: false, error: "Network error" };
     }
   }
+
+  // --- Role Challenges ---
+
+  async requestRoleChallenge(targetRole: string): Promise<{ ok: boolean; message?: string; error?: string }> {
+    if (!this._token) return { ok: false, error: "Not authenticated" };
+    try {
+      const res = await fetch("/api/v1/auth/role-challenge", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${this._token}`
+        },
+        body: JSON.stringify({ target_role: targetRole })
+      });
+      const json = await res.json();
+      return json.ok ? { ok: true, message: json.data.message } : { ok: false, error: json.error };
+    } catch (err) {
+      return { ok: false, error: "Network error" };
+    }
+  }
+
+  async applyRoleChallenge(code: string): Promise<{ ok: boolean; message?: string; error?: string }> {
+    if (!this._token) return { ok: false, error: "Not authenticated" };
+    try {
+      const res = await fetch("/api/v1/auth/verify-code/apply", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${this._token}`
+        },
+        body: JSON.stringify({ code })
+      });
+      const json = await res.json();
+      if (json.ok) {
+        // Refresh user data (role will have changed)
+        await this.init();
+        return { ok: true, message: json.data.message };
+      }
+      return { ok: false, error: json.error };
+    } catch (err) {
+      return { ok: false, error: "Network error" };
+    }
+  }
 }
 
 export const authStore = new AuthStore();
