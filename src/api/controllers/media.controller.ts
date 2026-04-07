@@ -2,14 +2,17 @@ import { getDrizzle } from "../../init";
 import { parsePagination } from "../response";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
 import type { Database } from "sqlite-napi";
+import { imagesTable, videosTable, contentTypesTable, mediaTable, mediaTranslationsTable } from "../../schema";
 
 function getPosterUrl(drizzle: any, mediaId: number): string | null {
-  const row = drizzle.query(`
-    SELECT url FROM images
-    WHERE entity_type = 'media' AND entity_id = ?
-      AND image_type = 'poster' AND is_primary = 1
-    LIMIT 1
-  `).get([mediaId]);
+  const row = drizzle.select(imagesTable)
+    .select("url")
+    .where("entity_type = 'media'")
+    .andWhere("entity_id = ?", [mediaId])
+    .andWhere("image_type = 'poster'")
+    .andWhere("is_primary = 1")
+    .limit(1)
+    .get();
   return row?.url ?? null;
 }
 
@@ -240,18 +243,18 @@ export class MediaController {
     const type = url.searchParams.get("type");
     const drizzle = getDrizzle();
 
-    const conditions = ["entity_type = 'media'", "entity_id = ?"];
-    const params: unknown[] = [mediaId];
+    const query = drizzle.select(imagesTable)
+      .where("entity_type = 'media'")
+      .andWhere("entity_id = ?", [mediaId]);
 
-    if (type) { conditions.push("image_type = ?"); params.push(type); }
+    if (type) {
+      query.andWhere("image_type = ?", [type]);
+    }
 
-    const rows = drizzle.query(`
-      SELECT id, image_type, locale, url, width, height, aspect_ratio,
-             is_primary, vote_average, vote_count, source
-      FROM images
-      WHERE ${conditions.join(" AND ")}
-      ORDER BY is_primary DESC, vote_average DESC
-    `).all(params);
+    const rows = query
+      .orderBy("is_primary", "desc")
+      .orderBy("vote_average", "desc")
+      .all();
 
     return { rows, locale, total: rows.length };
   }
@@ -259,12 +262,13 @@ export class MediaController {
   static getVideos(req: Request, mediaId: number) {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     const drizzle = getDrizzle();
-    const rows = drizzle.query(`
-      SELECT id, video_type, name, site, key, thumbnail_url, published_at, official, locale
-      FROM videos
-      WHERE media_id = ?
-      ORDER BY official DESC, published_at DESC
-    `).all([mediaId]);
+    
+    const rows = drizzle.select(videosTable)
+      .where("media_id = ?", [mediaId])
+      .orderBy("official", "desc")
+      .orderBy("published_at", "desc")
+      .all();
+      
     return { rows, locale, total: rows.length };
   }
 

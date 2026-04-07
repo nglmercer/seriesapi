@@ -78,7 +78,7 @@ describe("Media Routes", () => {
       db.run("INSERT INTO media (content_type_id, slug, original_title, score, release_date) VALUES (?, ?, 'Movie A', 9.0, '2023-01-01')", [ct, uniqueSlug("sort")]);
       db.run("INSERT INTO media (content_type_id, slug, original_title, score, release_date) VALUES (?, ?, 'Movie B', 7.0, '2023-06-01')", [ct, uniqueSlug("sort2")]);
 
-      const req = new Request("http://localhost/api/v1/media?sort=score&order=desc");
+      const req = new Request("http://localhost/api/v1/media?sort_by=score&order=desc");
       const res = handleMediaList(req, db);
       const body = await res.json() as { data: { score: number }[] };
       expect(body.data[0]!.score).toBe(9);

@@ -51,54 +51,123 @@ export interface PreparedQuery<T> {
 // ============================================
 
 class SelectBuilder<T> {
-  private sql: string = "";
+  private _columns: string = "*";
+  private _distinct: boolean = false;
+  private _joins: string[] = [];
+  private _whereConditions: string[] = [];
   private _whereParams: unknown[] = [];
+  private _orderBys: string[] = [];
+  private _limit: number | null = null;
+  private _offset: number | null = null;
 
   constructor(
     private db: SqliteNapiDatabase,
     private tableName: string
-  ) {
-    this.sql = `SELECT * FROM ${tableName}`;
+  ) {}
+
+  as(alias: string): this {
+    this.tableName += ` ${alias}`;
+    return this;
+  }
+
+  from(tableName: string): this {
+    this.tableName = tableName;
+    return this;
+  }
+
+  distinct(): this {
+    this._distinct = true;
+    return this;
   }
 
   select<K extends keyof T>(...columns: K[]): SelectBuilder<Pick<T, K>> {
-    const cols = columns.join(", ");
-    this.sql = `SELECT ${cols} FROM ${this.tableName}`;
+    this._columns = columns.join(", ");
     return this as unknown as SelectBuilder<Pick<T, K>>;
   }
 
+  selectRaw(sql: string): this {
+    this._columns = sql;
+    return this;
+  }
+
+  join(tableContent: string, condition: string, params?: unknown[]): this {
+    this._joins.push(`JOIN ${tableContent} ON ${condition}`);
+    if (params) this._whereParams.push(...params);
+    return this;
+  }
+
+  leftJoin(tableContent: string, condition: string, params?: unknown[]): this {
+    this._joins.push(`LEFT JOIN ${tableContent} ON ${condition}`);
+    if (params) this._whereParams.push(...params);
+    return this;
+  }
+
   where(condition: string, params?: unknown[]): this {
-    this.sql += ` WHERE ${condition}`;
+    this._whereConditions = [condition];
     this._whereParams = params || [];
     return this;
   }
 
-  orderBy(column: string, direction: "asc" | "desc" = "asc"): this {
-    this.sql += ` ORDER BY ${column} ${direction.toUpperCase()}`;
+  andWhere(condition: string, params?: unknown[]): this {
+    this._whereConditions.push(condition);
+    if (params) this._whereParams.push(...params);
     return this;
   }
 
+  orderBy(column: string, direction: "asc" | "desc" = "asc"): this {
+    this._orderBys.push(`${column} ${direction.toUpperCase()}`);
+    return this;
+  }
 
   limit(count: number): this {
-    this.sql += ` LIMIT ${count}`;
+    this._limit = count;
     return this;
   }
 
   offset(count: number): this {
-    this.sql += ` OFFSET ${count}`;
+    this._offset = count;
     return this;
   }
 
-  all(): T[] {
-    return this.db.query(this.sql).all(this._whereParams) as T[];
+  private build(): string {
+    let sql = `SELECT ${this._distinct ? "DISTINCT " : ""}${this._columns} FROM ${this.tableName}`;
+    
+    if (this._joins.length > 0) {
+      sql += ` ${this._joins.join(" ")}`;
+    }
+
+    if (this._whereConditions.length > 0) {
+      sql += ` WHERE ${this._whereConditions.join(" AND ")}`;
+    }
+    
+    if (this._orderBys.length > 0) {
+      sql += ` ORDER BY ${this._orderBys.join(", ")}`;
+    }
+    
+    if (this._limit !== null) {
+      sql += ` LIMIT ${this._limit}`;
+    }
+    
+    if (this._offset !== null) {
+      sql += ` OFFSET ${this._offset}`;
+    }
+    
+    return sql;
   }
 
-  get(): T | undefined {
-    return this.db.query(this.sql).get(this._whereParams) as T | undefined;
+  all(params?: unknown[]): T[] {
+    const finalParams = params ? [...this._whereParams, ...params] : this._whereParams;
+    return this.db.query(this.build()).all(finalParams) as T[];
   }
 
-  run(): QueryResult {
-    return this.db.run(this.sql, this._whereParams);
+  get(params?: unknown[]): T | undefined {
+    const finalParams = params ? [...this._whereParams, ...params] : this._whereParams;
+    return this.db.query(this.build()).get(finalParams) as T | undefined;
+  }
+
+  run(params?: unknown[]): QueryResult {
+    const finalParams = params ? [...this._whereParams, ...params] : this._whereParams;
+    return this.db.run(this.build(), finalParams);
   }
 }
 
@@ -215,8 +284,8 @@ class DeleteBuilder<T> {
  * */
 export function sqliteNapi(db: SqliteNapiDatabase): SqliteNapiAdapter {
   return {
-    select<T extends AnySQLiteTable>(table: T): SelectBuilder<InferRow<T>> {
-      return new SelectBuilder<InferRow<T>>(db, table.name);
+    select<T extends AnySQLiteTable>(table?: T): SelectBuilder<InferRow<T>> {
+      return new SelectBuilder<InferRow<T>>(db, table ? table.name : "");
     },
 
     insert<T extends AnySQLiteTable>(table: T): InsertBuilder<InferRow<T>> {
