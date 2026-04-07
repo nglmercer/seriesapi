@@ -25,75 +25,93 @@ export class CommentCompose extends LitElement {
     .compose {
       flex: 1;
       background: var(--bg-secondary);
-      border: 1.5px solid var(--border-color);
-      border-radius: 14px;
-      transition: border-color .2s, box-shadow .2s;
+      border: 2px solid var(--border-color);
+      border-radius: 16px;
+      transition: all .2s ease;
       overflow: hidden;
     }
     .compose:focus-within {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(255,71,87,.1);
+      box-shadow: 0 0 0 4px rgba(255,71,87,.08);
     }
 
     textarea {
       width: 100%; box-sizing: border-box;
       background: transparent; border: none; outline: none;
       color: var(--text-primary); font-family: inherit;
-      font-size: 15px; padding: 14px 16px;
+      font-size: 15px; padding: 12px 16px;
       resize: none; min-height: 80px;
     }
 
     .footer {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 8px 14px 10px;
+      padding: 8px 16px 10px;
+      background: rgba(0,0,0,0.02);
       border-top: 1px solid var(--border-color);
     }
 
     .spoiler-label {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 13px; color: var(--text-secondary);
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 600; color: var(--text-secondary);
       cursor: pointer; user-select: none;
+      transition: color .2s;
     }
-    .spoiler-label input { cursor: pointer; accent-color: var(--accent); }
+    .spoiler-label input { 
+      cursor: pointer; accent-color: var(--accent); 
+      width: 16px; height: 16px;
+    }
     .spoiler-label.on { color: #f39c12; }
 
     .btn-post {
       background: var(--accent); color: #fff;
-      font-size: 13px; font-weight: 700; font-family: inherit;
-      padding: 8px 20px; border: none; border-radius: 8px;
-      cursor: pointer; transition: opacity .2s, transform .1s;
+      font-size: 14px; font-weight: 700; font-family: inherit;
+      padding: 10px 24px; border: none; border-radius: 12px;
+      cursor: pointer; transition: all .2s ease;
+      box-shadow: 0 4px 12px rgba(255, 71, 87, 0.2);
     }
-    .btn-post:hover:not(:disabled) { opacity: .85; transform: translateY(-1px); }
-    .btn-post:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+    .btn-post:hover:not(:disabled) { 
+      transform: translateY(-1px); 
+      box-shadow: 0 6px 16px rgba(255, 71, 87, 0.3);
+    }
+    .btn-post:active { transform: translateY(0); }
+    .btn-post:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
 
     /* ── Login gate ── */
     .gate {
       flex: 1;
       background: var(--bg-secondary);
-      border: 1.5px dashed var(--border-color);
-      border-radius: 14px;
-      padding: 16px 20px;
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      border: 2px dashed var(--border-color);
+      border-radius: 16px;
+      padding: 24px 28px;
+      display: flex; align-items: center; justify-content: space-between; gap: 24px;
+      transition: border-color .2s;
     }
-    .gate-copy { font-size: 14px; color: var(--text-secondary); }
+    .gate:hover { border-color: var(--accent); }
+    .gate-copy { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
     .gate-copy strong {
-      display: block; margin-bottom: 3px;
-      font-size: 15px; color: var(--text-primary);
+      display: block; margin-bottom: 4px;
+      font-size: 17px; color: var(--text-primary);
+      letter-spacing: -0.01em;
     }
     .btn-signin {
       background: var(--accent); color: #fff;
-      font-weight: 700; font-size: 13px; white-space: nowrap;
-      padding: 9px 20px; border: none; border-radius: 8px;
-      flex-shrink: 0; cursor: pointer; transition: opacity .2s;
+      font-weight: 700; font-size: 14px; white-space: nowrap;
+      padding: 12px 28px; border: none; border-radius: 12px;
+      flex-shrink: 0; cursor: pointer; transition: all .2s;
+      box-shadow: 0 4px 12px rgba(255, 71, 87, 0.2);
     }
-    .btn-signin:hover { opacity: .85; }
+    .btn-signin:hover { 
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(255, 71, 87, 0.3);
+    }
 
     /* ── Ghost avatar for guests ── */
     .ghost-av {
-      width: 40px; height: 40px; border-radius: 50%;
-      background: var(--border-color);
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--bg-secondary);
+      border: 2px solid var(--border-color);
       display: flex; align-items: center; justify-content: center;
-      font-size: 18px; flex-shrink: 0;
+      font-size: 20px; flex-shrink: 0; color: var(--text-secondary);
     }
   `;
 

@@ -31,42 +31,55 @@ export class CommentsSection extends LitElement {
 
     /* ── Header ── */
     .head {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 24px;
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 28px;
     }
     .head h3 {
       margin: 0;
-      font-size: 20px; font-weight: 800; color: var(--text-primary);
+      font-size: 22px; font-weight: 800; color: var(--text-primary);
+      letter-spacing: -0.02em;
     }
     .badge {
       background: var(--accent); color: #fff;
       font-size: 12px; font-weight: 700;
-      padding: 2px 9px; border-radius: 20px;
+      padding: 2px 10px; border-radius: 20px;
+      box-shadow: 0 2px 8px rgba(255, 71, 87, 0.3);
     }
 
     /* ── List ── */
-    .list { margin-top: 28px; }
+    .list { 
+      margin-top: 32px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
 
     /* ── States ── */
     .empty {
-      text-align: center; padding: 40px 20px;
+      text-align: center; padding: 60px 20px;
       color: var(--text-secondary);
+      background: var(--bg-secondary);
+      border-radius: 16px;
+      margin-top: 24px;
     }
-    .empty-icon { font-size: 36px; margin-bottom: 10px; }
-    .empty p    { margin: 0; font-size: 15px; }
+    .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+    .empty p    { margin: 0; font-size: 16px; font-weight: 500; }
 
     .load-more {
-      text-align: center; padding: 20px 0 4px;
+      text-align: center; padding: 32px 0 16px;
     }
     .btn-more {
       background: var(--bg-secondary);
       border: 1px solid var(--border-color);
-      color: var(--text-secondary);
-      padding: 10px 28px; border-radius: 8px;
-      font-size: 14px; font-family: inherit; cursor: pointer;
-      transition: background .2s;
+      color: var(--text-primary);
+      padding: 12px 32px; border-radius: 12px;
+      font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer;
+      transition: all .2s ease;
     }
-    .btn-more:hover { background: var(--border-color); color: var(--text-primary); }
+    .btn-more:hover { 
+      background: var(--border-color); 
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .btn-more:active { transform: translateY(0); }
   `;
 
   @property({ type: String }) entityType = "";

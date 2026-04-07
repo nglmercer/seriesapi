@@ -81,8 +81,11 @@ const resources = {
         login_required: "Sign in to comment and interact with the community.",
         reply: "Reply",
         reply_btn: "Reply",
-        reply_placeholder: "Write a reply…  (Ctrl+Enter to send)",
-        load_more: "Load more"
+        reply_placeholder: "Write a reply…",
+        load_more: "Load more",
+        spoiler_badge: "SPOILER",
+        like: "Like",
+        dislike: "Dislike"
       },
       auth: {
         login: "Login",
@@ -244,8 +247,11 @@ const resources = {
         login_required: "Inicia sesión para comentar e interactuar con la comunidad.",
         reply: "Responder",
         reply_btn: "Responder",
-        reply_placeholder: "Escribe una respuesta…  (Ctrl+Enter para enviar)",
-        load_more: "Cargar más"
+        reply_placeholder: "Escribe una respuesta…",
+        load_more: "Cargar más",
+        spoiler_badge: "SPOILER",
+        like: "Me gusta",
+        dislike: "No me gusta"
       },
       auth: {
         login: "Iniciar sesión",
