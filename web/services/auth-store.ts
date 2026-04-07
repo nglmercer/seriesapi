@@ -122,6 +122,53 @@ class AuthStore {
       return { ok: false, error: "Network error" };
     }
   }
+
+  // --- Admin User Management ---
+
+  async getUsers(): Promise<{ ok: boolean; data?: AuthUser[]; error?: string }> {
+    if (!this._token || !this.isAdmin) return { ok: false, error: "Unauthorized" };
+    try {
+      const res = await fetch("/api/v1/auth/users", {
+        headers: { "Authorization": `Bearer ${this._token}` }
+      });
+      const json = await res.json();
+      return json.ok ? { ok: true, data: json.data } : { ok: false, error: json.error };
+    } catch (err) {
+      return { ok: false, error: "Network error" };
+    }
+  }
+
+  async adminUpdateUser(userId: number, data: any): Promise<{ ok: boolean; error?: string }> {
+    if (!this._token || !this.isAdmin) return { ok: false, error: "Unauthorized" };
+    try {
+      const res = await fetch(`/api/v1/auth/users/${userId}`, {
+        method: "PATCH",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${this._token}`
+        },
+        body: JSON.stringify(data)
+      });
+      const json = await res.json();
+      return json.ok ? { ok: true } : { ok: false, error: json.error };
+    } catch (err) {
+      return { ok: false, error: "Network error" };
+    }
+  }
+
+  async adminDeleteUser(userId: number): Promise<{ ok: boolean; error?: string }> {
+    if (!this._token || !this.isAdmin) return { ok: false, error: "Unauthorized" };
+    try {
+      const res = await fetch(`/api/v1/auth/users/${userId}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${this._token}` }
+      });
+      const json = await res.json();
+      return json.ok ? { ok: true } : { ok: false, error: json.error };
+    } catch (err) {
+      return { ok: false, error: "Network error" };
+    }
+  }
 }
 
 export const authStore = new AuthStore();

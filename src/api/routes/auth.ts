@@ -420,6 +420,80 @@ export const handleUserUpdate = withAuth(async (req: Request, user) => {
 });
 
 /**
+ * ADMIN: List all users.
+ */
+export const handleUserList = withAdmin(async (req: Request) => {
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+  try {
+    const drizzle = getDrizzle();
+    const users = drizzle.select(usersTable)
+      .select("id", "username", "email", "display_name", "role", "is_active", "created_at", "updated_at")
+      .all();
+    return ok(users, { locale });
+  } catch (err) {
+    return serverError(err, locale);
+  }
+});
+
+/**
+ * ADMIN: Update any user.
+ */
+export const handleUserUpdateAdmin = withAdmin(async (req: Request) => {
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+  try {
+    const url = new URL(req.url);
+    const parts = url.pathname.replace(/\/$/, "").split("/").filter(Boolean);
+    const targetUserId = parseInt(parts[4] ?? "", 10);
+    if (isNaN(targetUserId)) return badRequest("Invalid user ID", locale);
+
+    const body = await req.json();
+    const drizzle = getDrizzle();
+
+    // Check if user exists
+    const existing = drizzle.select(usersTable).where("id = ?", [targetUserId]).get();
+    if (!existing) return notFound("User", locale);
+
+    const updateData: Record<string, any> = {};
+    if (body.display_name !== undefined) updateData.display_name = body.display_name;
+    if (body.email !== undefined) updateData.email = body.email;
+    if (body.role !== undefined) updateData.role = body.role;
+    if (body.is_active !== undefined) updateData.is_active = body.is_active ? 1 : 0;
+    if (body.password !== undefined && body.password.length >= 6) {
+      updateData.password_hash = await hashPassword(body.password);
+    }
+
+    if (Object.keys(updateData).length === 0) return ok({ message: "No changes" }, { locale });
+
+    updateData.updated_at = new Date().toISOString();
+    drizzle.update(usersTable).set(updateData).where("id = ?", [targetUserId]).run();
+
+    return ok({ message: "User updated successfully by admin" }, { locale });
+  } catch (err) {
+    return serverError(err, locale);
+  }
+});
+
+/**
+ * ADMIN: Delete user.
+ */
+export const handleUserDelete = withAdmin(async (req: Request) => {
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+  try {
+    const url = new URL(req.url);
+    const parts = url.pathname.replace(/\/$/, "").split("/").filter(Boolean);
+    const targetUserId = parseInt(parts[4] ?? "", 10);
+    if (isNaN(targetUserId)) return badRequest("Invalid user ID", locale);
+
+    const drizzle = getDrizzle();
+    drizzle.delete(usersTable).where("id = ?", [targetUserId]).run();
+
+    return ok({ message: "User deleted successfully" }, { locale });
+  } catch (err) {
+    return serverError(err, locale);
+  }
+});
+
+/**
  * Main authentication router that dispatches requests to sub-routes.
  */
 export async function handleAuthRouter(req: Request, parts: string[]): Promise<Response> {
@@ -429,6 +503,7 @@ export async function handleAuthRouter(req: Request, parts: string[]): Promise<R
   const GET = req.method === "GET";
   const PATCH = req.method === "PATCH";
   const PUT = req.method === "PUT";
+  const DELETE = req.method === "DELETE";
 
   if (p3 === "register" && POST) return handleRegister(req);
   if (p3 === "login" && POST) return handleLogin(req);
@@ -436,6 +511,13 @@ export async function handleAuthRouter(req: Request, parts: string[]): Promise<R
   if (p3 === "me" && GET) return handleMe(req);
   if (p3 === "update" && (PATCH || PUT)) return handleUserUpdate(req);
   
+  if (p3 === "users") {
+    if (GET && !p4) return handleUserList(req);
+    if ((PATCH || PUT) && p4) return handleUserUpdateAdmin(req);
+    if (DELETE && p4) return handleUserDelete(req);
+    return notFound("User management route", locale);
+  }
+
   if (p3 === "verify-code") {
     if (p4 === "generate" && POST) return handleVerifyCodeGenerate(req);
     if (p4 === "apply" && POST) return handleVerifyCodeApply(req);

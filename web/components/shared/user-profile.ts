@@ -146,6 +146,87 @@ export class UserProfile extends LitElement {
       color: #27ae60; border-radius: 8px; padding: 10px 14px;
       font-size: 13px; margin-bottom: 20px;
     }
+
+    .tabs {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+
+    .tab {
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+
+    .tab:hover { background: var(--bg-secondary); }
+    .tab.active { background: var(--accent); color: white; }
+
+    .user-list {
+      margin-top: 20px;
+    }
+
+    .user-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      border-bottom: 1px solid var(--border-color);
+      gap: 16px;
+    }
+
+    .user-item:last-child { border-bottom: none; }
+
+    .user-item-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .user-item-name { font-weight: 700; font-size: 14px; }
+    .user-item-email { font-size: 12px; color: var(--text-secondary); }
+
+    .user-item-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+
+    .badge-admin { background: #e74c3c; color: white; }
+    .badge-editor { background: #3498db; color: white; }
+    .badge-user { background: var(--bg-secondary); color: var(--text-secondary); }
+    .badge-inactive { opacity: 0.5; text-decoration: line-through; }
+
+    .admin-edit-form {
+      background: var(--bg-secondary);
+      padding: 16px;
+      border-radius: 12px;
+      margin-top: 12px;
+      border: 1px solid var(--border-color);
+    }
+
+    select {
+      width: 100%; box-sizing: border-box;
+      padding: 10px 12px;
+      background: var(--bg-primary); border: 1.5px solid var(--border-color);
+      border-radius: 8px; color: var(--text-primary);
+      font-size: 14px; font-family: inherit;
+      margin-bottom: 12px;
+    }
   `;
 
   @state() private user: AuthUser | null = authStore.user;
@@ -153,11 +234,19 @@ export class UserProfile extends LitElement {
   @state() private errorMsg = "";
   @state() private successMsg = "";
 
-  // Form states
+  // Navigation
+  @state() private activeTab: 'profile' | 'admin' = 'profile';
+
+  // Profile Form states
   @state() private displayName = "";
   @state() private email = "";
   @state() private password = "";
   @state() private confirmPassword = "";
+
+  // Admin states
+  @state() private usersList: AuthUser[] = [];
+  @state() private editingUser: AuthUser | null = null;
+  @state() private adminLoading = false;
 
   private _unsub?: () => void;
 
@@ -165,14 +254,26 @@ export class UserProfile extends LitElement {
     super.connectedCallback();
     this.resetForm();
     this._unsub = authStore.subscribe(u => {
+      const wasAdmin = this.user?.role === 'admin';
       this.user = u;
       if (u && !this.loading) this.resetForm();
+      if (u?.role === 'admin' && !wasAdmin) this.loadUsers();
     });
+    if (this.user?.role === 'admin') this.loadUsers();
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
     this._unsub?.();
+  }
+
+  private async loadUsers() {
+    this.adminLoading = true;
+    const res = await authStore.getUsers();
+    if (res.ok && res.data) {
+      this.usersList = res.data;
+    }
+    this.adminLoading = false;
   }
 
   private resetForm() {
@@ -183,6 +284,7 @@ export class UserProfile extends LitElement {
     this.confirmPassword = "";
     this.errorMsg = "";
     this.successMsg = "";
+    this.editingUser = null;
   }
 
   private async handleSubmit(e: Event) {
@@ -220,6 +322,153 @@ export class UserProfile extends LitElement {
     this.loading = false;
   }
 
+  private async handleAdminUpdate(e: Event) {
+    e.preventDefault();
+    if (!this.editingUser) return;
+
+    this.adminLoading = true;
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    
+    const data = {
+      display_name: formData.get('display_name'),
+      email: formData.get('email'),
+      role: formData.get('role'),
+      is_active: formData.get('is_active') === 'on',
+    };
+
+    const res = await authStore.adminUpdateUser(this.editingUser.id, data);
+    if (res.ok) {
+      this.successMsg = "User updated successfully";
+      this.editingUser = null;
+      this.loadUsers();
+    } else {
+      this.errorMsg = res.error || "Failed to update user";
+    }
+    this.adminLoading = false;
+  }
+
+  private async handleAdminDelete(userId: number) {
+    if (!confirm("Are you sure you want to delete this user? This cannot be undone.")) return;
+    
+    this.adminLoading = true;
+    const res = await authStore.adminDeleteUser(userId);
+    if (res.ok) {
+      this.successMsg = "User deleted successfully";
+      this.loadUsers();
+    } else {
+      this.errorMsg = res.error || "Failed to delete user";
+    }
+    this.adminLoading = false;
+  }
+
+  private renderProfileTab() {
+    return html`
+      <form @submit=${this.handleSubmit}>
+        <div class="form-grid">
+          <div class="field">
+            <label>${i18next.t("auth.display_name", { defaultValue: "Display Name" })}</label>
+            <input type="text" .value=${this.displayName} @input=${(e: any) => this.displayName = e.target.value} 
+              ?disabled=${this.loading} />
+          </div>
+          <div class="field">
+            <label>${i18next.t("auth.email", { defaultValue: "Email Address" })}</label>
+            <input type="email" .value=${this.email} @input=${(e: any) => this.email = e.target.value} 
+              ?disabled=${this.loading} />
+          </div>
+          <div class="field">
+            <label>${i18next.t("auth.new_password", { defaultValue: "New Password (Optional)" })}</label>
+            <input type="password" .value=${this.password} @input=${(e: any) => this.password = e.target.value} 
+              placeholder="••••••••" ?disabled=${this.loading} />
+          </div>
+          <div class="field">
+            <label>${i18next.t("auth.confirm_password", { defaultValue: "Confirm New Password" })}</label>
+            <input type="password" .value=${this.confirmPassword} @input=${(e: any) => this.confirmPassword = e.target.value} 
+              placeholder="••••••••" ?disabled=${this.loading} />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="btn btn-secondary" @click=${this.resetForm} ?disabled=${this.loading}>
+            ${i18next.t("common.cancel", { defaultValue: "Cancel" })}
+          </button>
+          <button type="submit" class="btn btn-primary" ?disabled=${this.loading}>
+            ${this.loading ? i18next.t("common.saving", { defaultValue: "Saving..." }) : i18next.t("common.save_changes", { defaultValue: "Save Changes" })}
+          </button>
+        </div>
+      </form>
+    `;
+  }
+
+  private renderAdminTab() {
+    if (this.adminLoading && this.usersList.length === 0) {
+      return html`<p style="text-align: center; padding: 20px;">Loading users...</p>`;
+    }
+
+    return html`
+      <div class="user-list">
+        ${this.usersList.map(u => html`
+          <div class="user-item">
+            <div class="user-item-info">
+              <div class="user-item-name">
+                ${u.display_name} (@${u.username})
+                <span class="badge badge-${u.role}">${u.role}</span>
+                ${(u as any).is_active === 0 ? html`<span class="badge badge-inactive">Inactive</span>` : ""}
+              </div>
+              <div class="user-item-email">${u.email}</div>
+            </div>
+            <div class="user-item-actions">
+              <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;" 
+                @click=${() => this.editingUser = u}>
+                Edit
+              </button>
+              ${u.id !== this.user?.id ? html`
+                <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px; color: #e74c3c;" 
+                  @click=${() => this.handleAdminDelete(u.id)}>
+                  Delete
+                </button>
+              ` : ""}
+            </div>
+          </div>
+
+          ${this.editingUser?.id === u.id ? html`
+            <div class="admin-edit-form">
+              <form @submit=${this.handleAdminUpdate}>
+                <div class="form-grid">
+                  <div class="field">
+                    <label>Display Name</label>
+                    <input type="text" name="display_name" .value=${u.display_name} required />
+                  </div>
+                  <div class="field">
+                    <label>Email</label>
+                    <input type="email" name="email" .value=${u.email} required />
+                  </div>
+                  <div class="field">
+                    <label>Role</label>
+                    <select name="role">
+                      <option value="user" ?selected=${u.role === 'user'}>User</option>
+                      <option value="editor" ?selected=${u.role === 'editor'}>Editor</option>
+                      <option value="admin" ?selected=${u.role === 'admin'}>Admin</option>
+                    </select>
+                  </div>
+                  <div class="field" style="display: flex; align-items: center; gap: 10px; padding-top: 30px;">
+                    <input type="checkbox" name="is_active" id="active-${u.id}" 
+                      ?checked=${(u as any).is_active !== 0} style="width: auto;" />
+                    <label for="active-${u.id}" style="margin-bottom: 0;">Active Account</label>
+                  </div>
+                </div>
+                <div class="actions">
+                  <button type="button" class="btn btn-secondary" @click=${() => this.editingUser = null}>Cancel</button>
+                  <button type="submit" class="btn btn-primary" ?disabled=${this.adminLoading}>Save User</button>
+                </div>
+              </form>
+            </div>
+          ` : ""}
+        `)}
+      </div>
+    `;
+  }
+
   override render() {
     if (!this.user) {
       return html`
@@ -245,46 +494,27 @@ export class UserProfile extends LitElement {
           </div>
         </div>
 
-        <div class="section-title">
-          ${i18next.t("profile.edit_settings", { defaultValue: "Account Settings" })}
-        </div>
+        ${this.user.role === 'admin' ? html`
+          <div class="tabs">
+            <div class="tab ${this.activeTab === 'profile' ? 'active' : ''}" 
+              @click=${() => { this.activeTab = 'profile'; this.errorMsg = ''; this.successMsg = ''; }}>
+              ${i18next.t("profile.my_account", { defaultValue: "My Account" })}
+            </div>
+            <div class="tab ${this.activeTab === 'admin' ? 'active' : ''}" 
+              @click=${() => { this.activeTab = 'admin'; this.errorMsg = ''; this.successMsg = ''; }}>
+              ${i18next.t("profile.manage_users", { defaultValue: "User Management" })}
+            </div>
+          </div>
+        ` : html`
+          <div class="section-title">
+            ${i18next.t("profile.edit_settings", { defaultValue: "Account Settings" })}
+          </div>
+        `}
 
         ${this.errorMsg ? html`<div class="error-msg">⚠️ ${this.errorMsg}</div>` : ""}
         ${this.successMsg ? html`<div class="success-msg">✅ ${this.successMsg}</div>` : ""}
 
-        <form @submit=${this.handleSubmit}>
-          <div class="form-grid">
-            <div class="field">
-              <label>${i18next.t("auth.display_name", { defaultValue: "Display Name" })}</label>
-              <input type="text" .value=${this.displayName} @input=${(e: any) => this.displayName = e.target.value} 
-                ?disabled=${this.loading} />
-            </div>
-            <div class="field">
-              <label>${i18next.t("auth.email", { defaultValue: "Email Address" })}</label>
-              <input type="email" .value=${this.email} @input=${(e: any) => this.email = e.target.value} 
-                ?disabled=${this.loading} />
-            </div>
-            <div class="field">
-              <label>${i18next.t("auth.new_password", { defaultValue: "New Password (Optional)" })}</label>
-              <input type="password" .value=${this.password} @input=${(e: any) => this.password = e.target.value} 
-                placeholder="••••••••" ?disabled=${this.loading} />
-            </div>
-            <div class="field">
-              <label>${i18next.t("auth.confirm_password", { defaultValue: "Confirm New Password" })}</label>
-              <input type="password" .value=${this.confirmPassword} @input=${(e: any) => this.confirmPassword = e.target.value} 
-                placeholder="••••••••" ?disabled=${this.loading} />
-            </div>
-          </div>
-
-          <div class="actions">
-            <button type="button" class="btn btn-secondary" @click=${this.resetForm} ?disabled=${this.loading}>
-              ${i18next.t("common.cancel", { defaultValue: "Cancel" })}
-            </button>
-            <button type="submit" class="btn btn-primary" ?disabled=${this.loading}>
-              ${this.loading ? i18next.t("common.saving", { defaultValue: "Saving..." }) : i18next.t("common.save_changes", { defaultValue: "Save Changes" })}
-            </button>
-          </div>
-        </form>
+        ${this.activeTab === 'profile' ? this.renderProfileTab() : this.renderAdminTab()}
       </div>
     `;
   }
