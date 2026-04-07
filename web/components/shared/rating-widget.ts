@@ -1,6 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { api } from "../../services/api-service";
+import { authStore } from "../../services/auth-store";
 import i18next from "../../utils/i18n";
 
 @customElement("rating-widget")
@@ -20,6 +21,7 @@ export class RatingWidget extends LitElement {
     .average span { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
     .count { font-size: 12px; color: var(--text-secondary); }
     .label { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+    .login-msg { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
   `;
 
   @property({ type: String }) entityType = "";
@@ -31,6 +33,10 @@ export class RatingWidget extends LitElement {
   @state() userRating = 0;
 
   private async handleRate(score: number) {
+    if (!authStore.isLoggedIn) {
+      this.dispatchEvent(new CustomEvent("need-login", { bubbles: true, composed: true }));
+      return;
+    }
     if (this.loading || !this.entityType || !this.entityId) return;
     this.userRating = score;
     this.loading = true;
@@ -73,6 +79,7 @@ export class RatingWidget extends LitElement {
               >★</span>
             `)}
           </div>
+          ${!authStore.isLoggedIn ? html`<div class="login-msg">${i18next.t("ratings.login_to_rate", { defaultValue: "Login to rate" })}</div>` : ""}
         </div>
       </div>
     `;

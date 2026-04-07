@@ -52,7 +52,7 @@ export class CommentController {
       parent_id,
       display_name: display_name.trim(),
       ip_hash,
-      locale: commentLocale,
+      locale: commentLocale || locale,
       body: text.trim(),
       contains_spoilers: contains_spoilers
     }).run();

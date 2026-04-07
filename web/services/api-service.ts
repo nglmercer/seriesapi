@@ -387,14 +387,9 @@ class ApiClient {
   }
 
   postRating(data: { entity_type: string; entity_id: number; score: number }): Promise<ApiResponse<{average: number; count: number}>> {
-    let session_id = localStorage.getItem("rating_session_id");
-    if (!session_id) {
-       session_id = crypto.randomUUID();
-       localStorage.setItem("rating_session_id", session_id);
-    }
     return this.request("/ratings", {
       method: "POST",
-      body: JSON.stringify({...data, session_id})
+      body: JSON.stringify(data)
     });
   }
 }

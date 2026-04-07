@@ -1,15 +1,21 @@
-import { getDrizzle, getDb } from "../../init";
+import { getDrizzle } from "../../init";
 import { ratingsTable } from "../../schema";
-import { ok, badRequest, serverError } from "../response";
+import { ok, badRequest, serverError, unauthorized } from "../response";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
+import { getUserFromToken } from "./auth";
 
 export async function handleRatingPost(req: Request) {
   try {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const body = await req.json() as { entity_type?: string; entity_id?: number; score?: number; session_id?: string };
+    const user = getUserFromToken(req);
+    if (!user) {
+      return unauthorized("Authentication required for rating", locale);
+    }
+
+    const body = await req.json() as { entity_type?: string; entity_id?: number; score?: number };
     
-    if (!body.entity_type || !body.entity_id || typeof body.score !== "number" || !body.session_id) {
-      return badRequest("Missing required fields (entity_type, entity_id, score, session_id)", locale);
+    if (!body.entity_type || !body.entity_id || typeof body.score !== "number") {
+      return badRequest("Missing required fields (entity_type, entity_id, score)", locale);
     }
     
     if (body.score < 1 || body.score > 10) {
@@ -23,11 +29,11 @@ export async function handleRatingPost(req: Request) {
     const ipHashBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip));
     const ipHash = Array.from(new Uint8Array(ipHashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
     
-    // Check if rating already exists for this session/IP + entity
+    // Check if rating already exists for this user + entity
     const existing = drizzle.select(ratingsTable)
       .select("id")
-      .where("entity_type = ? AND entity_id = ? AND (session_id = ? OR ip_hash = ?)", 
-        [body.entity_type, body.entity_id, body.session_id, ipHash])
+      .where("entity_type = ? AND entity_id = ? AND user_id = ?", 
+        [body.entity_type, body.entity_id, user.id])
       .get();
       
     if (existing) {
@@ -39,7 +45,7 @@ export async function handleRatingPost(req: Request) {
       drizzle.insert(ratingsTable).values({
         entity_type: body.entity_type,
         entity_id: body.entity_id,
-        session_id: body.session_id,
+        user_id: user.id,
         ip_hash: ipHash,
         score: body.score
       }).run();

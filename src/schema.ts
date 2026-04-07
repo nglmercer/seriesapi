@@ -486,7 +486,7 @@ export const ratingsTable = sqliteTable("ratings", {
   id: primaryKey(integer("id")),
   entity_type: notNull(text("entity_type")),    // "media"|"season"|"episode"
   entity_id: notNull(integer("entity_id")),
-  session_id: notNull(text("session_id")),      // UUID from client cookie
+  user_id: notNull(references(integer("user_id"), { table: "users", column: "id" })),
   ip_hash: notNull(text("ip_hash")),
   score: notNull(integer("score")),             // 1-10
   created_at: default_(text("created_at"), NOW),

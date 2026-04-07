@@ -177,5 +177,12 @@ class UI {
     });
   }
 }
-
+window.alert = (message: any) => {
+  if (typeof message === "string")
+    UI.alert(message);
+  else if (message instanceof Error)
+    UI.alert(message.message);
+  else
+    UI.alert(JSON.stringify(message));
+};
 export const ui = UI;

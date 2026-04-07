@@ -66,6 +66,19 @@ export function badRequest(message: string, locale: string): Response {
   });
 }
 
+export function unauthorized(message: string, locale: string): Response {
+  const body: ApiResponse<null> = {
+    ok: false,
+    data: null,
+    error: message,
+    meta: { locale },
+  };
+  return new Response(JSON.stringify(body), {
+    status: 401,
+    headers: { ...BASE_HEADERS, "Cache-Control": "no-store" },
+  });
+}
+
 export function serverError(err: unknown, locale: string): Response {
   console.error("[anima] Internal error:", err);
   const body: ApiResponse<null> = {

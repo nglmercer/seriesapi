@@ -334,6 +334,7 @@ export class PublicApp extends LitElement {
     super.connectedCallback();
     this._setupAuthSubscription();
     this._setupEventBusListeners();
+    this.addEventListener("need-login", () => this.openAuth());
   }
 
   override disconnectedCallback() {
@@ -459,7 +460,7 @@ export class PublicApp extends LitElement {
 
   override render() {
     return html`
-      ${this.showAuthModal ? html`<auth-modal @closed=${() => this.showAuthModal = false}></auth-modal>` : ""}
+      ${this.showAuthModal ? html`<auth-modal @auth-close=${() => this.showAuthModal = false}></auth-modal>` : ""}
       
       <header>
         <div class="header-inner container">
