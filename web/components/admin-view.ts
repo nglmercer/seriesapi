@@ -6,12 +6,16 @@ import { AdminMediaForm } from "./admin-media-form";
 import "./admin-genres-view";
 import "./admin-content-manager";
 import "./search-box";
+import "./media-filters";
+import type { MediaFiltersState } from "./media-filters";
 
 export class AdminView extends HTMLElement {
   private mediaList: MediaItem[] = [];
   private searchQuery = "";
+  private filters: Partial<MediaFiltersState> = {};
   private currentTab: "media" | "genres" = "media";
   private editingMediaId: number | null = null; // Used for Content Manager
+  private showFilters = false;
 
   async connectedCallback() {
     await this.fetchMedia();
@@ -19,10 +23,24 @@ export class AdminView extends HTMLElement {
   }
 
   private async fetchMedia() {
-    const res = await api.getMedia(1, 20, this.searchQuery ? { q: this.searchQuery } : {});
+    // MediaFiltersState now uses snake_case keys matching the API
+    const filters: Record<string, string> = { ...this.filters as any };
+    if (this.searchQuery) filters.q = this.searchQuery;
+    
+    // Clean up empty values
+    Object.keys(filters).forEach(k => {
+      if (!filters[k]) delete filters[k];
+    });
+
+    const res = await api.getMedia(1, 40, filters);
     if (res.ok) {
       this.mediaList = res.data;
     }
+  }
+
+  private handleFiltersChange(e: CustomEvent<MediaFiltersState>) {
+    this.filters = e.detail;
+    this.fetchMedia().then(() => this.render());
   }
 
   private async handleSearch(e: CustomEvent) {
@@ -84,16 +102,32 @@ export class AdminView extends HTMLElement {
     if (this.currentTab === 'media') {
       content = h("div", {},
         h("div", { style: "display:flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 20px;" },
-          h("search-box", { 
-            placeholder: i18next.t("admin.search_placeholder"),
-            buttonText: i18next.t("admin.search"),
-            query: this.searchQuery,
-            showResults: false, // In admin list we just want to filter
-            onsearch: (e: CustomEvent) => this.handleSearch(e),
-            style: "flex: 1; max-width: 400px;"
-          }),
+          h("div", { style: "display:flex; align-items: center; gap: 10px; flex: 1; max-width: 600px;" },
+            h("search-box", { 
+              placeholder: i18next.t("admin.search_placeholder"),
+              buttonText: i18next.t("admin.search"),
+              query: this.searchQuery,
+              showResults: false, 
+              onsearch: (e: CustomEvent) => this.handleSearch(e),
+              style: "flex: 1;"
+            }),
+            h("button", { 
+               onclick: () => { this.showFilters = !this.showFilters; this.render(); },
+               className: this.showFilters ? "active" : "",
+               style: "height: 48px; padding: 0 16px; display: flex; align-items: center; gap: 8px; font-weight: 600;"
+            }, 
+              h("span", { innerHTML: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>', style: "display:flex; align-items:center;" }),
+              i18next.t("admin.filters") || "FILTROS"
+            )
+          ),
           h("button", { onclick: () => this.openEditMedia(null), className: "primary", style: "height: 48px; border-radius: 10px; font-weight: 600;" }, i18next.t("admin.new_entry"))
         ),
+        this.showFilters ? h("div", { style: "margin-bottom: 20px;" },
+           h("media-filters", {
+             ...this.filters as any,
+             "onfilters-change": (e: CustomEvent) => this.handleFiltersChange(e)
+           } as any)
+        ) : null,
         h("div", { className: "media-admin-list", style: "display: grid; gap: 10px;" },
           ...this.mediaList.map(item => h("div", { className: "card", style: "display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;" },
             h("div", {},

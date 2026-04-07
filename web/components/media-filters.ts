@@ -7,10 +7,10 @@ export interface MediaFiltersState {
   type: string;
   status: string;
   genre: string;
-  yearFrom: string;
-  yearTo: string;
-  scoreFrom: string;
-  sortBy: string;
+  year_from: string;
+  year_to: string;
+  score_from: string;
+  sort_by: string;
 }
 
 @customElement("media-filters")
@@ -69,10 +69,10 @@ export class MediaFilters extends LitElement {
   @property({type: String}) type = "";
   @property({type: String}) status = "";
   @property({type: String}) genre = "";
-  @property({type: String}) yearFrom = "";
-  @property({type: String}) yearTo = "";
-  @property({type: String}) scoreFrom = "";
-  @property({type: String}) sortBy = "popularity";
+  @property({type: String, attribute: "year-from"}) year_from = "";
+  @property({type: String, attribute: "year-to"}) year_to = "";
+  @property({type: String, attribute: "score-from"}) score_from = "";
+  @property({type: String, attribute: "sort-by"}) sort_by = "popularity";
 
   @state() genres: Array<{slug: string; name: string}> = [];
 
@@ -94,10 +94,10 @@ export class MediaFilters extends LitElement {
         type: this.type,
         status: this.status,
         genre: this.genre,
-        yearFrom: this.yearFrom,
-        yearTo: this.yearTo,
-        scoreFrom: this.scoreFrom,
-        sortBy: this.sortBy,
+        year_from: this.year_from,
+        year_to: this.year_to,
+        score_from: this.score_from,
+        sort_by: this.sort_by,
       } as MediaFiltersState,
       bubbles: true,
       composed: true,
@@ -105,15 +105,7 @@ export class MediaFilters extends LitElement {
   }
 
   private handleChange(field: keyof MediaFilters, value: string) {
-    switch (field) {
-      case "type": this.type = value; break;
-      case "status": this.status = value; break;
-      case "genre": this.genre = value; break;
-      case "yearFrom": this.yearFrom = value; break;
-      case "yearTo": this.yearTo = value; break;
-      case "scoreFrom": this.scoreFrom = value; break;
-      case "sortBy": this.sortBy = value; break;
-    }
+    (this as any)[field] = value;
     this.emitChange();
   }
 
@@ -121,10 +113,10 @@ export class MediaFilters extends LitElement {
     this.type = "";
     this.status = "";
     this.genre = "";
-    this.yearFrom = "";
-    this.yearTo = "";
-    this.scoreFrom = "";
-    this.sortBy = "popularity";
+    this.year_from = "";
+    this.year_to = "";
+    this.score_from = "";
+    this.sort_by = "popularity";
     this.emitChange();
   }
 
@@ -139,7 +131,7 @@ export class MediaFilters extends LitElement {
             <select @change=${(e: Event) => this.handleChange("type", (e.target as HTMLSelectElement).value)} .value=${this.type}>
               <option value="">${i18next.t("filters.all")}</option>
               <option value="anime">Anime</option>
-              <option value="manga">Manga</option>
+              <option value="series">${i18next.language === 'es' ? 'Serie' : 'Series'}</option>
               <option value="movie">${i18next.language === 'es' ? 'Película' : 'Movie'}</option>
               <option value="ova">OVA</option>
               <option value="ona">ONA</option>
@@ -169,14 +161,14 @@ export class MediaFilters extends LitElement {
           <div class="filter-group">
             <label>${i18next.t("filters.year_range")}</label>
             <div style="display: flex; gap: 8px;">
-              <input type="number" placeholder=${i18next.language === 'es' ? "Desde" : "From"} min="1990" max=${currentYear} .value=${this.yearFrom} @change=${(e: Event) => this.handleChange("yearFrom", (e.target as HTMLInputElement).value)} />
-              <input type="number" placeholder=${i18next.language === 'es' ? "Hasta" : "To"} min="1990" max=${currentYear} .value=${this.yearTo} @change=${(e: Event) => this.handleChange("yearTo", (e.target as HTMLInputElement).value)} />
+              <input type="number" placeholder=${i18next.language === 'es' ? "Desde" : "From"} min="1900" max=${currentYear} .value=${this.year_from} @change=${(e: Event) => this.handleChange("year_from", (e.target as HTMLInputElement).value)} />
+              <input type="number" placeholder=${i18next.language === 'es' ? "Hasta" : "To"} min="1900" max=${currentYear} .value=${this.year_to} @change=${(e: Event) => this.handleChange("year_to", (e.target as HTMLInputElement).value)} />
             </div>
           </div>
           
           <div class="filter-group">
             <label>${i18next.t("filters.score")}</label>
-            <select @change=${(e: Event) => this.handleChange("scoreFrom", (e.target as HTMLSelectElement).value)} .value=${this.scoreFrom}>
+            <select @change=${(e: Event) => this.handleChange("score_from", (e.target as HTMLSelectElement).value)} .value=${this.score_from}>
               <option value="">${i18next.t("filters.any")}</option>
               <option value="9">9+ ★</option>
               <option value="8">8+ ★</option>
@@ -187,7 +179,7 @@ export class MediaFilters extends LitElement {
           
           <div class="filter-group">
             <label>${i18next.t("filters.sort_by")}</label>
-            <select @change=${(e: Event) => this.handleChange("sortBy", (e.target as HTMLSelectElement).value)} .value=${this.sortBy}>
+            <select @change=${(e: Event) => this.handleChange("sort_by", (e.target as HTMLSelectElement).value)} .value=${this.sort_by}>
               <option value="popularity">${i18next.t("filters.popularity")}</option>
               <option value="score">${i18next.t("filters.score")}</option>
               <option value="release_date">${i18next.t("filters.date")}</option>

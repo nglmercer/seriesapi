@@ -57,18 +57,24 @@ button {
   background: var(--bg-secondary);
   color: var(--text-primary);
   padding: 8px 16px;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 
-button.primary {
+button.primary, button.active {
   background: var(--accent-color);
   color: white;
   border-color: var(--accent-color);
 }
 
 button:hover {
-  opacity: 0.9;
+  filter: brightness(0.9);
+}
+
+button.active:hover {
+  filter: brightness(1.1);
 }
 
 input, textarea, select {
