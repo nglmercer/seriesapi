@@ -392,6 +392,12 @@ class ApiClient {
       body: JSON.stringify(data)
     });
   }
+
+  getRating(entityType: string, entityId: number): Promise<ApiResponse<{average: number; count: number; userScore: number}>> {
+    return this.request(`/ratings?entity_type=${entityType}&entity_id=${entityId}`, {
+      method: "GET"
+    });
+  }
 }
 
 export const api = new ApiClient();

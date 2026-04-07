@@ -32,6 +32,41 @@ export class RatingWidget extends LitElement {
   @state() loading = false;
   @state() userRating = 0;
 
+  private _unsubAuth?: () => void;
+
+  override connectedCallback() {
+    super.connectedCallback();
+    this.fetchRatingData();
+    this._unsubAuth = authStore.subscribe(() => {
+      this.fetchRatingData();
+    });
+  }
+
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    this._unsubAuth?.();
+  }
+
+  override updated(changedProperties: Map<string | number | symbol, unknown>) {
+    if (changedProperties.has("entityId") || changedProperties.has("entityType")) {
+      this.fetchRatingData();
+    }
+  }
+
+  private async fetchRatingData() {
+    if (!this.entityType || !this.entityId) return;
+    try {
+      const res = await api.getRating(this.entityType, this.entityId);
+      if (res.ok && res.data) {
+        this.average = res.data.average;
+        this.count = res.data.count;
+        this.userRating = res.data.userScore;
+      }
+    } catch (e) {
+      console.error("[rating-widget] fetch error:", e);
+    }
+  }
+
   private async handleRate(score: number) {
     if (!authStore.isLoggedIn) {
       this.dispatchEvent(new CustomEvent("need-login", { bubbles: true, composed: true }));

@@ -1,5 +1,5 @@
 import { getDrizzle } from "../../init";
-import { ratingsTable } from "../../schema";
+import { ratingsTable, mediaTable, seasonsTable, episodesTable } from "../../schema";
 import { ok, badRequest, serverError, unauthorized } from "../response";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
 import { getUserFromToken } from "./auth";
@@ -26,8 +26,20 @@ export async function handleRatingPost(req: Request) {
     
     // Hash IP address
     const ip = req.headers.get("x-forwarded-for") || "127.0.0.1";
-    const ipHashBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip));
-    const ipHash = Array.from(new Uint8Array(ipHashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    let ipHash = "ip_unknown";
+    try {
+      const ipHashBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip));
+      ipHash = Array.from(new Uint8Array(ipHashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (e) {
+      console.warn("[ratings] crypto.subtle failed, using fallback hash", e);
+      // fallback simple hash
+      let hash = 0;
+      for (let i = 0; i < ip.length; i++) {
+        hash = ((hash << 5) - hash) + ip.charCodeAt(i);
+        hash = hash & hash;
+      }
+      ipHash = "ip_" + Math.abs(hash).toString(16);
+    }
     
     // Check if rating already exists for this user + entity
     const existing = drizzle.select(ratingsTable)
@@ -52,11 +64,72 @@ export async function handleRatingPost(req: Request) {
     }
 
     // Get new average score
-    const result = drizzle.query<{ avgScore: number, count: number }>(
+    const result = drizzle.query<{ avgScore: number | null, count: number }>(
       "SELECT avg(score) as avgScore, count(id) as count FROM ratings WHERE entity_type = ? AND entity_id = ?"
     ).get([body.entity_type, body.entity_id]);
     
-    return ok({ average: result?.avgScore || 0, count: result?.count || 0 }, { locale });
+    const newAverage = result?.avgScore ?? 0;
+    const newCount = result?.count ?? 0;
+
+    // Synchronize aggregate scores to parent tables
+    if (body.entity_type === "media") {
+      drizzle.update(mediaTable)
+        .set({ score: newAverage, score_count: newCount } as any)
+        .where("id = ?", [body.entity_id])
+        .run();
+    } else if (body.entity_type === "season") {
+      drizzle.update(seasonsTable)
+        .set({ score: newAverage, score_count: newCount } as any)
+        .where("id = ?", [body.entity_id])
+        .run();
+    } else if (body.entity_type === "episode") {
+      drizzle.update(episodesTable)
+        .set({ score: newAverage, score_count: newCount } as any)
+        .where("id = ?", [body.entity_id])
+        .run();
+    }
+    
+    return ok({ average: newAverage, count: newCount }, { locale });
+  } catch (err) {
+    return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
+  }
+}
+
+export async function handleRatingGet(req: Request) {
+  try {
+    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+    const url = new URL(req.url);
+    const entity_type = url.searchParams.get("entity_type");
+    const entity_id = parseInt(url.searchParams.get("entity_id") ?? "", 10);
+
+    if (!entity_type || isNaN(entity_id)) {
+      return badRequest("Missing required query parameters (entity_type, entity_id)", locale);
+    }
+
+    const drizzle = getDrizzle();
+    const user = getUserFromToken(req);
+
+    // Get average and count
+    const stats = drizzle.query<{ avgScore: number | null, count: number }>(
+      "SELECT avg(score) as avgScore, count(id) as count FROM ratings WHERE entity_type = ? AND entity_id = ?"
+    ).get([entity_type, entity_id]);
+
+    // Get user's rating if logged in
+    let userScore = 0;
+    if (user) {
+      const userRating = drizzle.select(ratingsTable)
+        .select("score")
+        .where("entity_type = ? AND entity_id = ? AND user_id = ?", 
+          [entity_type, entity_id, user.id])
+        .get() as { score: number } | undefined;
+      if (userRating) userScore = userRating.score;
+    }
+
+    return ok({
+      average: stats?.avgScore ?? 0,
+      count: stats?.count ?? 0,
+      userScore
+    }, { locale });
   } catch (err) {
     return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
   }
