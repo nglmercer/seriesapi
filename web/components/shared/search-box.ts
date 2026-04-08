@@ -2,6 +2,7 @@ import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { api } from "../../services/api-service";
 import i18next from "../../utils/i18n";
+import { ICONS } from "../../utils/icons";
 import { eventBus } from "../../utils/events";
 //  { id: number; entity_type: string; title: string; content_type?: string; image_url?: string }> = [];
 
@@ -243,10 +244,7 @@ export class SearchBox extends LitElement {
         <div class="search-wrapper">
           <div class="input-group">
             <div class="search-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
+              ${ICONS.search}
             </div>
             <input 
               type="text" 
@@ -257,11 +255,7 @@ export class SearchBox extends LitElement {
             />
           </div>
           <button ?disabled=${this.loading} @click=${this.handleSearch}>
-            ${this.loading ? html`
-              <svg class="spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
-                <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
-              </svg>
-            ` : (this.buttonText || i18next.t("hero.explore_btn"))}
+            ${this.loading ? ICONS.spinner : (this.buttonText || i18next.t("hero.explore_btn"))}
           </button>
         </div>
         ${this.showResults && this.results.length > 0 ? html`

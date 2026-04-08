@@ -8,6 +8,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import i18next from "../../utils/i18n";
+import { ICONS } from "../../utils/icons";
 import "./comment-avatar";
 import { type Comment_Item as CommentData } from "../../services/api-service";
 
@@ -231,27 +232,18 @@ export class CommentItem extends LitElement {
           <div class="actions">
             <!-- Like -->
             <button class="act-btn ${this.liked ? "active" : ""}" @click=${this.handleLike} title=${i18next.t("comments.like", { defaultValue: "Like" })}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill=${this.liked ? "currentColor" : "none"} stroke="currentColor" stroke-width="2.5">
-                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/>
-                <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
-              </svg>
+              <span style="${this.liked ? 'color: currentColor;' : ''}">${ICONS.like}</span>
               ${(c.likes || 0) + (this.liked ? 1 : 0)}
             </button>
 
             <!-- Dislike -->
             <button class="act-btn ${this.disliked ? "active" : ""}" @click=${this.handleDislike} title=${i18next.t("comments.dislike", { defaultValue: "Dislike" })}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill=${this.disliked ? "currentColor" : "none"} stroke="currentColor" stroke-width="2.5">
-                <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/>
-                <path d="M17 2h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"/>
-              </svg>
+              <span style="${this.disliked ? 'color: currentColor;' : ''}">${ICONS.dislike}</span>
             </button>
 
             <!-- Reply toggle -->
             <button class="act-btn ${this.showReply ? "active" : ""}" @click=${this.handleReplyClick}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <polyline points="9 17 4 12 9 7"/>
-                <path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
-              </svg>
+              ${ICONS.reply}
               ${i18next.t("comments.reply", { defaultValue: "Reply" })}
               ${c.replies?.length ? html`<span style="opacity:.6; font-size: 11px; margin-left: -2px;">${c.replies.length}</span>` : ""}
             </button>

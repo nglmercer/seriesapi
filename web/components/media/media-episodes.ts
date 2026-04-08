@@ -3,6 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { type EpisodeItem, type MediaItem } from "../../services/api-service";
 import { mediaService } from "../../services/media-service";
 import i18next from "../../utils/i18n";
+import { ICONS } from "../../utils/icons";
 import "../shared/empty-state";
 import "../shared/rating-widget";
 import "../shared/comments-section";
@@ -90,7 +91,7 @@ export class MediaEpisodes extends LitElement {
     return html`
       <div class="header">
         <div class="back-link" @click=${this.handleBack}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          ${ICONS.back}
           ${i18next.t("episodes.back_to_series")}
         </div>
         <h1 class="title">
