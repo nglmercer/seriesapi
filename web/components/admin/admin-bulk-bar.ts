@@ -33,21 +33,9 @@ export class AdminBulkBar extends HTMLElement {
         h("div", { style: "height: 30px; width: 1px; background: rgba(255,255,255,0.2);" }),
         h("div", { style: "display: flex; gap: 8px;" },
           h("button", { 
-            onclick: () => this.onAction("status"),
-            style: "background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;"
-          }, i18next.t("admin.change_status", { defaultValue: "Status" })),
-          h("button", { 
-            onclick: () => this.onAction("add_tag"),
-            style: "background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;"
-          }, i18next.t("admin.add_tag", { defaultValue: "Add Tag" })),
-          h("button", { 
-            onclick: () => this.onAction("replace_tags"),
-            style: "background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;"
-          }, i18next.t("admin.replace_tags", { defaultValue: "Replace" })),
-          h("button", { 
-            onclick: () => this.onAction("clear_tags"),
-            style: "background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;"
-          }, i18next.t("admin.clear_tags", { defaultValue: "Clear" }))
+            onclick: () => this.onAction("bulk-edit"),
+            style: "background: white; border: none; color: var(--accent-color); padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 700; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"
+          }, i18next.t("admin.bulk_edit", { defaultValue: "Bulk Edit" }))
         )
       ),
       h("button", { 

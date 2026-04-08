@@ -9,6 +9,8 @@ import "./admin-bulk-bar";
 import "./admin-media-list";
 import "../shared/search-box";
 import "../shared/app-pagination";
+//not delete import its necesary for load and register, when import types or use for types never register the component
+//its necesary allways import the component to use it
 import { AdminContentManager } from "./admin-content-manager";
 import { AdminBulkBar } from "./admin-bulk-bar";
 import { AdminMediaList } from "./admin-media-list";
@@ -83,37 +85,59 @@ export class AdminView extends HTMLElement {
 
     if (this.selectedIds.size === 0) return;
 
-    const ids = Array.from(this.selectedIds);
-    let status: string | undefined;
-    let tags: string[] | undefined;
-    let tagAction: "add" | "replace" | "clear" | undefined;
+    if (action === "bulk-edit") {
+      const fields = [
+        { 
+          label: i18next.t("admin.action_type", { defaultValue: "Action Type" }), 
+          name: "actionType", 
+          type: "select", 
+          options: [
+            { label: i18next.t("admin.change_status", { defaultValue: "Change Status" }), value: "status" },
+            { label: i18next.t("admin.add_tag", { defaultValue: "Add Tag" }), value: "add_tag" },
+            { label: i18next.t("admin.replace_tags", { defaultValue: "Replace Tags" }), value: "replace_tags" },
+            { label: i18next.t("admin.clear_tags", { defaultValue: "Clear Tags" }), value: "clear_tags" }
+          ]
+        },
+        { 
+          label: i18next.t("admin.value", { defaultValue: "Value" }), 
+          name: "value", 
+          type: "text",
+          placeholder: i18next.t("admin.bulk_value_placeholder", { defaultValue: "Status or Tags..." })
+        }
+      ];
 
-    if (action === "status") {
-      const resPrompt = await ui.prompt(i18next.t("admin.new_status", { defaultValue: "New Status" }), "ongoing");
-      if (!resPrompt) return;
-      status = resPrompt;
-    } else if (action === "add_tag") {
-      const tag = await ui.prompt(i18next.t("admin.tag_slug", { defaultValue: "Tag Slug" }), "");
-      if (!tag) return;
-      tags = [tag];
-      tagAction = "add";
-    } else if (action === "replace_tags") {
-      const tagStr = await ui.prompt(i18next.t("admin.tags_comma", { defaultValue: "Tags (comma separated)" }), "");
-      if (tagStr === null) return;
-      tags = tagStr.split(",").map(s => s.trim()).filter(Boolean);
-      tagAction = "replace";
-    } else if (action === "clear_tags") {
-      if (!await ui.confirm(i18next.t("admin.confirm_clear_tags", { defaultValue: "Are you sure you want to clear all tags for selected items?" }))) return;
-      tags = [];
-      tagAction = "clear";
-    }
+      const resModal = await ui.form<{ actionType: string, value: string }>(
+        i18next.t("admin.bulk_edit_title", { count: this.selectedIds.size, defaultValue: `Bulk Edit (${this.selectedIds.size} items)` }),
+        fields
+      );
 
-    const res = await api.bulkUpdateMedia({ ids, status, tags, tagAction });
-    if (res.ok) {
-      ui.toast(i18next.t("admin.bulk_success", { defaultValue: "Bulk update successful" }));
-      this.selectedIds.clear();
-      await this.fetchMedia();
-      this.render();
+      if (!resModal) return;
+
+      const ids = Array.from(this.selectedIds);
+      let status: string | undefined;
+      let tags: string[] | undefined;
+      let tagAction: "add" | "replace" | "clear" | undefined;
+
+      if (resModal.actionType === "status") {
+        status = resModal.value;
+      } else if (resModal.actionType === "add_tag") {
+        tags = [resModal.value];
+        tagAction = "add";
+      } else if (resModal.actionType === "replace_tags") {
+        tags = resModal.value.split(",").map(s => s.trim()).filter(Boolean);
+        tagAction = "replace";
+      } else if (resModal.actionType === "clear_tags") {
+        tags = [];
+        tagAction = "clear";
+      }
+
+      const res = await api.bulkUpdateMedia({ ids, status, tags, tagAction });
+      if (res.ok) {
+        ui.toast(i18next.t("admin.bulk_success", { defaultValue: "Bulk update successful" }));
+        this.selectedIds.clear();
+        await this.fetchMedia();
+        this.render();
+      }
     }
   }
 

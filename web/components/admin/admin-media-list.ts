@@ -37,11 +37,44 @@ export class AdminMediaList extends HTMLElement {
       return;
     }
 
-    const selectAllCheck = h("input", { 
-      type: "checkbox", 
-      checked: this._selectedIds.size === this._mediaList.length && this._mediaList.length > 0,
-      onchange: () => this.onSelectAll()
-    });
+    const style = h("style", {}, `
+      .media-admin-list { display: grid; gap: 12px; }
+      .admin-card {
+        display: flex; 
+        align-items: center; 
+        gap: 16px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        transition: all 0.2s ease;
+      }
+      .admin-card.selected {
+        border: 2px solid var(--accent-color); 
+        background: var(--bg-secondary); 
+        transform: translateX(4px);
+      }
+      .card-main { display: flex; align-items: center; gap: 16px; flex: 1; min-width: 0; }
+      .card-info { flex: 1; min-width: 0; }
+      .card-meta { 
+        color: var(--text-secondary); 
+        font-size: 13px; 
+        display: flex; 
+        gap: 8px; 
+        flex-wrap: wrap; 
+        margin-top: 4px;
+      }
+      .card-actions { display: flex; gap: 8px; flex-shrink: 0; }
+      
+      @media (max-width: 768px) {
+        .admin-card { flex-direction: column; align-items: stretch; gap: 12px; padding: 16px; }
+        .card-main { align-items: flex-start; }
+        .card-meta .meta-hide-mobile { display: none; }
+        .card-actions { justify-content: flex-end; border-top: 1px solid var(--border-color); pt: 12px; margin-top: 4px; padding-top: 12px; }
+        .card-actions button { flex: 1; padding: 10px; font-size: 12px; }
+      }
+    `);
+    this.appendChild(style);
 
     const header = h("div", { 
       style: "margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color);" 
@@ -64,63 +97,57 @@ export class AdminMediaList extends HTMLElement {
       )
     );
 
-    const listContainer = h("div", { className: "media-admin-list", style: "display: grid; gap: 12px;" },
+    const listContainer = h("div", { className: "media-admin-list" },
       ...this._mediaList.map(item => {
         const isSelected = this._selectedIds.has(item.id);
         return h("div", { 
-          className: `card ${isSelected ? 'selected' : ''}`, 
-          style: `
-            display: flex; 
-            align-items: center; 
-            gap: 20px;
-            padding: 12px 20px;
-            margin-bottom: 0; 
-            transition: all 0.2s ease;
-            ${isSelected ? 'border: 2px solid var(--accent-color); background: var(--bg-secondary); transform: translateX(5px);' : 'border: 1px solid var(--border-color);'}
-          ` 
+          className: `admin-card ${isSelected ? 'selected' : ''}`, 
         },
-          h("input", { 
-            type: "checkbox", 
-            checked: isSelected,
-            style: "width: 18px; height: 18px; cursor: pointer; flex-shrink: 0;",
-            onclick: (e: Event) => e.stopPropagation(),
-            onchange: () => this.onSelect(item.id)
-          }),
-          
-          h("img", {
-            src: item.poster_url || "/placeholder-poster.png",
-            style: "width: 50px; height: 75px; object-fit: cover; border-radius: 6px; background: var(--bg-secondary); flex-shrink: 0;",
-            onerror: (e: Event) => { (e.target as HTMLImageElement).src = "/placeholder-poster.png"; }
-          }),
+          h("div", { className: "card-main" },
+            h("input", { 
+              type: "checkbox", 
+              checked: isSelected,
+              style: "width: 20px; height: 20px; cursor: pointer; flex-shrink: 0;",
+              onclick: (e: Event) => e.stopPropagation(),
+              onchange: () => this.onSelect(item.id)
+            }),
+            
+            h("img", {
+              src: item.poster_url || "/placeholder-poster.png",
+              style: "width: 50px; height: 75px; object-fit: cover; border-radius: 6px; background: var(--bg-secondary); flex-shrink: 0;",
+              onerror: (e: Event) => { (e.target as HTMLImageElement).src = "/placeholder-poster.png"; }
+            }),
 
-          h("div", { 
-            onclick: () => this.onSelect(item.id), 
-            style: "cursor: pointer; flex: 1; min-width: 0;" 
-          },
-            h("div", { style: "display:flex; align-items:center; gap:8px; margin-bottom: 4px;" },
-              h("strong", { style: "font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" }, item.title),
-              !item.translation_id ? h("span", { 
-                style: "background: var(--error-color); color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase; flex-shrink: 0;" 
-              }, i18next.t("admin.missing_translation", { defaultValue: "MISSING " + i18next.language.toUpperCase() })) : null
-            ),
-            h("div", { style: "color:var(--text-secondary); font-size:13px; display: flex; gap: 10px; flex-wrap: wrap;" }, 
-              h("span", {}, `${item.content_type.toUpperCase()}`),
-              h("span", { style: "opacity: 0.5" }, "|"),
-              h("span", {}, `ID: ${item.id}`),
-              h("span", { style: "opacity: 0.5" }, "|"),
-              h("span", {}, `Slug: ${item.slug}`),
-              h("span", { style: "opacity: 0.5" }, "|"),
-              h("span", { 
-                style: `font-weight: 600; color: ${item.status === 'completed' ? '#10b981' : '#f59e0b'}` 
-              }, item.status)
+            h("div", { 
+              className: "card-info",
+              onclick: () => this.onSelect(item.id), 
+              style: "cursor: pointer;" 
+            },
+              h("div", { style: "display:flex; align-items:center; gap:8px; margin-bottom: 2px;" },
+                h("strong", { style: "font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;" }, item.title),
+                !item.translation_id ? h("span", { 
+                  style: "background: var(--error-color); color: white; font-size: 9px; padding: 2px 4px; border-radius: 4px; font-weight: bold; text-transform: uppercase; flex-shrink: 0;" 
+                }, i18next.t("admin.missing_translation", { defaultValue: "MISSING" })) : null
+              ),
+              h("div", { className: "card-meta" }, 
+                h("span", { style: "font-weight: 700; color: var(--accent-color);" }, item.content_type.toUpperCase()),
+                h("span", { className: "meta-hide-mobile", style: "opacity: 0.5" }, "|"),
+                h("span", { className: "meta-hide-mobile" }, `ID: ${item.id}`),
+                h("span", { style: "opacity: 0.5" }, "|"),
+                h("span", { className: "meta-hide-mobile" }, `Slug: ${item.slug}`),
+                h("span", { className: "meta-hide-mobile", style: "opacity: 0.5" }, "|"),
+                h("span", { 
+                  style: `font-weight: 600; color: ${item.status === 'completed' ? '#10b981' : '#f59e0b'}` 
+                }, item.status)
+              )
             )
           ),
           
-          h("div", { style: "display: flex; gap: 8px; flex-shrink: 0;" },
+          h("div", { className: "card-actions" },
             h("button", { 
               onclick: (e: Event) => { e.stopPropagation(); this.onAction("content_mgr", item.id); },
               style: "padding: 8px 12px; font-size: 13px;"
-            }, i18next.t("admin.content_mgr", { defaultValue: "Content (T/E)" })),
+            }, i18next.t("admin.content_mgr", { defaultValue: "Content" })),
             h("button", { 
               onclick: (e: Event) => { e.stopPropagation(); this.onAction("edit", item.id); },
               style: "padding: 8px 12px; font-size: 13px;"
