@@ -1,5 +1,19 @@
 import i18next from "../utils/i18n";
 import { mediaStore } from "./media-store";
+import type { 
+  InferRow, 
+  mediaTable, 
+  mediaTranslationsTable,
+  genresTable,
+  peopleTable,
+  seasonsTable,
+  seasonTranslationsTable,
+  episodesTable,
+  episodeTranslationsTable,
+  commentsTable,
+  tagsTable
+} from "../../src/schema";
+
 const API_BASE = "/api/v1";
 
 export interface ApiResponse<T> {
@@ -9,38 +23,18 @@ export interface ApiResponse<T> {
   meta?: Record<string, unknown>;
   params?: Record<string, unknown>;
 }
-export interface Genres {
-  id: number | string,
-  name:string,
-  slug:string
-}
+
+export type Genres = InferRow<typeof genresTable> & { name: string };
+export type Tag = InferRow<typeof tagsTable>;
+
 export { mediaStore };
-/*
-id: 47
-name: "Acción"
-​
-slug: "acci-n"
-*/
-export interface MediaItem {
-  id: number;
-  slug: string;
+
+export interface MediaItem extends Omit<InferRow<typeof mediaTable>, 'is_adult' | 'content_type_id'> {
   content_type: string;
-  original_title: string;
-  original_language?: string;
-  status: string;
-  release_date: string | null;
-  end_date: string | null;
-  runtime_minutes: number | null;
-  total_episodes: number | null;
-  total_seasons: number | null;
-  score: number;
-  score_count: number;
-  popularity: number;
-  age_rating: string | null;
   is_adult: boolean;
   poster_url: string;
   image_url?: string;
-  // Localized fields
+  // Localized fields (joined from media_translations)
   title: string;
   tagline: string | null;
   synopsis: string | null;
@@ -63,24 +57,13 @@ export interface MediaItem {
   originalTitle?: string;
 }
 
-export interface PeopleItem {
-  id: number;
-  name: string;
+export interface PeopleItem extends InferRow<typeof peopleTable> {
   originalName?: string;
   image?: string;
   occupation?: string;
 }
 
-export interface SeasonItem {
-  id: number;
-  media_id: number;
-  season_number: number;
-  episode_count: number;
-  air_date: string | null;
-  end_date: string | null;
-  score: number;
-  score_count: number;
-  
+export interface SeasonItem extends InferRow<typeof seasonsTable> {
   // Localized fields
   name: string | null;
   synopsis: string | null;
@@ -91,15 +74,9 @@ export interface SeasonsResponse {
   seasons: SeasonItem[];
 }
 
-export interface Comment_Item {
-  id: number;
-  parent_id: number | null;
-  display_name: string;
-  body: string;
+export interface Comment_Item extends Omit<InferRow<typeof commentsTable>, 'contains_spoilers' | 'is_hidden'> {
   contains_spoilers: boolean;
-  likes: number;
-  dislikes: number;
-  created_at: string;
+  is_hidden: boolean;
   replies?: Comment_Item[];
 }
 
@@ -110,18 +87,7 @@ export interface CommentsResponse {
   pages: number;
 }
 
-export interface EpisodeItem {
-  id: number;
-  media_id: number;
-  season_id: number | null;
-  episode_number: number;
-  absolute_number: number | null;
-  episode_type: string;
-  air_date: string | null;
-  runtime_minutes: number | null;
-  score: number;
-  score_count: number;
-  
+export interface EpisodeItem extends InferRow<typeof episodesTable> {
   // Localized fields
   title: string | null;
   synopsis: string | null;

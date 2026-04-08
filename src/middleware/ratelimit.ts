@@ -14,6 +14,62 @@
 import { createHash } from "crypto";
 import type { Database } from "sqlite-napi";
 
+// ─── Constants & Enums ────────────────────────────────────────────────────────
+
+export enum HttpMethod {
+  GET = "GET",
+  POST = "POST",
+  PUT = "PUT",
+  DELETE = "DELETE",
+  OPTIONS = "OPTIONS",
+}
+
+export enum HttpStatus {
+  OK = 200,
+  CREATED = 201,
+  NO_CONTENT = 204,
+  BAD_REQUEST = 400,
+  UNAUTHORIZED = 401,
+  FORBIDDEN = 403,
+  NOT_FOUND = 404,
+  METHOD_NOT_ALLOWED = 405,
+  TOO_MANY_REQUESTS = 429,
+  INTERNAL_SERVER_ERROR = 500,
+}
+
+export enum HttpHeader {
+  CONTENT_TYPE = "Content-Type",
+  AUTHORIZATION = "Authorization",
+  ORIGIN = "Origin",
+  X_FORWARDED_FOR = "X-Forwarded-For",
+  RETRY_AFTER = "Retry-After",
+  RATELIMIT_LIMIT = "X-RateLimit-Limit",
+  RATELIMIT_REMAINING = "X-RateLimit-Remaining",
+  RATELIMIT_RESET = "X-RateLimit-Reset",
+  CORS_ALLOW_ORIGIN = "Access-Control-Allow-Origin",
+  CORS_ALLOW_METHODS = "Access-Control-Allow-Methods",
+  CORS_ALLOW_HEADERS = "Access-Control-Allow-Headers",
+  CORS_MAX_AGE = "Access-Control-Max-Age",
+}
+
+export enum ContentType {
+  JSON = "application/json",
+  HTML = "text/html",
+}
+
+const DURATIONS = {
+  MINUTE: 60_000,
+  PRUNE_INTERVAL: 5 * 60_000,
+  CORS_MAX_AGE: 86400, // 24 hours in seconds
+};
+
+const DEFAULTS = {
+  WINDOW_MS: DURATIONS.MINUTE,
+  MAX_REQUESTS: 60,
+  UNKNOWN_IP: "unknown",
+  ID_PLACEHOLDER: "/:id",
+};
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface RateLimiterOptions {
@@ -37,7 +93,7 @@ interface Counter {
 
 const store = new Map<string, Counter>();
 
-// Prune expired entries every 5 minutes
+// Prune expired entries
 let pruneTimer: ReturnType<typeof setInterval> | null = null;
 
 function startPruning(windowMs: number) {
@@ -47,15 +103,15 @@ function startPruning(windowMs: number) {
     for (const [key, counter] of store.entries()) {
       if (now - counter.windowStart >= windowMs) store.delete(key);
     }
-  }, Math.max(windowMs, 5 * 60_000));
+  }, Math.max(windowMs, DURATIONS.PRUNE_INTERVAL));
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function hashIP(req: Request): string {
-  const forwarded = req.headers.get("x-forwarded-for");
+  const forwarded = req.headers.get(HttpHeader.X_FORWARDED_FOR.toLowerCase());
   if (!forwarded || typeof forwarded !== "string") {
-    return "unknown";
+    return DEFAULTS.UNKNOWN_IP;
   }
   const ip = forwarded.split(",")[0]!.trim();
   return createHash("sha256").update(ip).digest("hex").slice(0, 16);
@@ -64,7 +120,7 @@ function hashIP(req: Request): string {
 function getEndpoint(req: Request): string {
   const url = new URL(req.url);
   // Collapse IDs to keep key space small: /api/v1/media/123 → /api/v1/media/:id
-  return url.pathname.replace(/\/\d+/g, "/:id");
+  return url.pathname.replace(/\/\d+/g, DEFAULTS.ID_PLACEHOLDER);
 }
 
 // ─── Factory ─────────────────────────────────────────────────────────────────
@@ -77,8 +133,8 @@ export interface RateLimiter {
 }
 
 export function createRateLimiter(opts: RateLimiterOptions = {}): RateLimiter {
-  const windowMs = opts.windowMs ?? 60_000;
-  const max = opts.max ?? 60;
+  const windowMs = opts.windowMs ?? DEFAULTS.WINDOW_MS;
+  const max = opts.max ?? DEFAULTS.MAX_REQUESTS;
   const keyFn = opts.keyFn ?? ((req) => `${hashIP(req)}:${getEndpoint(req)}`);
 
   startPruning(windowMs);
@@ -101,10 +157,10 @@ export function createRateLimiter(opts: RateLimiterOptions = {}): RateLimiter {
 
       // Always attach headers; only block when over limit
       const headers = {
-        "X-RateLimit-Limit": String(max),
-        "X-RateLimit-Remaining": String(remaining),
-        "X-RateLimit-Reset": String(reset),
-        "Retry-After": counter.count > max ? String(Math.ceil(windowMs / 1000)) : "",
+        [HttpHeader.RATELIMIT_LIMIT]: String(max),
+        [HttpHeader.RATELIMIT_REMAINING]: String(remaining),
+        [HttpHeader.RATELIMIT_RESET]: String(reset),
+        [HttpHeader.RETRY_AFTER]: counter.count > max ? String(Math.ceil(windowMs / 1000)) : "",
       };
 
       if (counter.count > max) {
@@ -115,11 +171,11 @@ export function createRateLimiter(opts: RateLimiterOptions = {}): RateLimiter {
             retryAfter: reset,
           }),
           {
-            status: 429,
+            status: HttpStatus.TOO_MANY_REQUESTS,
             headers: { 
-              "Content-Type": "application/json", 
+              [HttpHeader.CONTENT_TYPE]: ContentType.JSON, 
               ...headers,
-              ...corsHeaders(req.headers.get("origin"))
+              ...corsHeaders(req.headers.get(HttpHeader.ORIGIN.toLowerCase()))
             },
           },
         );
@@ -136,19 +192,19 @@ export function createRateLimiter(opts: RateLimiterOptions = {}): RateLimiter {
 
 export function corsHeaders(origin?: string | null): Record<string, string> {
   return {
-    "Access-Control-Allow-Origin": origin ?? "*",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Accept-Language",
-    "Access-Control-Max-Age": "86400",
+    [HttpHeader.CORS_ALLOW_ORIGIN]: origin ?? "*",
+    [HttpHeader.CORS_ALLOW_METHODS]: `${HttpMethod.GET}, ${HttpMethod.OPTIONS}`,
+    [HttpHeader.CORS_ALLOW_HEADERS]: `${HttpHeader.CONTENT_TYPE}, Accept-Language`,
+    [HttpHeader.CORS_MAX_AGE]: String(DURATIONS.CORS_MAX_AGE),
   };
 }
 
 /** Respond to OPTIONS pre-flight */
 export function handlePreflight(req: Request): Response | undefined {
-  if (req.method === "OPTIONS") {
+  if (req.method === HttpMethod.OPTIONS) {
     return new Response(null, {
-      status: 204,
-      headers: corsHeaders(req.headers.get("origin")),
+      status: HttpStatus.NO_CONTENT,
+      headers: corsHeaders(req.headers.get(HttpHeader.ORIGIN.toLowerCase())),
     });
   }
 }

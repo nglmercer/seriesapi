@@ -1,5 +1,5 @@
 import { initializeDatabase, getDb } from "./src/init";
-import { createRateLimiter, handlePreflight, corsHeaders } from "./src/middleware/ratelimit";
+import { createRateLimiter, handlePreflight, corsHeaders, HttpMethod, HttpHeader, ContentType } from "./src/middleware/ratelimit";
 
 // ── route handlers ────────────────────────────────────────────────────────────
 import {
@@ -64,8 +64,8 @@ function route(req: Request): Response | Promise<Response> {
   const parts = url.pathname.replace(/\/$/, "").split("/").filter(Boolean);
   // parts[0] = "api", parts[1] = "v1", parts[2] = resource, ...
   const [, , resource, p3, p4] = parts;
-  const GET = req.method === "GET";
-  const POST = req.method === "POST";
+  const GET = req.method === HttpMethod.GET;
+  const POST = req.method === HttpMethod.POST;
   const db = getDb();
 
   // ── /api/v1/health ─────────────────────────────────────────────────────────
@@ -109,7 +109,7 @@ function route(req: Request): Response | Promise<Response> {
 
   // ── /api/v1/media ──────────────────────────────────────────────────────────
   if (resource === "media") {
-    if (req.method === "POST" && p3 === "bulk") return handleMediaBulkUpdate(req, db);
+    if (POST && p3 === "bulk") return handleMediaBulkUpdate(req, db);
     if (!GET) return methodNotAllowed(locale);
     if (!p3) return handleMediaList(req, db);
     const id = seg(parts, 3);
@@ -136,8 +136,8 @@ function route(req: Request): Response | Promise<Response> {
       return notFound("Resource", locale);
     }
     
-    if (req.method === "POST") return handleSeasonCreate(req);
-    return (req.method === "PUT" ? handleSeasonUpdate(req) : req.method === "DELETE" ? handleSeasonDelete(req) : methodNotAllowed(locale));
+    if (POST) return handleSeasonCreate(req);
+    return (req.method === HttpMethod.PUT ? handleSeasonUpdate(req) : req.method === HttpMethod.DELETE ? handleSeasonDelete(req) : methodNotAllowed(locale));
   }
 
   // ── /api/v1/episodes ───────────────────────────────────────────────────────
@@ -152,8 +152,8 @@ function route(req: Request): Response | Promise<Response> {
       return notFound("Resource", locale);
     }
 
-    if (req.method === "POST") return handleEpisodeCreate(req);
-    return (req.method === "PUT" ? handleEpisodeUpdate(req) : req.method === "DELETE" ? handleEpisodeDelete(req) : methodNotAllowed(locale));
+    if (POST) return handleEpisodeCreate(req);
+    return (req.method === HttpMethod.PUT ? handleEpisodeUpdate(req) : req.method === HttpMethod.DELETE ? handleEpisodeDelete(req) : methodNotAllowed(locale));
   }
 
   // ── /api/v1/comments ───────────────────────────────────────────────────────
@@ -219,7 +219,7 @@ const server = Bun.serve({
         JSON.stringify({ ok: false, data: null, error: "Internal Server Error" }),
         {
           status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders() },
+          headers: { [HttpHeader.CONTENT_TYPE]: ContentType.JSON, ...corsHeaders(req.headers.get(HttpHeader.ORIGIN.toLowerCase())) },
         },
       );
     }

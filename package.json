@@ -8,7 +8,8 @@
     "start": "bun index.ts",
     "web": "bun --watch ./web/index.html",
     "import:mal": "bun script/import-mal.ts",
-    "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist/types --noEmit false"
+    "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist/types --noEmit false",
+    "build:schema": "tsc src/schema/index.ts --declaration --emitDeclarationOnly --outDir dist/types --noEmit false --skipLibCheck --moduleResolution bundler --target ESNext"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.8.9",
