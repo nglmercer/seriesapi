@@ -2,6 +2,7 @@ import { api, type MediaItem, type EpisodeItem, type SeasonItem, type RelationIt
 import i18next from "../../utils/i18n";
 import { h } from "../../utils/dom";
 import { ui } from "../../utils/ui";
+import { ICONS } from "../../utils/icons";
 import "./admin-season-list";
 import "./admin-episode-list";
 import "./admin-relation-list";
@@ -173,7 +174,7 @@ export class AdminContentManager extends HTMLElement {
     const backBtn = h("button", { 
         onclick: () => this.dispatchEvent(new CustomEvent("back", { bubbles: true })),
         style: "margin-bottom: 24px; padding: 10px 20px; font-weight: 700; border-radius:10px; display:flex; align-items:center; gap:8px;"
-    }, h("span", { innerHTML: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>' }), i18next.t("admin.back_to_media_list"));
+    }, h("span", { innerHTML: ICONS.back.toString() }), i18next.t("admin.back_to_media_list"));
 
     const header = h("div", { className: "card", style: "background: var(--bg-secondary); margin-bottom: 24px; padding: 24px; border-radius:16px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05);" },
       h("h2", { style: "margin:0 0 8px 0; font-size:24px; font-weight:900; color:var(--text-primary);" }, i18next.t("admin.managing", { title: this.media.title })),

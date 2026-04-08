@@ -1,5 +1,6 @@
 import { h } from "../../utils/dom";
 import i18next from "../../utils/i18n";
+import { ICONS } from "../../utils/icons";
 import { type SeasonItem } from "../../services/api-service";
 
 export class AdminSeasonList extends HTMLElement {
@@ -47,7 +48,7 @@ export class AdminSeasonList extends HTMLElement {
               h("button", { 
                 style: "padding:6px; background:var(--bg-secondary); border:none; border-radius:6px; cursor:pointer;",
                 onclick: (e: Event) => { e.stopPropagation(); this.dispatchEvent(new CustomEvent("edit-season", { detail: s })); }
-              }, h("span", { innerHTML: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>' }))
+              }, h("span", { innerHTML: ICONS.edit.toString() }))
             )
           );
         })

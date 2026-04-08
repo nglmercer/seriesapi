@@ -2,6 +2,7 @@ import { api, type MediaItem } from "../../services/api-service";
 import i18next from "../../utils/i18n";
 import { h } from "../../utils/dom";
 import { ui } from "../../utils/ui";
+import { ICONS } from "../../utils/icons";
 import { AdminMediaForm } from "./admin-media-form";
 import { AdminContentManager } from "./admin-content-manager";
 import { AdminBulkBar } from "./admin-bulk-bar";
@@ -275,7 +276,7 @@ export class AdminView extends HTMLElement {
                className: this.showFilters ? "active" : "",
                style: "height: 48px; padding: 0 16px; display: flex; align-items: center; gap: 8px; font-weight: 600;"
             }, 
-              h("span", { innerHTML: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>', style: "display:flex; align-items:center;" }),
+              h("span", { innerHTML: ICONS.filter.toString(), style: "display:flex; align-items:center;" }),
               i18next.t("admin.filters", { defaultValue: "Filters" })
             )
           ),

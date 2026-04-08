@@ -1,5 +1,6 @@
 import { h } from "../../utils/dom";
 import i18next from "../../utils/i18n";
+import { ICONS } from "../../utils/icons";
 import { type RelationItem } from "../../services/api-service";
 
 export class AdminRelationList extends HTMLElement {
@@ -48,7 +49,7 @@ export class AdminRelationList extends HTMLElement {
             onclick: () => this.dispatchEvent(new CustomEvent("delete-relation", { detail: rel.id })), 
             className: "danger", 
             style: "width:32px; height:32px; padding:0; display:flex; align-items:center; justify-content:center; background:rgba(239, 68, 68, 0.1); color:#ef4444; border-radius:8px; cursor:pointer; border:none;" 
-          }, h("span", { innerHTML: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>' }))
+          }, h("span", { innerHTML: ICONS.trash.toString() }))
         )),
         this._relations.length === 0 ? h("div", { 
           style: "text-align:center; padding: 30px; color: var(--text-secondary); border: 1px dashed var(--border-color); border-radius:12px; grid-column: 1 / -1;" 
