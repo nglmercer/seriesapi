@@ -55,7 +55,7 @@ export function getUserFromToken(req: Request): { id: number; role: string; user
     .selectRaw("s.user_id, u.role, u.username, s.expires_at, u.is_active")
     .join("users u", "s.user_id = u.id")
     .where("s.token = ?", [token])
-    .get() as any) as { user_id: number; role: string; username: string; expires_at: string; is_active: number } | undefined;
+    .get()) as { user_id: number; role: string; username: string; expires_at: string; is_active: number } | undefined;
   
   if (!res || !res.is_active || new Date(res.expires_at) < new Date()) {
     if (res && new Date(res.expires_at) < new Date()) {
@@ -178,7 +178,7 @@ export async function handleLogin(req: Request): Promise<Response> {
       return unauthorized("Invalid credentials", locale);
     }
 
-    const user = users[0]! as any;
+    const user = users[0]!;
 
     if (!user.is_active) {
       return forbidden("Account is disabled", locale);
@@ -258,7 +258,7 @@ export const handleMe = withAuth(async (req: Request, user) => {
       return unauthorized("User not found", locale);
     }
 
-    const userData = users[0]! as any;
+    const userData = users[0]!;
 
     return ok({
       id: userData.id,
@@ -390,12 +390,12 @@ export async function handleVerifyCodeApply(req: Request): Promise<Response> {
     }
 
     drizzle.update(usersTable)
-      .set({ role: verifyCode.target_role as any, updated_at: new Date().toISOString() })
+      .set({ role: verifyCode.target_role, updated_at: new Date().toISOString() })
       .where("id = ?", [verifyCode.user_id as number])
       .run();
     
     drizzle.update(verificationCodesTable)
-      .set({ used: 1 } as any)
+      .set({ used: 1 })
       .where("id = ?", [verifyCode.id as number])
       .run();
 

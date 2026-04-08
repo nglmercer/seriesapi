@@ -2,10 +2,14 @@ import i18next from "../../utils/i18n";
 import { h, toggleTheme } from "../../utils/dom";
 import { authStore, type AuthUser } from "../../services/auth-store";
 import "../admin/admin-view";
-
+import "./admin-header";
+import "./mobile-menu";
+import { AdminHeader } from "./admin-header";
+import { MobileMenu } from "./mobile-menu";
 export class AdminApp extends HTMLElement {
   private user: AuthUser | null = null;
   private unsub?: () => void;
+  private isMenuOpen = false;
 
   // ── Login form state (for inline admin login) ──────────────────────────────
   private loginUsername = "";
@@ -37,6 +41,11 @@ export class AdminApp extends HTMLElement {
     this.unsub?.();
   }
 
+  private toggleMenu() {
+    this.isMenuOpen = !this.isMenuOpen;
+    this.render();
+  }
+
   // ── Login handler ──────────────────────────────────────────────────────────
 
   private async doLogin() {
@@ -66,6 +75,7 @@ export class AdminApp extends HTMLElement {
     this.loginUsername = "";
     this.loginPassword = "";
     this.loginError = "";
+    this.isMenuOpen = false;
     this.render();
   }
 
@@ -74,38 +84,22 @@ export class AdminApp extends HTMLElement {
   private render() {
     this.innerHTML = "";
 
-    const header = h("header",
-      { className: "card", style: "border-radius:0; margin-bottom:0; display:flex; justify-content:space-between; align-items:center; padding:10px 20px; position:sticky; top:0; z-index:50;" },
-      h("a", { href: "/", style: "font-size:22px; font-weight:900; color:var(--accent-color); text-decoration:none;" }, i18next.t("admin.title")),
-      h("div", { style: "display:flex; gap:16px; align-items:center;" },
-        // Language switcher
-        h("div", { style: "display:flex; gap:6px; border-right:1px solid var(--border-color); padding-right:16px;" },
-          h("button", {
-            onclick: () => { i18next.changeLanguage("en"); localStorage.setItem("lang", "en"); },
-            style: `background:${i18next.language === "en" ? "var(--accent-color)" : "transparent"}; color:${i18next.language === "en" ? "white" : "inherit"}; border:none; padding:4px 8px; font-weight:bold; font-size:12px; cursor:pointer; border-radius:4px;`
-          }, "EN"),
-          h("button", {
-            onclick: () => { i18next.changeLanguage("es"); localStorage.setItem("lang", "es"); },
-            style: `background:${i18next.language === "es" ? "var(--accent-color)" : "transparent"}; color:${i18next.language === "es" ? "white" : "inherit"}; border:none; padding:4px 8px; font-weight:bold; font-size:12px; cursor:pointer; border-radius:4px;`
-          }, "ES")
-        ),
-        h("button", { onclick: () => toggleTheme(), style: "border:none; background:transparent; cursor:pointer; font-size:18px;" }, "🌗"),
-        h("a", { href: "/", style: "font-size:13px; font-weight:600; color:var(--text-secondary); text-decoration:none;" }, i18next.t("admin.public_page")),
-        this.user
-          ? h("div", { style: "display:flex; align-items:center; gap:10px;" },
-              h("span", { style: "font-size:13px; font-weight:600; background:rgba(255,71,87,0.1); color:var(--accent-color); padding:4px 10px; border-radius:6px;" },
-                `👤 ${this.user.display_name || this.user.username}`
-              ),
-              h("button", {
-                onclick: () => this.doLogout(),
-                style: "font-size:12px; background:none; border:1px solid var(--border-color); color:var(--text-secondary); padding:4px 10px; border-radius:6px; cursor:pointer;"
-              }, i18next.t("auth.sign_out", { defaultValue: "Sign Out" }))
-            )
-          : h("span", { style: "font-size:13px; color:var(--text-secondary);" }, "Not signed in")
-      )
-    );
-
+    // 1. Render Lit components for header and mobile menu
+    const header = document.createElement("admin-header") as AdminHeader;
+    header.user = this.user;
+    header.isMenuOpen = this.isMenuOpen;
+    header.addEventListener("toggle-menu", () => this.toggleMenu());
+    header.addEventListener("logout", () => this.doLogout());
+    header.addEventListener("lang-change", () => this.render());
     this.appendChild(header);
+
+    const mobileMenu = document.createElement("mobile-menu") as MobileMenu;
+    mobileMenu.open = this.isMenuOpen;
+    mobileMenu.user = this.user;
+    mobileMenu.addEventListener("close", () => { this.isMenuOpen = false; this.render(); });
+    mobileMenu.addEventListener("logout", () => this.doLogout());
+    mobileMenu.addEventListener("lang-change", () => this.render());
+    this.appendChild(mobileMenu);
 
     // If not logged in or not admin — show a login gate
     if (!this.user || this.user.role !== "admin") {

@@ -9,6 +9,8 @@ import { initials, avatarColor } from "../shared/comment-avatar";
 import { toggleTheme } from "../../utils/dom";
 import i18next from "../../utils/i18n";
 import { eventBus } from "../../utils/events";
+import "./public-header";
+import "./mobile-menu";
 
 /**
  * Interface representing season data for a media item.
@@ -39,159 +41,6 @@ export class PublicApp extends LitElement {
       max-width: 1200px;
       margin: 0 auto;
       padding: 0 20px;
-    }
-    
-    header {
-      padding: 16px 0;
-      border-bottom: 1px solid var(--border-color);
-      background: var(--header-bg);
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      backdrop-filter: blur(8px);
-    }
-    
-    .header-inner {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-    }
-    
-    .logo {
-      font-size: 22px;
-      font-weight: 900;
-      color: var(--accent-color);
-      letter-spacing: -1px;
-      text-decoration: none;
-      cursor: pointer;
-    }
-    
-    .header-actions {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-    }
-    
-    .lang-btn {
-      background: transparent;
-      border: 1px solid transparent;
-      padding: 4px 8px;
-      font-weight: bold;
-      font-size: 12px;
-      cursor: pointer;
-      border-radius: 4px;
-      transition: all 0.2s;
-      color: var(--text-primary);
-    }
-    
-    .lang-btn.active {
-      background: var(--accent-color);
-      color: white;
-      border-color: var(--accent-color);
-    }
-    
-    .lang-btn:hover:not(.active) {
-      background: var(--bg-secondary);
-      border-color: var(--border-color);
-    }
-    
-    .theme-btn {
-      border: none;
-      background: transparent;
-      font-size: 20px;
-      cursor: pointer;
-      padding: 4px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s;
-    }
-
-    .theme-btn:hover {
-      background: var(--bg-secondary);
-    }
-    
-    .admin-link {
-      font-weight: 600;
-      font-size: 13px;
-      color: var(--text-secondary);
-      text-decoration: none;
-      padding: 6px 12px;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      transition: all 0.2s;
-    }
-    
-    .admin-link:hover {
-      background: var(--bg-secondary);
-      color: var(--text-primary);
-    }
-    
-    .auth-chip {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      position: relative;
-    }
-    
-    .avatar {
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      font-weight: 800;
-      color: #fff;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .user-name {
-      font-size: 13px;
-      font-weight: 600;
-      max-width: 100px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    
-    .sign-out-btn {
-      background: none;
-      border: 1px solid var(--border-color);
-      color: var(--text-secondary);
-      font-size: 11px;
-      cursor: pointer;
-      padding: 3px 8px;
-      border-radius: 6px;
-      margin-left: 4px;
-      transition: all 0.2s;
-    }
-    
-    .sign-out-btn:hover {
-      background: var(--bg-secondary);
-      color: var(--error-color, #d33);
-      border-color: var(--error-color, #d33);
-    }
-    
-    .sign-in-btn {
-      background: var(--accent-color);
-      color: #fff;
-      font-weight: 700;
-      font-size: 13px;
-      padding: 8px 18px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .sign-in-btn:hover {
-      opacity: 0.9;
-      transform: translateY(-1px);
     }
     
     .hero {
@@ -272,19 +121,9 @@ export class PublicApp extends LitElement {
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-    
-    .lang-separator {
-      display: flex;
-      gap: 4px;
-      border-right: 1px solid var(--border-color);
-      padding-right: 12px;
-      margin-right: 4px;
-    }
 
     @media (max-width: 768px) {
       .hero h1 { font-size: 32px; }
-      .header-actions .admin-link, 
-      .header-actions .user-name { display: none; }
     }
   `;
 
@@ -297,6 +136,7 @@ export class PublicApp extends LitElement {
    * Currently selected season ID.
    */
   @property({ type: Number }) selectedSeasonId: number | null = null;
+
   /**
    * Current authenticated user.
    */
@@ -311,6 +151,11 @@ export class PublicApp extends LitElement {
    * Whether the profile view is visible.
    */
   @state() private showProfile = false;
+
+  /**
+   * Whether the mobile menu is open.
+   */
+  @state() private isMenuOpen = false;
 
   /**
    * Loaded media item details.
@@ -435,15 +280,12 @@ export class PublicApp extends LitElement {
     }
   }
 
-  private handleLanguageChange(lng: string) {
-    i18next.changeLanguage(lng);
-    localStorage.setItem("lang", lng);
-    // Force re-render of components using translate directive
-    this.requestUpdate();
-  }
-
   private openAuth() {
     this.showAuthModal = true;
+  }
+
+  private toggleMenu() {
+    this.isMenuOpen = !this.isMenuOpen;
   }
 
   private async doLogout() {
@@ -476,53 +318,29 @@ export class PublicApp extends LitElement {
     return html`
       ${this.showAuthModal ? html`<auth-modal @auth-close=${() => this.showAuthModal = false}></auth-modal>` : ""}
       
-      <header>
-        <div class="header-inner container">
-          <a class="logo" href="/" @click=${(e: Event) => { e.preventDefault(); this.handleHomeClick(); }}>
-            ${translate("header.explorer")}
-          </a>
-          <div class="header-actions">
-            <div class="lang-separator">
-              <button 
-                class="lang-btn ${i18next.language === "en" ? "active" : ""}"
-                @click=${() => this.handleLanguageChange("en")}
-                aria-label="English"
-              >EN</button>
-              <button 
-                class="lang-btn ${i18next.language === "es" ? "active" : ""}"
-                @click=${() => this.handleLanguageChange("es")}
-                aria-label="Español"
-              >ES</button>
-            </div>
-            <button class="theme-btn" @click=${toggleTheme} title="Toggle Theme">🌗</button>
-            <a class="admin-link" href="/admin">${translate("header.admin_panel")}</a>
-            ${this.renderAuth()}
-          </div>
-        </div>
-      </header>
+      <public-header 
+        .user=${this.user} 
+        .isMenuOpen=${this.isMenuOpen}
+        @toggle-menu=${this.toggleMenu}
+        @home-click=${this.handleHomeClick}
+        @profile-click=${this.handleProfileClick}
+        @need-login=${this.openAuth}
+        @logout=${this.doLogout}
+        @lang-change=${() => this.requestUpdate()}
+      ></public-header>
+
+      <mobile-menu
+        .open=${this.isMenuOpen}
+        .user=${this.user}
+        @close=${() => this.isMenuOpen = false}
+        @home-click=${this.handleHomeClick}
+        @profile-click=${this.handleProfileClick}
+        @need-login=${this.openAuth}
+        @logout=${this.doLogout}
+        @lang-change=${() => this.requestUpdate()}
+      ></mobile-menu>
 
       ${this.renderContent()}
-    `;
-  }
-
-  private renderAuth() {
-    if (this.user) {
-      const color = avatarColor(this.user.display_name);
-      const init = initials(this.user.display_name);
-      return html`
-        <div class="auth-chip" @click=${this.handleProfileClick}>
-          <div class="avatar" style="background: ${color};">${init}</div>
-          <span class="user-name">${this.user.display_name}</span>
-          <button class="sign-out-btn" @click=${(e: Event) => { e.stopPropagation(); this.doLogout(); }}>
-            ${translate("auth.sign_out", "Sign Out")}
-          </button>
-        </div>
-      `;
-    }
-    return html`
-      <button class="sign-in-btn" @click=${this.openAuth}>
-        ${translate("auth.sign_in", "Sign In")}
-      </button>
     `;
   }
 

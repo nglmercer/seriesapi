@@ -70,17 +70,17 @@ export const handleRatingPost = withAuth(async (req: Request, user) => {
     // Synchronize aggregate scores to parent tables
     if (body.entity_type === "media") {
       drizzle.update(mediaTable)
-        .set({ score: newAverage, score_count: newCount } as any)
+        .set({ score: newAverage, score_count: newCount })
         .where("id = ?", [body.entity_id])
         .run();
     } else if (body.entity_type === "season") {
       drizzle.update(seasonsTable)
-        .set({ score: newAverage, score_count: newCount } as any)
+        .set({ score: newAverage, score_count: newCount })
         .where("id = ?", [body.entity_id])
         .run();
     } else if (body.entity_type === "episode") {
       drizzle.update(episodesTable)
-        .set({ score: newAverage, score_count: newCount } as any)
+        .set({ score: newAverage, score_count: newCount })
         .where("id = ?", [body.entity_id])
         .run();
     }
