@@ -36,11 +36,17 @@ class MalImporter {
     const targetStr = target.toString();
 
     try {
+      // Add a small delay to avoid rate limiting/CAPTCHAs
+      await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1500));
+
       // Fetch data
       const malData = await this.malService.fetchInfo(targetStr);
       
       if (!malData || !malData.id) {
-        if (!silent) console.error(`[mal] No anime found for: ${targetStr}`);
+        if (!silent) {
+          console.error(`[mal] No anime found for: ${targetStr}.`);
+          console.error(`[mal] If you are hitting a CAPTCHA, try passing --cookie "MALSession=your_session_id"`);
+        }
         this.results.failed.push(targetStr);
         return null;
       }
@@ -138,7 +144,7 @@ class MalImporter {
     }
 
     const targets = results.map(res => res.name);
-    await this.importBatch(targets, 1); // Search results are often related, process one by one
+    await this.importBatch(targets, 3); // Search results are often related, process one by one
   }
 
   /**
@@ -160,10 +166,40 @@ class MalImporter {
 
 async function main() {
   const args = process.argv.slice(2);
-  const command = args[0];
+  
+  // Basic flag parsing
+  const cookies: string[] = [];
+  if (process.env.MAL_COOKIE) cookies.push(process.env.MAL_COOKIE);
+  let userAgent: string | undefined = process.env.MAL_USER_AGENT;
+  const headers: Record<string, string> = {};
+  const filteredArgs: string[] = [];
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!;
+    if (arg === "--cookie" && i + 1 < args.length) {
+      cookies.push(args[i + 1]!);
+      i++;
+    } else if (arg === "--user-agent" && i + 1 < args.length) {
+      userAgent = args[i + 1]!;
+      i++;
+    } else if (arg === "--header" && i + 1 < args.length) {
+      const h = args[i + 1]!;
+      const colonIndex = h.indexOf(":");
+      if (colonIndex !== -1) {
+        const key = h.substring(0, colonIndex).trim();
+        const value = h.substring(colonIndex + 1).trim();
+        headers[key] = value;
+      }
+      i++;
+    } else {
+      filteredArgs.push(arg);
+    }
+  }
+
+  const command = filteredArgs[0] as string | undefined;
 
   if (!command) {
-    console.error("Usage: bun run import:mal <single|search|season|bulk> [args...]");
+    console.error("Usage: bun run import:mal <single|search|season|bulk> [args...] [--cookie \"...\"] [--user-agent \"...\"] [--header \"Key: Value\"]");
     process.exit(1);
   }
 
@@ -172,6 +208,22 @@ async function main() {
   
   const dbManager = new DbManager(drizzle);
   const malService = new MalService();
+
+  for (const c of cookies) {
+    malService.setCookie(c);
+  }
+  if (userAgent) {
+    console.log(`[mal] Using custom User-Agent: ${userAgent}`);
+    malService.setHeader("User-Agent", userAgent);
+  }
+  for (const [key, value] of Object.entries(headers)) {
+    console.log(`[mal] Using custom header: ${key}`);
+    malService.setHeader(key, value);
+  }
+
+  if (cookies.length > 0) {
+    console.log(`[mal] Using ${cookies.length} cookie entries.`);
+  }
 
   // Load existing lookups and initialize caches
   await dbManager.initCaches();
@@ -182,46 +234,41 @@ async function main() {
   try {
     switch (command) {
       case "single": {
-        const target = args[1];
+        const target = filteredArgs[1] as string | undefined;
         if (!target) throw new Error("Missing name, URL, or ID");
         await importer.importSingle(target);
         break;
       }
       case "bulk": {
-        const input = args[1];
+        const input = filteredArgs[1] as string | undefined;
         if (!input) throw new Error("Missing comma-separated list of targets");
-        const inputs = input.split(",").map(t => {
-            const trimmed = t.trim();
-            return isNaN(Number(trimmed)) ? trimmed : Number(trimmed);
-        });
-        //let targets: (string | number)[] = []
-        const results = inputs.map(async t => {
-          const data = await importer.importSearch(t.toString());
-          return data;
-        });
-        await Promise.all(results);
-        //await Promise.all(results);
-        //await importer.importBatch(targets);
+        const inputs = input.split(",").map(t => t.trim()).filter(Boolean);
+        
+        console.log(`[mal] Bulk processing ${inputs.length} search queries sequentially...`);
+        for (const t of inputs) {
+          console.log(`[mal] Processing search for: ${t}`);
+          await importer.importSearch(t);
+        }
         break;
       }
       case "search": {
-        const query = args[1];
-        const limit = args[2] ? parseInt(args[2], 10) : 5;
+        const query = filteredArgs[1] as string | undefined;
+        const limit = filteredArgs[2] ? parseInt(filteredArgs[2], 10) : 5;
         if (!query) throw new Error("Missing search query");
         await importer.importSearch(query, limit);
         break;
       }
       case "season": {
-        const year = parseInt(args[1] || "0", 10);
-        const season = args[2] || "";
-        const type = args[3] || "";
+        const year = parseInt(filteredArgs[1] || "0", 10);
+        const season = filteredArgs[2] || "";
+        const type = filteredArgs[3] || "";
         if (isNaN(year) || !season) throw new Error("Usage: season <year> <season> [type]");
         await importer.importSeason(year, season, type);
         break;
       }
       default:
         // Fallback for backward compatibility: if first arg is not a command, assume single
-        await importer.importSingle(command);
+        await importer.importSingle(command as string);
         break;
     }
   } catch (err: any) {
