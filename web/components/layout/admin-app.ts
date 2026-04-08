@@ -153,7 +153,7 @@ export class AdminApp extends HTMLElement {
       placeholder: "admin",
       autocomplete: "username",
       style: "width:100%; box-sizing:border-box; padding:11px 13px; background:var(--bg-primary); border:1.5px solid var(--border-color); border-radius:10px; color:var(--text-primary); font-size:15px; font-family:inherit;",
-      oninput: (e: any) => { this.loginUsername = e.target.value; },
+      oninput: (e: CustomEvent) => { this.loginUsername = (e.target as HTMLInputElement).value; },
       onkeydown: (e: KeyboardEvent) => { if (e.key === "Enter") this.doLogin(); }
     }) as HTMLInputElement;
     uField.append(uLabel, uInput);
@@ -167,7 +167,7 @@ export class AdminApp extends HTMLElement {
       placeholder: "••••••••",
       autocomplete: "current-password",
       style: "width:100%; box-sizing:border-box; padding:11px 13px; background:var(--bg-primary); border:1.5px solid var(--border-color); border-radius:10px; color:var(--text-primary); font-size:15px; font-family:inherit;",
-      oninput: (e: any) => { this.loginPassword = e.target.value; },
+      oninput: (e: CustomEvent) => { this.loginPassword = (e.target as HTMLInputElement).value; },
       onkeydown: (e: KeyboardEvent) => { if (e.key === "Enter") this.doLogin(); }
     }) as HTMLInputElement;
     pField.append(pLabel, pInput);

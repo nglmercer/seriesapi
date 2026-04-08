@@ -5,12 +5,12 @@ import { ui } from "../../utils/ui";
 import { AdminMediaForm } from "./admin-media-form";
 import "./admin-genres-view";
 import "./admin-reports-view";
-import "./admin-content-manager";
-import "./admin-bulk-bar";
-import "./admin-media-list";
+import { AdminContentManager } from "./admin-content-manager";
+import { AdminBulkBar } from "./admin-bulk-bar";
+import { AdminMediaList } from "./admin-media-list";
 import "../shared/search-box";
-import "../shared/app-pagination";
-import "../media/media-filters";
+import { AppPagination } from "../shared/app-pagination";
+import { MediaFilters } from "../media/media-filters";
 import type { MediaFiltersState } from "../media/media-filters";
 
 export class AdminView extends HTMLElement {
@@ -18,7 +18,7 @@ export class AdminView extends HTMLElement {
   private searchQuery = "";
   private filters: Partial<MediaFiltersState> = {};
   private currentTab: "media" | "genres" | "reports" = "media";
-  private editingMediaId: number | null = null; // Used for Content Manager
+  private editingMediaId: number | null = null;
   private showFilters = false;
   private selectedIds: Set<number> = new Set();
   
@@ -33,21 +33,23 @@ export class AdminView extends HTMLElement {
   }
 
   private async fetchMedia() {
-    // MediaFiltersState now uses snake_case keys matching the API
-    const filters: Record<string, string> = { ...this.filters as any };
-    if (this.searchQuery) filters.q = this.searchQuery;
+    const filters: Record<string, string> = {};
     
-    // Clean up empty values
-    Object.keys(filters).forEach(k => {
-      if (!filters[k]) delete filters[k];
+    // Map filters to strings for the API
+    Object.entries(this.filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        filters[key] = String(value);
+      }
     });
+
+    if (this.searchQuery) filters.q = this.searchQuery;
 
     const res = await api.getMedia(this.currentPage, this.pageSize, filters);
     if (res.ok) {
       this.mediaList = res.data;
-      // The API returns pagination info in 'meta' according to the provided example
-      const meta = (res as any).meta;
-      this.totalItems = meta?.total || res.data.length;
+      // The API returns pagination info in 'meta'
+      const meta = res.meta as { total?: number } | undefined;
+      this.totalItems = meta?.total ?? res.data.length;
     }
   }
 
@@ -118,7 +120,7 @@ export class AdminView extends HTMLElement {
     this.fetchMedia().then(() => this.render());
   }
 
-  private async handleSearch(e: CustomEvent) {
+  private async handleSearch(e: CustomEvent<string>) {
     this.searchQuery = e.detail || "";
     this.currentPage = 1;
     await this.fetchMedia();
@@ -170,7 +172,7 @@ export class AdminView extends HTMLElement {
     const container = h("div", { className: "container" });
 
     if (this.editingMediaId) {
-        const mgr = document.createElement("admin-content-manager") as any;
+        const mgr = document.createElement("admin-content-manager") as AdminContentManager;
         mgr.setMedia(this.editingMediaId);
         mgr.addEventListener("back", () => {
            this.editingMediaId = null;
@@ -201,31 +203,45 @@ export class AdminView extends HTMLElement {
 
     let content;
     if (this.currentTab === 'media') {
-      const bulkBar = document.createElement("admin-bulk-bar") as any;
+      const bulkBar = document.createElement("admin-bulk-bar") as AdminBulkBar;
       bulkBar.selectedCount = this.selectedIds.size;
-      bulkBar.addEventListener("bulk-action", (e: any) => this.handleBulkAction(e.detail));
+      bulkBar.addEventListener("bulk-action", (e: Event) => {
+        const customEvent = e as CustomEvent<string>;
+        this.handleBulkAction(customEvent.detail);
+      });
 
-      const mediaList = document.createElement("admin-media-list") as any;
+      const mediaList = document.createElement("admin-media-list") as AdminMediaList;
       mediaList.data = { list: this.mediaList, selected: this.selectedIds };
-      mediaList.addEventListener("toggle-select", (e: any) => this.toggleSelect(e.detail));
+      mediaList.addEventListener("toggle-select", (e: Event) => {
+        const customEvent = e as CustomEvent<number>;
+        this.toggleSelect(customEvent.detail);
+      });
       mediaList.addEventListener("toggle-select-all", () => this.toggleSelectAll());
-      mediaList.addEventListener("item-action", (e: any) => this.handleItemAction(e));
+      mediaList.addEventListener("item-action", (e: Event) => {
+        this.handleItemAction(e as CustomEvent<{ action: string, id: number }>);
+      });
 
-      const pagination = document.createElement("app-pagination") as any;
+      const pagination = document.createElement("app-pagination") as AppPagination;
       pagination.info = { page: this.currentPage, pageSize: this.pageSize, total: this.totalItems };
-      pagination.addEventListener("page-change", (e: any) => this.handlePageChange(e));
+      pagination.addEventListener("page-change", (e: Event) => {
+        this.handlePageChange(e as CustomEvent<number>);
+      });
+
+      const searchBox = h("search-box", { 
+        placeholder: i18next.t("admin.search_placeholder"),
+        buttonText: i18next.t("admin.search"),
+        query: this.searchQuery,
+        showResults: false, 
+        style: "flex: 1;"
+      });
+      searchBox.addEventListener("search", (e: Event) => {
+        this.handleSearch(e as CustomEvent<string>);
+      });
 
       content = h("div", {},
         h("div", { style: "display:flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 20px;" },
           h("div", { style: "display:flex; align-items: center; gap: 10px; flex: 1; max-width: 600px;" },
-            h("search-box", { 
-              placeholder: i18next.t("admin.search_placeholder"),
-              buttonText: i18next.t("admin.search"),
-              query: this.searchQuery,
-              showResults: false, 
-              onsearch: (e: CustomEvent) => this.handleSearch(e),
-              style: "flex: 1;"
-            }),
+            searchBox,
             h("button", { 
                onclick: () => { this.showFilters = !this.showFilters; this.render(); },
                className: this.showFilters ? "active" : "",
@@ -239,10 +255,14 @@ export class AdminView extends HTMLElement {
         ),
         bulkBar,
         this.showFilters ? h("div", { style: "margin-bottom: 20px;" },
-           h("media-filters", {
-             ...this.filters as any,
-             "onfilters-change": (e: CustomEvent) => this.handleFiltersChange(e)
-           } as any)
+           (() => {
+             const filterEl = document.createElement("media-filters") as MediaFilters;
+             Object.assign(filterEl, this.filters);
+             filterEl.addEventListener("filters-change", (e: Event) => {
+               this.handleFiltersChange(e as CustomEvent<MediaFiltersState>);
+             });
+             return filterEl;
+           })()
         ) : null,
         mediaList,
         pagination

@@ -263,7 +263,7 @@ export class CommentItem extends LitElement {
               <textarea
                 placeholder=${i18next.t("comments.reply_placeholder", { defaultValue: "Write a reply…" })}
                 .value=${this.replyText}
-                @input=${(e: any) => this.replyText = e.target.value}
+                @input=${(e: CustomEvent) => this.replyText = (e.target as HTMLTextAreaElement).value}
                 @keydown=${(e: KeyboardEvent) => { if (e.key === "Enter" && e.ctrlKey) this.submitReply(); }}
               ></textarea>
               <div class="reply-footer">

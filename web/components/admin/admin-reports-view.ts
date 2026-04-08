@@ -1,6 +1,6 @@
 import { LitElement, html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { api } from "../../services/api-service";
+import { api, type ReportItem } from "../../services/api-service";
 import i18next from "../../utils/i18n";
 
 @customElement("admin-reports-view")
@@ -17,7 +17,7 @@ export class AdminReportsView extends LitElement {
     th { color: var(--text-secondary); font-weight: 500; font-size: 14px; }
   `;
 
-  @state() reports: any[] = [];
+  @state() reports: ReportItem[] = [];
   @state() loading = true;
 
   override connectedCallback() {

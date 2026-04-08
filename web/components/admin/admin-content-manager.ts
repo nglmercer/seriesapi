@@ -1,4 +1,4 @@
-import { api, type MediaItem, type EpisodeItem, type SeasonItem } from "../../services/api-service";
+import { api, type MediaItem, type EpisodeItem, type SeasonItem, type RelationItem } from "../../services/api-service";
 import i18next from "../../utils/i18n";
 import { h } from "../../utils/dom";
 import { ui } from "../../utils/ui";
@@ -9,7 +9,7 @@ export class AdminContentManager extends HTMLElement {
   private seasons: SeasonItem[] = [];
   private selectedSeasonId: number | null = null;
   private episodes: EpisodeItem[] = [];
-  private relations: any[] = [];
+  private relations: RelationItem[] = [];
   private currentTab: "episodes" | "relations" = "episodes";
 
   setMedia(id: number) {
@@ -31,8 +31,8 @@ export class AdminContentManager extends HTMLElement {
         this.currentTab = "relations";
       }
     }
-    if (sRes.ok) this.seasons = (sRes.data as any);
-    if (rRes.ok) this.relations = (rRes.data as any);
+    if (sRes.ok) this.seasons = sRes.data.seasons;
+    if (rRes.ok) this.relations = rRes.data;
     
     this.render();
   }
@@ -87,7 +87,7 @@ export class AdminContentManager extends HTMLElement {
 
   private async handleAddSeason() {
     if (!this.mediaId) return;
-    const data = await ui.form<any>(i18next.t("admin.new_season"), [
+    const data = await ui.form<{ seasonNumber: number; title: string; air_date: string }>(i18next.t("admin.new_season"), [
         { label: i18next.t("admin.season_number"), name: "seasonNumber", type: "number", value: this.seasons.length + 1, width: "50%" },
         { label: i18next.t("admin.season_title"), name: "title", type: "text", width: "50%" },
         { label: i18next.language === 'es' ? "Fecha Inicio" : "Air Date", name: "air_date", type: "date", width: "50%" }
@@ -99,7 +99,7 @@ export class AdminContentManager extends HTMLElement {
 
   private async handleAddEpisode() {
     if (!this.mediaId || !this.selectedSeasonId) return;
-    const data = await ui.form<any>(i18next.t("admin.new_episode"), [
+    const data = await ui.form<{ number: number; title: string; episode_type: string; synopsis: string }>(i18next.t("admin.new_episode"), [
         { label: i18next.t("admin.episode_number"), name: "number", type: "number", value: this.episodes.length + 1, width: "33%" },
         { label: i18next.t("admin.episode_title"), name: "title", type: "text", width: "33%" },
         { label: i18next.language === 'es' ? "Tipo" : "Type", name: "episode_type", type: "select", value: "regular", width: "33%",

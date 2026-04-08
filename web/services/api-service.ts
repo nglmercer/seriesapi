@@ -98,6 +98,36 @@ export interface EpisodeItem extends InferRow<typeof episodesTable> {
   rating_count?: number;
 }
 
+export interface RelationItem {
+  id: number;
+  source_media_id: number;
+  related_media_id: number;
+  relation_type: string;
+  related_title?: string;
+  related_type?: string;
+}
+
+export interface ReportItem {
+  id: number;
+  entity_type: string;
+  entity_id: number;
+  report_type: string;
+  locale?: string;
+  message?: string;
+  status: string;
+  created_at: string;
+}
+
+export interface RatingItem {
+  entity_type: string;
+  entity_id: number;
+  score: number;
+  created_at: string;
+  // Optional info join
+  title?: string;
+  poster_url?: string;
+}
+
 class ApiClient {
   private getLocale() {
     return i18next.language || "es";
@@ -200,11 +230,11 @@ class ApiClient {
     return this.request(`/people/${personId}/credits?locale=${this.getLocale()}`);
   }
 
-  getGenres(): Promise<ApiResponse<unknown[]>> {
+  getGenres(): Promise<ApiResponse<Genres[]>> {
     return this.request(`/genres?locale=${this.getLocale()}`);
   }
 
-  getTags(): Promise<ApiResponse<any[]>> {
+  getTags(): Promise<ApiResponse<Tag[]>> {
     return this.request(`/tags?locale=${this.getLocale()}`);
   }
 
@@ -265,7 +295,7 @@ class ApiClient {
     });
   }
 
-  getMediaRelations(mediaId: number): Promise<ApiResponse<unknown[]>> {
+  getMediaRelations(mediaId: number): Promise<ApiResponse<RelationItem[]>> {
     return this.request(`/media/${mediaId}/related?locale=${this.getLocale()}`);
   }
 
@@ -337,7 +367,7 @@ class ApiClient {
   }
 
   // Season Operations
-  updateSeason(id: number, data: any): Promise<ApiResponse<void>> {
+  updateSeason(id: number, data: Partial<SeasonItem>): Promise<ApiResponse<void>> {
     return this.request(`/seasons/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
@@ -358,7 +388,7 @@ class ApiClient {
   }
 
   // Episode Operations
-  updateEpisode(id: number, data: any): Promise<ApiResponse<void>> {
+  updateEpisode(id: number, data: Partial<EpisodeItem>): Promise<ApiResponse<void>> {
     return this.request(`/episodes/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
@@ -385,7 +415,7 @@ class ApiClient {
     });
   }
 
-  getReports(): Promise<ApiResponse<any[]>> {
+  getReports(): Promise<ApiResponse<ReportItem[]>> {
     return this.request("/reports");
   }
 
@@ -409,7 +439,7 @@ class ApiClient {
     });
   }
 
-  getTopRatings(entityType: string = "media", limit: number = 10, minVotes: number = 5): Promise<ApiResponse<any[]>> {
+  getTopRatings(entityType: string = "media", limit: number = 10, minVotes: number = 5): Promise<ApiResponse<MediaItem[]>> {
     const params = new URLSearchParams({
       entity_type: entityType,
       limit: String(limit),
@@ -419,7 +449,7 @@ class ApiClient {
     return this.request(`/ratings/top?${params}`);
   }
 
-  getUserRatings(page: number = 1, limit: number = 20): Promise<ApiResponse<any[]>> {
+  getUserRatings(page: number = 1, limit: number = 20): Promise<ApiResponse<RatingItem[]>> {
     const params = new URLSearchParams({
       page: String(page),
       limit: String(limit),
@@ -428,7 +458,7 @@ class ApiClient {
     return this.request(`/ratings/user?${params}`);
   }
 
-  getUserComments(page: number = 1, limit: number = 20): Promise<ApiResponse<any[]>> {
+  getUserComments(page: number = 1, limit: number = 20): Promise<ApiResponse<Comment_Item[]>> {
     const params = new URLSearchParams({
       page: String(page),
       limit: String(limit),

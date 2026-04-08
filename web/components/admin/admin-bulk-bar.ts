@@ -4,6 +4,10 @@ import i18next from "../../utils/i18n";
 export class AdminBulkBar extends HTMLElement {
   private _selectedCount = 0;
 
+  get selectedCount(): number {
+    return this._selectedCount;
+  }
+
   set selectedCount(val: number) {
     this._selectedCount = val;
     this.render();

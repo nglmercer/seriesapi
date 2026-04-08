@@ -6,6 +6,10 @@ export class AdminMediaList extends HTMLElement {
   private _mediaList: MediaItem[] = [];
   private _selectedIds: Set<number> = new Set();
 
+  get data(): { list: MediaItem[], selected: Set<number> } {
+    return { list: this._mediaList, selected: this._selectedIds };
+  }
+
   set data(val: { list: MediaItem[], selected: Set<number> }) {
     this._mediaList = val.list;
     this._selectedIds = val.selected;
@@ -86,7 +90,7 @@ export class AdminMediaList extends HTMLElement {
           h("img", {
             src: item.poster_url || "/placeholder-poster.png",
             style: "width: 50px; height: 75px; object-fit: cover; border-radius: 6px; background: var(--bg-secondary); flex-shrink: 0;",
-            onerror: (e: any) => { e.target.src = "/placeholder-poster.png"; }
+            onerror: (e: Event) => { (e.target as HTMLImageElement).src = "/placeholder-poster.png"; }
           }),
 
           h("div", { 

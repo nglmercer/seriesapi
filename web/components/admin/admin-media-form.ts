@@ -11,7 +11,9 @@ export class AdminMediaForm {
     if (media?.id) {
        const detail = await api.getMediaDetail(media.id);
        if(detail.ok && Array.isArray(detail.data.genres)) {
-           selectedGenreIds = (detail.data.genres as any).map((g: any) => g.id);
+           selectedGenreIds = detail.data.genres
+            .map((g) => (typeof g === 'object' ? g.id : null))
+            .filter((id): id is number => id !== null);
        }
     }
 

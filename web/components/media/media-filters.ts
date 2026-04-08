@@ -1,6 +1,6 @@
 import {LitElement, html, css} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
-import {api} from "../../services/api-service";
+import {api, type Genres, type Tag} from "../../services/api-service";
 import i18next from "../../utils/i18n";
 
 export interface MediaFiltersState {
@@ -76,8 +76,8 @@ export class MediaFilters extends LitElement {
   @property({type: String, attribute: "score-from"}) score_from = "";
   @property({type: String, attribute: "sort-by"}) sort_by = "popularity";
 
-  @state() genres: Array<{slug: string; name: string}> = [];
-  @state() tags: Array<{slug: string; label: string}> = [];
+  @state() genres: Genres[] = [];
+  @state() tags: Tag[] = [];
 
   override connectedCallback() {
     super.connectedCallback();
@@ -88,7 +88,7 @@ export class MediaFilters extends LitElement {
   async loadGenres() {
     const res = await api.getGenres();
     if (res.ok) {
-      this.genres = res.data as Array<{slug: string; name: string}>;
+      this.genres = res.data;
     }
   }
 
@@ -116,8 +116,8 @@ export class MediaFilters extends LitElement {
     }));
   }
 
-  private handleChange(field: keyof MediaFilters, value: string) {
-    (this as any)[field] = value;
+  private handleChange(field: 'type' | 'status' | 'genre' | 'tag' | 'year_from' | 'year_to' | 'score_from' | 'sort_by', value: string) {
+    this[field] = value;
     this.emitChange();
   }
 

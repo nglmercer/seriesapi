@@ -146,14 +146,14 @@ export class CommentCompose extends LitElement {
             <textarea
               placeholder=${i18next.t("comments.body_placeholder", { defaultValue: "Share your thoughts…  (Ctrl+Enter to post)" })}
               .value=${this.text}
-              @input=${(e: any) => this.text = e.target.value}
+              @input=${(e: CustomEvent) => this.text = (e.target as HTMLTextAreaElement).value}
               @keydown=${(e: KeyboardEvent) => { if (e.key === "Enter" && e.ctrlKey) this.submit(); }}
             ></textarea>
             <div class="footer">
               <label class="spoiler-label ${this.spoilers ? "on" : ""}">
                 <input type="checkbox"
                   .checked=${this.spoilers}
-                  @change=${(e: any) => this.spoilers = e.target.checked}
+                  @change=${(e: CustomEvent) => this.spoilers = (e.target as HTMLInputElement).checked}
                 />
                 ${i18next.t("comments.contains_spoilers", { defaultValue: "Contains Spoilers" })}
               </label>

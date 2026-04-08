@@ -424,22 +424,22 @@ export class UserProfile extends LitElement {
         <div class="form-grid">
           <div class="field">
             <label>${i18next.t("auth.display_name", { defaultValue: "Display Name" })}</label>
-            <input type="text" .value=${this.displayName} @input=${(e: any) => this.displayName = e.target.value} 
+            <input type="text" .value=${this.displayName} @input=${(e: CustomEvent) => this.displayName = (e.target as HTMLInputElement).value} 
               ?disabled=${this.loading} />
           </div>
           <div class="field">
             <label>${i18next.t("auth.email", { defaultValue: "Email Address" })}</label>
-            <input type="email" .value=${this.email} @input=${(e: any) => this.email = e.target.value} 
+            <input type="email" .value=${this.email} @input=${(e: CustomEvent) => this.email = (e.target as HTMLInputElement).value} 
               ?disabled=${this.loading} />
           </div>
           <div class="field">
             <label>${i18next.t("auth.new_password", { defaultValue: "New Password (Optional)" })}</label>
-            <input type="password" .value=${this.password} @input=${(e: any) => this.password = e.target.value} 
+            <input type="password" .value=${this.password} @input=${(e: CustomEvent) => this.password = (e.target as HTMLInputElement).value} 
               placeholder="••••••••" ?disabled=${this.loading} />
           </div>
           <div class="field">
             <label>${i18next.t("auth.confirm_password", { defaultValue: "Confirm New Password" })}</label>
-            <input type="password" .value=${this.confirmPassword} @input=${(e: any) => this.confirmPassword = e.target.value} 
+            <input type="password" .value=${this.confirmPassword} @input=${(e: CustomEvent) => this.confirmPassword = (e.target as HTMLInputElement).value} 
               placeholder="••••••••" ?disabled=${this.loading} />
           </div>
         </div>
@@ -466,7 +466,7 @@ export class UserProfile extends LitElement {
           <div class="challenge-grid">
             <div class="field">
               <label>Target Role</label>
-              <select @change=${(e: any) => this.targetRole = e.target.value} ?disabled=${this.challengeLoading}>
+              <select @change=${(e: CustomEvent) => this.targetRole = (e.target as HTMLSelectElement).value as "admin" | "editor"} ?disabled=${this.challengeLoading}>
                 <option value="editor" ?selected=${this.targetRole === 'editor'}>Editor</option>
                 <option value="admin" ?selected=${this.targetRole === 'admin'}>Admin</option>
               </select>
@@ -479,7 +479,7 @@ export class UserProfile extends LitElement {
             <div class="field">
               <label>Verification Code</label>
               <input type="text" .value=${this.challengeCode} 
-                @input=${(e: any) => this.challengeCode = e.target.value}
+                @input=${(e: CustomEvent) => this.challengeCode = (e.target as HTMLInputElement).value}
                 placeholder="ABC12345" ?disabled=${this.challengeLoading} />
               <button class="btn btn-primary" style="width: 100%; margin-top: 12px;" 
                 @click=${this.handleApplyChallenge} ?disabled=${this.challengeLoading || !this.challengeCode}>

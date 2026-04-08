@@ -10,6 +10,10 @@ export interface PaginationInfo {
 export class AppPagination extends HTMLElement {
   private _info: PaginationInfo = { page: 1, pageSize: 20, total: 0 };
 
+  get info(): PaginationInfo {
+    return this._info;
+  }
+
   set info(val: PaginationInfo) {
     this._info = val;
     this.render();
