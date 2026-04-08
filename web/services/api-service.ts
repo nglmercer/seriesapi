@@ -70,9 +70,7 @@ export interface SeasonItem extends InferRow<typeof seasonsTable> {
   translation_id?: number | null;
 }
 
-export interface SeasonsResponse {
-  seasons: SeasonItem[];
-}
+export type SeasonsResponse = SeasonItem[];
 
 export interface Comment_Item extends Omit<InferRow<typeof commentsTable>, 'contains_spoilers' | 'is_hidden'> {
   contains_spoilers: boolean;

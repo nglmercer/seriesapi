@@ -2,6 +2,13 @@ import { api, type MediaItem, type EpisodeItem, type SeasonItem, type RelationIt
 import i18next from "../../utils/i18n";
 import { h } from "../../utils/dom";
 import { ui } from "../../utils/ui";
+import "./admin-season-list";
+import "./admin-episode-list";
+import "./admin-relation-list";
+
+import { AdminSeasonList } from "./admin-season-list";
+import { AdminEpisodeList } from "./admin-episode-list";
+import { AdminRelationList } from "./admin-relation-list";
 
 export class AdminContentManager extends HTMLElement {
   private mediaId: number | null = null;
@@ -31,7 +38,7 @@ export class AdminContentManager extends HTMLElement {
         this.currentTab = "relations";
       }
     }
-    if (sRes.ok) this.seasons = sRes.data.seasons;
+    if (sRes.ok) this.seasons = sRes.data;
     if (rRes.ok) this.relations = rRes.data;
     
     this.render();
@@ -46,7 +53,7 @@ export class AdminContentManager extends HTMLElement {
     this.render();
   }
 
-  // Season & Episode Handlers (unchanged logic)
+  // Season & Episode Handlers
   private async handleEditSeason(season: SeasonItem) {
       const data = await ui.form<Partial<SeasonItem>>(i18next.t("admin.edit_season"), [
           { label: i18next.t("admin.season_number"), name: "season_number", type: "number", value: season.season_number, width: "50%" },
@@ -117,13 +124,19 @@ export class AdminContentManager extends HTMLElement {
     if (res.ok) await this.fetchEpisodes(this.selectedSeasonId);
   }
 
-  // Relations Handlers
+  private async handleDeleteEpisode(id: number) {
+    if(await ui.confirm(i18next.t("admin.delete_episode_confirm"))) {
+        await api.deleteEpisode(id);
+        if(this.selectedSeasonId) await this.fetchEpisodes(this.selectedSeasonId);
+    }
+  }
+
   private async handleAddRelation() {
       if (!this.mediaId) return;
-      const data = await ui.form<{ relatedId: number; type: string }>(i18next.language === 'es' ? "Nueva Relación (Precuela/Secuela)" : "New Relation (Prequel/Sequel)", [
-          { label: i18next.language === 'es' ? "ID del Contenido Relacionado" : "Related Media ID", name: "relatedId", type: "number" },
+      const data = await ui.form<{ relatedId: number; type: string }>(i18next.language === 'es' ? "Nueva Relación" : "New Relation", [
+          { label: i18next.language === 'es' ? "ID del Contenido" : "Media ID", name: "relatedId", type: "number" },
           { 
-              label: i18next.language === 'es' ? "Tipo de Relación" : "Relation Type", name: "type", type: "select",
+              label: i18next.language === 'es' ? "Tipo" : "Type", name: "type", type: "select",
               options: [
                   { label: "Sequel", value: "sequel" },
                   { label: "Prequel", value: "prequel" },
@@ -159,103 +172,66 @@ export class AdminContentManager extends HTMLElement {
 
     const backBtn = h("button", { 
         onclick: () => this.dispatchEvent(new CustomEvent("back", { bubbles: true })),
-        style: "margin-bottom: 20px;"
-    }, i18next.t("admin.back_to_media_list"));
+        style: "margin-bottom: 24px; padding: 10px 20px; font-weight: 700; border-radius:10px; display:flex; align-items:center; gap:8px;"
+    }, h("span", { innerHTML: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>' }), i18next.t("admin.back_to_media_list"));
 
-    const header = h("div", { className: "card", style: "background: var(--bg-secondary); margin-bottom: 20px;" },
-      h("h2", {}, i18next.t("admin.managing", { title: this.media.title })),
-      h("p", { style: "color: var(--text-secondary);" }, i18next.t("admin.content_mgmt_desc"))
+    const header = h("div", { className: "card", style: "background: var(--bg-secondary); margin-bottom: 24px; padding: 24px; border-radius:16px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05);" },
+      h("h2", { style: "margin:0 0 8px 0; font-size:24px; font-weight:900; color:var(--text-primary);" }, i18next.t("admin.managing", { title: this.media.title })),
+      h("p", { style: "margin:0; color: var(--text-secondary); font-size:15px; font-weight:500;" }, i18next.t("admin.content_mgmt_desc"))
     );
 
     const isEpisodic = !["movie", "short"].includes(this.media.content_type);
 
-    const tabs = h("div", { className: "admin-tabs", style: "display: flex; gap: 20px; border-bottom: 2px solid var(--border-color); margin-bottom: 20px;" },
+    const tabs = h("div", { className: "admin-tabs", style: "display: flex; gap: 24px; border-bottom: 2px solid var(--border-color); margin-bottom: 24px;" },
       h("button", {
         onclick: () => { if(isEpisodic) { this.currentTab = "episodes"; this.render(); } },
-        style: `border-radius:0; border:none; background:transparent; cursor:${isEpisodic ? 'pointer' : 'not-allowed'}; opacity:${isEpisodic ? '1' : '0.4'}; padding: 10px; ${this.currentTab === 'episodes' ? 'border-bottom: 3px solid var(--accent-color)' : ''}`
+        style: `border-radius:0; border:none; background:transparent; cursor:${isEpisodic ? 'pointer' : 'not-allowed'}; opacity:${isEpisodic ? '1' : '0.4'}; padding: 12px 4px; font-weight:700; font-size:15px; ${this.currentTab === 'episodes' ? 'border-bottom: 4px solid var(--accent-color); color:var(--accent-color);' : 'color:var(--text-secondary);'}`
       }, i18next.t("admin.episodes")),
       h("button", {
         onclick: () => { this.currentTab = "relations"; this.render(); },
-        style: `border-radius:0; border:none; background:transparent; cursor:pointer; padding: 10px; ${this.currentTab === 'relations' ? 'border-bottom: 3px solid var(--accent-color)' : ''}`
+        style: `border-radius:0; border:none; background:transparent; cursor:pointer; padding: 12px 4px; font-weight:700; font-size:15px; ${this.currentTab === 'relations' ? 'border-bottom: 4px solid var(--accent-color); color:var(--accent-color);' : 'color:var(--text-secondary);'}`
       }, i18next.language === 'es' ? "Relaciones / Trilogías" : "Relations / Trilogies")
     );
 
     let content;
     if (this.currentTab === "episodes" && isEpisodic) {
-        content = h("div", { style: "display: grid; grid-template-columns: 1fr 2fr; gap: 20px;" },
-            // (Standard Episodic Content logic - same as before)
-            h("div", {},
-                h("div", { style: "display:flex; justify-content: space-between; align-items:center; margin-bottom:10px;" },
-                    h("h3", {}, i18next.t("admin.seasons")),
-                    h("button", { onclick: () => this.handleAddSeason(), className: "primary" }, "+")
-                ),
-                h("div", { className: "seasons-list", style: "display: flex; flex-direction: column; gap: 8px;" },
-                    ...this.seasons.map(s => h("div", { 
-                        className: "card", 
-                        style: `margin:0; padding: 8px; cursor: pointer; border-left: 4px solid ${this.selectedSeasonId === s.id ? 'var(--accent-color)' : 'transparent'};`,
-                        onclick: () => this.fetchEpisodes(s.id)
-                    },
-                    h("div", { style: "display:flex; justify-content: space-between; align-items:center;" },
-                        h("span", {}, `S${s.season_number}: ${s.name || (i18next.language === 'es' ? 'Sin Título' : 'No Title')}`),
-                        h("button", { onclick: (e: Event) => { e.stopPropagation(); this.handleEditSeason(s); }, style: "padding:2px 6px; font-size:11px;" }, "✎")
-                    )
-                  ))
-                )
-            ),
-            h("div", {},
-                h("h3", { style: "margin-bottom:10px;" }, this.selectedSeasonId ? i18next.t("admin.episodes") : i18next.t("admin.select_season_desc")),
-                this.selectedSeasonId ? h("div", { className: "episodes-list", style: "display: grid; gap: 8px;" },
-                     ...this.episodes.map(ep => h("div", { className: "card", style: "margin:0; padding: 8px; display:flex; justify-content: space-between; align-items:center;" },
-                        h("div", {},
-                            h("span", { style: "font-weight:bold; margin-right:10px;" }, `#${ep.episode_number}`),
-                            h("span", {}, ep.title || (i18next.language === 'es' ? 'Sin Título' : 'No Title'))
-                        ),
-                        h("div", { style: "display:flex; gap: 5px;" },
-                            h("button", { onclick: () => this.handleEditEpisode(ep), style: "padding:2px 6px; font-size:11px;" }, i18next.t("admin.edit")),
-                            h("button", { onclick: () => { if(ep.id) this.handleDeleteEpisode(ep.id); }, className: "danger", style: "padding:2px 6px; font-size:11px; background:var(--error-color); color:white;" }, i18next.t("admin.delete"))
-                        )
-                     )),
-                     h("button", { onclick: () => this.handleAddEpisode(), style: "margin-top:10px;", className: "primary" }, i18next.t("admin.add_episode"))
-                ) : h("div", { className: "card", style: "text-align:center; color: var(--text-secondary);" }, `← ${i18next.t("admin.select_season_desc")}`)
-            )
-        );
+        const style = h("style", {}, `
+            .content-grid { display: grid; grid-template-columns: 300px 1fr; gap: 24px; }
+            @media (max-width: 900px) { .content-grid { grid-template-columns: 1fr; } }
+        `);
+        this.appendChild(style);
+
+        const seasonList = document.createElement("admin-season-list") as AdminSeasonList;
+        seasonList.data = { seasons: this.seasons, selectedId: this.selectedSeasonId };
+        seasonList.addEventListener("select-season", (e: Event) => this.fetchEpisodes((e as CustomEvent<number>).detail));
+        seasonList.addEventListener("add-season", () => this.handleAddSeason());
+        seasonList.addEventListener("edit-season", (e: Event) => this.handleEditSeason((e as CustomEvent<SeasonItem>).detail));
+
+        const episodeList = document.createElement("admin-episode-list") as AdminEpisodeList;
+        episodeList.data = { episodes: this.episodes, seasonId: this.selectedSeasonId };
+        episodeList.addEventListener("add-episode", () => this.handleAddEpisode());
+        episodeList.addEventListener("edit-episode", (e: Event) => this.handleEditEpisode((e as CustomEvent<EpisodeItem>).detail));
+        episodeList.addEventListener("delete-episode", (e: Event) => this.handleDeleteEpisode((e as CustomEvent<number>).detail));
+
+        content = h("div", { className: "content-grid" }, seasonList, episodeList);
     } else if(this.currentTab === "episodes" && !isEpisodic) {
-        content = h("div", { className: "card", style: "text-align:center; padding: 40px; color: var(--text-secondary);" },
-            h("div", { style: "font-size: 40px; margin-bottom: 20px;" }, "🎬"),
-            h("h3", {}, i18next.language === 'es' ? "Contenido no episódico" : "Non-episodic content"),
-            h("p", {}, i18next.language === 'es' ? "Las temporadas no son aplicables. Usa la pestaña 'Relaciones' para conectar secuelas o trilogías." : "Seasons are not applicable. Use the 'Relations' tab to connect sequels or trilogies.")
+        content = h("div", { className: "card", style: "text-align:center; padding: 60px 40px; color: var(--text-secondary); border-radius:16px; border:1px solid var(--border-color); background:var(--bg-secondary);" },
+            h("div", { style: "font-size: 48px; margin-bottom: 24px;" }, "🎬"),
+            h("h3", { style: "font-size:20px; font-weight:800; color:var(--text-primary); margin-bottom:8px;" }, i18next.language === 'es' ? "Contenido no episódico" : "Non-episodic content"),
+            h("p", { style: "font-weight:500;" }, i18next.language === 'es' ? "Las temporadas no son aplicables. Usa la pestaña 'Relaciones' para conectar secuelas o trilogías." : "Seasons are not applicable. Use the 'Relations' tab to connect sequels or trilogies.")
         );
     } else {
-        // Relations Content
-        content = h("div", {},
-            h("div", { style: "display:flex; justify-content: space-between; align-items:center; margin-bottom: 20px;" },
-                h("h3", {}, i18next.language === 'es' ? "Relaciones y Trilogías" : "Relations and Trilogies"),
-                h("button", { onclick: () => this.handleAddRelation(), className: "primary" }, "+")
-            ),
-            h("div", { className: "relations-grid", style: "display: grid; gap: 12px;" },
-                ...this.relations.map(rel => h("div", { className: "card", style: "margin:0; padding:12px; display:flex; justify-content: space-between; align-items:center;" },
-                    h("div", {},
-                        h("span", { className: "badge", style: "text-transform: uppercase; margin-right: 15px; font-size: 10px; background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px;" }, rel.relation_type),
-                        h("strong", {}, rel.related_title || `Related Media ID: ${rel.related_media_id}`),
-                        rel.related_type ? h("small", { style: "margin-left: 10px; color: var(--text-secondary);" }, `(${rel.related_type})`) : null
-                    ),
-                    h("button", { onclick: () => this.handleDeleteRelation(rel.id), className: "danger", style: "padding:2px 8px; font-size:11px; background:var(--error-color); color:white;" }, i18next.t("admin.delete"))
-                )),
-                this.relations.length === 0 ? h("div", { style: "text-align:center; padding: 20px; color: var(--text-secondary);" }, i18next.language === 'es' ? "No hay relaciones agregadas." : "No relations added yet.") : null
-            )
-        );
+        const relationList = document.createElement("admin-relation-list") as AdminRelationList;
+        relationList.data = this.relations;
+        relationList.addEventListener("add-relation", () => this.handleAddRelation());
+        relationList.addEventListener("delete-relation", (e: Event) => this.handleDeleteRelation((e as CustomEvent<number>).detail));
+        content = relationList;
     }
 
-    const container = h("div", {}, backBtn, header, tabs, content);
-    this.appendChild(container);
+    const mainContainer = h("div", { className: "container", style: "max-width: 1200px; margin: 0 auto; padding: 24px;" }, backBtn, header, tabs, content);
+    this.appendChild(mainContainer);
   }
-
-  private async handleDeleteEpisode(id: number) {
-    if(await ui.confirm(i18next.t("admin.delete_episode_confirm"))) {
-        await api.deleteEpisode(id);
-        if(this.selectedSeasonId) await this.fetchEpisodes(this.selectedSeasonId);
-    }
-}
 }
 
 customElements.define("admin-content-manager", AdminContentManager);
+

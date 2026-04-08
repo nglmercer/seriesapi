@@ -1,0 +1,63 @@
+import { h } from "../../utils/dom";
+import i18next from "../../utils/i18n";
+import { type RelationItem } from "../../services/api-service";
+
+export class AdminRelationList extends HTMLElement {
+  private _relations: RelationItem[] = [];
+
+  set data(val: RelationItem[]) {
+    this._relations = val;
+    this.render();
+  }
+
+  connectedCallback() {
+    this.render();
+  }
+
+  render() {
+    this.innerHTML = "";
+    
+    const container = h("div", { className: "relations-container" },
+      h("div", { style: "display:flex; justify-content: space-between; align-items:center; margin-bottom:15px;" },
+        h("h3", { style: "margin:0; font-size:18px; font-weight:800;" }, i18next.t("admin.relations_and_trilogies", { defaultValue: "Relations and Trilogies" })),
+        h("button", { 
+          className: "primary", 
+          style: "height:32px; padding:0 12px; border-radius:8px; font-weight:700; font-size:13px;",
+          onclick: () => this.dispatchEvent(new CustomEvent("add-relation"))
+        }, i18next.t("admin.add_relation", { defaultValue: "+ Add Relation" }))
+      ),
+      h("div", { 
+        className: "relations-grid", 
+        style: "display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));" 
+      },
+        ...this._relations.map(rel => h("div", { 
+          className: "card", 
+          style: "margin:0; padding:16px; display:flex; justify-content: space-between; align-items:center; border: 1px solid var(--border-color); background: var(--bg-primary); border-radius:12px; transition: all 0.2s;" 
+        },
+          h("div", { style: "display:flex; flex-direction:column; gap:4px; min-width:0; flex:1;" },
+            h("div", { style: "display:flex; align-items:center; gap:8px;" },
+              h("span", { 
+                className: "badge", 
+                style: "text-transform: uppercase; font-size: 9px; font-weight:900; background: var(--accent-color); color:white; padding: 2px 6px; border-radius: 4px; letter-spacing:0.5px;" 
+              }, rel.relation_type),
+              rel.related_type ? h("span", { style: "font-size: 11px; font-weight:700; color: var(--text-secondary); background: var(--bg-secondary); padding:2px 6px; border-radius:4px;" }, rel.related_type) : null
+            ),
+            h("strong", { style: "font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" }, rel.related_title || `Media ID: ${rel.related_media_id}`)
+          ),
+          h("button", { 
+            onclick: () => this.dispatchEvent(new CustomEvent("delete-relation", { detail: rel.id })), 
+            className: "danger", 
+            style: "width:32px; height:32px; padding:0; display:flex; align-items:center; justify-content:center; background:rgba(239, 68, 68, 0.1); color:#ef4444; border-radius:8px; cursor:pointer; border:none;" 
+          }, h("span", { innerHTML: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>' }))
+        )),
+        this._relations.length === 0 ? h("div", { 
+          style: "text-align:center; padding: 30px; color: var(--text-secondary); border: 1px dashed var(--border-color); border-radius:12px; grid-column: 1 / -1;" 
+        }, i18next.t("admin.no_relations_added", { defaultValue: "No relations added yet." })) : null
+      )
+    );
+
+    this.appendChild(container);
+  }
+}
+
+customElements.define("admin-relation-list", AdminRelationList);
