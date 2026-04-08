@@ -90,3 +90,11 @@ export function handleMediaComments(req: Request, _db: Database, mediaId: number
     return ok(MediaView.formatComments(rows), params);
   } catch (err) { return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES)); }
 }
+
+export async function handleMediaBulkUpdate(req: Request, _db: Database): Promise<Response> {
+  try {
+    const result = await MediaController.bulkUpdate(req);
+    if ("error" in result) return badRequest(result.error as string, getLocaleFromRequest(req, SUPPORTED_LOCALES));
+    return ok({ success: true }, { locale: getLocaleFromRequest(req, SUPPORTED_LOCALES) });
+  } catch (err) { return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES)); }
+}

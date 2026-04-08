@@ -7,6 +7,7 @@ export interface MediaFiltersState {
   type: string;
   status: string;
   genre: string;
+  tag: string;
   year_from: string;
   year_to: string;
   score_from: string;
@@ -69,16 +70,19 @@ export class MediaFilters extends LitElement {
   @property({type: String}) type = "";
   @property({type: String}) status = "";
   @property({type: String}) genre = "";
+  @property({type: String}) tag = "";
   @property({type: String, attribute: "year-from"}) year_from = "";
   @property({type: String, attribute: "year-to"}) year_to = "";
   @property({type: String, attribute: "score-from"}) score_from = "";
   @property({type: String, attribute: "sort-by"}) sort_by = "popularity";
 
   @state() genres: Array<{slug: string; name: string}> = [];
+  @state() tags: Array<{slug: string; label: string}> = [];
 
   override connectedCallback() {
     super.connectedCallback();
     this.loadGenres();
+    this.loadTags();
   }
 
   async loadGenres() {
@@ -88,12 +92,20 @@ export class MediaFilters extends LitElement {
     }
   }
 
+  async loadTags() {
+    const res = await api.getTags();
+    if (res.ok) {
+      this.tags = res.data;
+    }
+  }
+
   private emitChange() {
     this.dispatchEvent(new CustomEvent("filters-change", {
       detail: {
         type: this.type,
         status: this.status,
         genre: this.genre,
+        tag: this.tag,
         year_from: this.year_from,
         year_to: this.year_to,
         score_from: this.score_from,
@@ -113,6 +125,7 @@ export class MediaFilters extends LitElement {
     this.type = "";
     this.status = "";
     this.genre = "";
+    this.tag = "";
     this.year_from = "";
     this.year_to = "";
     this.score_from = "";
@@ -155,6 +168,14 @@ export class MediaFilters extends LitElement {
             <select @change=${(e: Event) => this.handleChange("genre", (e.target as HTMLSelectElement).value)} .value=${this.genre}>
               <option value="">${i18next.t("filters.all")}</option>
               ${this.genres.map(g => html`<option value=${g.slug}>${g.name}</option>`)}
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label>${i18next.t("filters.tag", { defaultValue: "Tag" })}</label>
+            <select @change=${(e: Event) => this.handleChange("tag", (e.target as HTMLSelectElement).value)} .value=${this.tag}>
+              <option value="">${i18next.t("filters.all")}</option>
+              ${this.tags.map(t => html`<option value=${t.slug}>${t.label}</option>`)}
             </select>
           </div>
           

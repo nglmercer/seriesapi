@@ -166,9 +166,25 @@ class ApiClient {
     const params = new URLSearchParams({ page: String(page), limit: String(pageSize), locale: this.getLocale() });
     if (offset !== undefined) params.set("offset", String(offset));
     if (filters) {
-      Object.entries(filters).forEach(([k, v]) => v && params.set(k, v));
+      Object.entries(filters).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== "") {
+          params.set(k, String(v));
+        }
+      });
     }
     return this.request(`/media?${params}`);
+  }
+
+  bulkUpdateMedia(data: { 
+    ids: number[]; 
+    status?: string; 
+    tags?: string[]; 
+    tagAction?: "add" | "replace" | "clear" 
+  }): Promise<ApiResponse<{ success: true }>> {
+    return this.request("/media/bulk", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
   }
 
   getMediaDetail(id: number): Promise<ApiResponse<MediaItem>> {
@@ -220,6 +236,10 @@ class ApiClient {
 
   getGenres(): Promise<ApiResponse<unknown[]>> {
     return this.request(`/genres?locale=${this.getLocale()}`);
+  }
+
+  getTags(): Promise<ApiResponse<any[]>> {
+    return this.request(`/tags?locale=${this.getLocale()}`);
   }
 
   getGenreMedia(slug: string, page = 1): Promise<ApiResponse<unknown>> {

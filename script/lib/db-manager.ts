@@ -35,22 +35,22 @@ export class DbManager {
   async initCaches(): Promise<void> {
     const genres = this.drizzle.select(genresTable).all() as GenreRow[];
     for (const g of genres) {
-        if (g.id !== undefined) this.genreCache.set(g.slug, g.id);
+        if (g.id !== undefined && g.slug) this.genreCache.set(g.slug as string, g.id as number);
     }
 
     const studios = this.drizzle.select(studiosTable).all() as StudioRow[];
     for (const s of studios) {
-        if (s.id !== undefined) this.studioCache.set(s.name, s.id);
+        if (s.id !== undefined && s.name) this.studioCache.set(s.name as string, s.id as number);
     }
 
     const types = this.drizzle.select(contentTypesTable).all() as ContentTypeRow[];
     for (const t of types) {
-        if (t.id !== undefined) this.contentTypeCache.set(t.slug, t.id);
+        if (t.id !== undefined && t.slug) this.contentTypeCache.set(t.slug as string, t.id as number);
     }
 
     const langs = this.drizzle.select(languagesTable).all() as LanguageRow[];
     for (const l of langs) {
-        if (l.id !== undefined) this.languageCache.set(l.code, l.id);
+        if (l.id !== undefined && l.code) this.languageCache.set(l.code as string, l.id as number);
     }
   }
 
@@ -98,7 +98,7 @@ export class DbManager {
     const existing = this.drizzle.select(mediaTable)
       .where("json_extract(external_ids, '$.mal') = ?", [malId])
       .get() as MediaRow | undefined;
-    return existing?.id ?? null;
+    return (existing?.id as number) ?? null;
   }
 
   /**
@@ -158,10 +158,10 @@ export class DbManager {
     if (malData.aired) {
       const dates = malData.aired.split(" to ");
       if (dates[0]) {
-        try { releaseDate = new Date(dates[0]).toISOString().split('T')[0]; } catch {}
+        try { releaseDate = new Date(dates[0]).toISOString().split('T')[0] ?? null; } catch {}
       }
       if (dates[1] && dates[1] !== "?") {
-        try { endDate = new Date(dates[1]).toISOString().split('T')[0]; } catch {}
+        try { endDate = new Date(dates[1]).toISOString().split('T')[0] ?? null; } catch {}
       }
     }
 

@@ -12,6 +12,7 @@ import {
   handleMediaVideos,
   handleMediaRelated,
   handleMediaComments,
+  handleMediaBulkUpdate,
 } from "./src/api/routes/media";
 import {
   handleSeasonDetail,
@@ -32,6 +33,7 @@ import {
 } from "./src/api/routes/episodes";
 import { handlePeopleList, handlePersonDetail, handlePersonCredits } from "./src/api/routes/people";
 import { handleGenresList, handleGenreMedia } from "./src/api/routes/genres";
+import { handleTagsList } from "./src/api/routes/tags";
 import { handleCollectionsList, handleCollectionDetail } from "./src/api/routes/collections";
 import { handleSearch } from "./src/api/routes/search";
 import { handleCommentPost, handleCommentGet, handleUserComments } from "./src/api/routes/comments";
@@ -81,6 +83,12 @@ function route(req: Request): Response | Promise<Response> {
     return handleGenreMedia(req, db, p3); // p3 = slug
   }
 
+  // ── /api/v1/tags ───────────────────────────────────────────────────────────
+  if (resource === "tags") {
+    if (!GET) return methodNotAllowed(locale);
+    return handleTagsList(req, db);
+  }
+
   // ── /api/v1/collections ────────────────────────────────────────────────────
   if (resource === "collections") {
     if (!GET) return methodNotAllowed(locale);
@@ -101,6 +109,7 @@ function route(req: Request): Response | Promise<Response> {
 
   // ── /api/v1/media ──────────────────────────────────────────────────────────
   if (resource === "media") {
+    if (req.method === "POST" && p3 === "bulk") return handleMediaBulkUpdate(req, db);
     if (!GET) return methodNotAllowed(locale);
     if (!p3) return handleMediaList(req, db);
     const id = seg(parts, 3);

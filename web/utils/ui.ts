@@ -67,6 +67,33 @@ class UI {
     });
   }
 
+  static toast(message: string, type: "success" | "error" | "info" = "info") {
+    const toast = h("div", {
+      className: `toast toast-${type}`,
+      style: `
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        padding: 12px 24px;
+        border-radius: 12px;
+        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        z-index: 10000;
+        animation: slideUp 0.3s ease-out;
+      `
+    }, message);
+
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateY(20px)";
+      toast.style.transition = "all 0.3s ease";
+      setTimeout(() => document.body.removeChild(toast), 300);
+    }, 3000);
+  }
+
   static prompt(message: string, defaultValue = "", title = "Prompt"): Promise<string | null> {
     return new Promise((resolve) => {
       const input = h("input", { 

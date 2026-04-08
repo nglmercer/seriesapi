@@ -26,7 +26,7 @@ export class MediaController {
     if (!v.success) return { error: v.error };
 
     const { 
-      page, limit: pageSize, type, genre, status, 
+      page, limit: pageSize, type, genre, tag, status, 
       sort_by: sortBy, order, q: search, 
       year_from: yearFrom, year_to: yearTo, score_from: scoreFrom,
       offset: requestedOffset
@@ -61,6 +61,11 @@ export class MediaController {
       const cond = `m.id IN (SELECT media_id FROM media_genres mg JOIN genres g ON g.id = mg.genre_id WHERE g.slug = ?)`;
       itemsQuery.andWhere(cond, [genre]);
       totalQuery.andWhere(cond, [genre]);
+    }
+    if (tag) {
+      const cond = `m.id IN (SELECT media_id FROM media_tags mtg JOIN tags t ON t.id = mtg.tag_id WHERE t.slug = ?)`;
+      itemsQuery.andWhere(cond, [tag]);
+      totalQuery.andWhere(cond, [tag]);
     }
     if (search) {
       const cond = `(m.original_title LIKE ? OR mt.title LIKE ?)`;
@@ -321,5 +326,63 @@ export class MediaController {
       .all();
 
     return { rows, params: { locale, page, pageSize, total } };
+  }
+
+  static async bulkUpdate(req: Request) {
+    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      return { error: "Invalid JSON" };
+    }
+
+    const { ids, status, tags, tagAction = "add" } = body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return { error: "No IDs provided" };
+    }
+
+    const drizzle = getDrizzle();
+
+    // 1. Update status if provided
+    if (status) {
+      drizzle.update(mediaTable)
+        .set({ status, updated_at: new Date().toISOString() })
+        .where(`id IN (${ids.join(",")})`)
+        .run();
+    }
+
+    // 2. Handle tags if provided
+    if (tags && Array.isArray(tags)) {
+      // tagAction: "add" (append), "replace" (clear then add), "clear" (remove all)
+      
+      if (tagAction === "replace" || tagAction === "clear") {
+        drizzle.delete(mediaTagsTable)
+          .where(`media_id IN (${ids.join(",")})`)
+          .run();
+      }
+
+      if (tagAction !== "clear" && tags.length > 0) {
+        // Find tag IDs by slugs
+        const tagPlaceholders = tags.map(() => "?").join(",");
+        const tagRows = drizzle.select(tagsTable)
+          .where(`slug IN (${tagPlaceholders})`, tags)
+          .all() as { id: number, slug: string }[];
+        
+        const tagIds = tagRows.map(r => r.id);
+
+        if (tagIds.length > 0) {
+          for (const mediaId of ids) {
+            for (const tagId of tagIds) {
+              // Using a raw query for INSERT OR IGNORE since the custom ORM might not support it directly
+              drizzle.execute(`INSERT OR IGNORE INTO media_tags (media_id, tag_id) VALUES (?, ?)`, [mediaId, tagId]);
+            }
+          }
+        }
+      }
+    }
+
+    return { success: true };
   }
 }

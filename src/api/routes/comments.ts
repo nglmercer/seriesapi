@@ -17,6 +17,8 @@ import { ok, notFound, serverError } from "../response";
 import { CommentController } from "../controllers/comment.controller";
 import { CommentView } from "../views/comment.view";
 import { withAuth } from "./auth";
+import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
+import { getDrizzle } from "../../init";
 
 export const handleCommentPost = withAuth(async (req: Request, user) => {
   try {
@@ -61,11 +63,11 @@ export const handleUserComments = withAuth(async (req: Request, user) => {
       WHERE c.display_name = ?
       ORDER BY c.created_at DESC
       LIMIT ? OFFSET ?
-    `).all([locale, locale, user.display_name, limit, offset]);
+    `).all([locale, locale, user.username, limit, offset]);
 
     const total = drizzle.query<{ count: number }>(
       "SELECT count(id) as count FROM comments WHERE display_name = ?"
-    ).get([user.display_name])?.count || 0;
+    ).get([user.username])?.count || 0;
 
     return ok(results, { locale, total, page, pageSize: limit });
   } catch (err) {

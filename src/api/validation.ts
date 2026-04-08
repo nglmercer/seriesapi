@@ -69,6 +69,7 @@ export const searchParamsSchema = z.object({
 export const mediaFilterSchema = z.object({
   type: z.string().optional(),
   genre: z.string().optional(),
+  tag: z.string().optional(),
   status: z.string().optional(),
   sort_by: z.enum(["popularity", "score", "release_date", "title"]).default("popularity"),
   order: sortOrderSchema,
