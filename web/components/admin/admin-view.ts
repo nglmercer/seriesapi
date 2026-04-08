@@ -163,24 +163,43 @@ export class AdminView extends LitElement {
         <admin-media-list 
           .media=${this.mediaList}
           .selectedIds=${this.selectedIds}
+          .currentPage=${this.currentPage}
+          .pageSize=${this.pageSize}
+          .totalItems=${this.totalItems}
           @toggle-select=${(e: CustomEvent<number>) => this.toggleSelect(e.detail)}
           @toggle-select-all=${() => this.toggleSelectAll()}
           @edit-media=${(e: CustomEvent<number>) => this.editingMediaId = e.detail}
           @delete-media=${(e: CustomEvent<number>) => this.handleDeleteMedia(e.detail)}
-        ></admin-media-list>
-
-        <app-pagination 
-          .currentPage=${this.currentPage}
-          .pageSize=${this.pageSize}
-          .totalItems=${this.totalItems}
           @page-change=${(e: CustomEvent<number>) => { this.currentPage = e.detail; this.fetchMedia(); }}
-        ></app-pagination>
+        ></admin-media-list>
       </div>
     `;
   }
 
   private async handleAddMedia() {
-    // Implementation logic should be preserved here
+    const data = await ui.form<Partial<MediaItem>>(i18next.t("admin.add_new_media"), [
+        { label: i18next.t("admin.form_title"), name: "title", type: "text", width: "100%" },
+        { 
+            label: i18next.t("admin.form_type"), name: "content_type", type: "select", width: "50%",
+            options: [
+                { label: "Serie", value: "serie" },
+                { label: "Anime", value: "anime" },
+                { label: "Movie", value: "movie" },
+                { label: "Short", value: "short" }
+            ]
+        },
+        { label: i18next.t("admin.form_status"), name: "status", type: "select", width: "50%",
+            options: [
+                { label: i18next.language === 'es' ? "En emisión" : "Ongoing", value: "ongoing" },
+                { label: i18next.language === 'es' ? "Finalizado" : "Completed", value: "completed" },
+                { label: i18next.language === 'es' ? "Próximamente" : "Upcoming", value: "upcoming" }
+            ]
+        }
+    ]);
+    if (data) {
+        const res = await api.createMedia(data);
+        if (res.ok) await this.fetchMedia();
+    }
   }
 
   private async handleDeleteMedia(id: number) {
@@ -191,7 +210,56 @@ export class AdminView extends LitElement {
   }
 
   private async handleBulkAction(action: string) {
-    // Implementation logic should be preserved here
+    if (action === "cancel") {
+      this.selectedIds = new Set();
+      return;
+    }
+
+    if (this.selectedIds.size === 0) return;
+
+    if (action === "bulk-edit") {
+      const data = await ui.form<{ actionType: string; status?: string; tags?: string }>(i18next.t("admin.bulk_edit"), [
+        { 
+          label: i18next.t("admin.action_type"), name: "actionType", type: "select", width: "100%",
+          options: [
+            { label: i18next.t("admin.change_status"), value: "status" },
+            { label: i18next.t("admin.add_tag"), value: "add_tag" },
+            { label: i18next.t("admin.replace_tags"), value: "replace_tags" },
+            { label: i18next.t("admin.clear_tags"), value: "clear_tags" }
+          ]
+        },
+        { 
+          label: i18next.t("admin.new_status"), name: "status", type: "select", width: "100%",
+          options: [
+            { label: i18next.language === 'es' ? "En emisión" : "Ongoing", value: "ongoing" },
+            { label: i18next.language === 'es' ? "Finalizado" : "Completed", value: "completed" },
+            { label: i18next.language === 'es' ? "Próximamente" : "Upcoming", value: "upcoming" }
+          ]
+        },
+        { label: i18next.t("admin.tags_comma"), name: "tags", type: "text", width: "100%" }
+      ]);
+
+      if (data) {
+        const ids = Array.from(this.selectedIds);
+        const bulkData: any = { ids };
+        
+        if (data.actionType === "status") {
+          bulkData.status = data.status;
+        } else if (data.actionType === "add_tag") {
+          bulkData.tagAction = "add";
+          bulkData.tags = data.tags?.split(",").map(t => t.trim()).filter(Boolean);
+        } else if (data.actionType === "replace_tags") {
+          bulkData.tagAction = "replace";
+          bulkData.tags = data.tags?.split(",").map(t => t.trim()).filter(Boolean);
+        } else if (data.actionType === "clear_tags") {
+          bulkData.tagAction = "clear";
+        }
+
+        await api.bulkUpdateMedia(bulkData);
+        this.selectedIds = new Set();
+        await this.fetchMedia();
+      }
+    }
   }
 }
 

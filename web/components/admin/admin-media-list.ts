@@ -107,6 +107,9 @@ export class AdminMediaList extends LitElement {
 
   @property({ type: Array }) media: MediaItem[] = [];
   @property({ type: Object }) selectedIds: Set<number> = new Set();
+  @property({ type: Number }) currentPage = 1;
+  @property({ type: Number }) pageSize = 20;
+  @property({ type: Number }) totalItems = 0;
 
   override render() {
     if (this.media.length === 0) {
@@ -151,6 +154,13 @@ export class AdminMediaList extends LitElement {
           </div>
         `)}
       </div>
+
+      <app-pagination 
+        .currentPage=${this.currentPage}
+        .pageSize=${this.pageSize}
+        .totalItems=${this.totalItems}
+        @page-change=${(e: CustomEvent<number>) => this.dispatchEvent(new CustomEvent("page-change", { detail: e.detail }))}
+      ></app-pagination>
     `;
   }
 }

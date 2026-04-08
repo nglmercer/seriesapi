@@ -1,4 +1,4 @@
-import { LitElement, html, css } from "lit";
+import { LitElement, html, css, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { api, type MediaItem, type EpisodeItem, type SeasonItem, type RelationItem } from "../../services/api-service";
 import i18next from "../../utils/i18n";
@@ -23,7 +23,7 @@ export class AdminContentManager extends LitElement {
     .back-btn { margin-bottom: 24px; padding: 10px 20px; font-weight: 700; border-radius:10px; display:flex; align-items:center; gap:8px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); cursor: pointer; }
   `;
 
-  @state() private mediaId: number | null = null;
+  @property({ type: Number }) mediaId: number | null = null;
   @state() private media: MediaItem | null = null;
   @state() private seasons: SeasonItem[] = [];
   @state() private selectedSeasonId: number | null = null;
@@ -31,9 +31,14 @@ export class AdminContentManager extends LitElement {
   @state() private relations: RelationItem[] = [];
   @state() private currentTab: "episodes" | "relations" = "episodes";
 
+  override willUpdate(changedProperties: PropertyValues) {
+    if (changedProperties.has("mediaId") && this.mediaId) {
+      this.fetchData();
+    }
+  }
+
   setMedia(id: number) {
     this.mediaId = id;
-    this.fetchData();
   }
 
   private async fetchData() {
