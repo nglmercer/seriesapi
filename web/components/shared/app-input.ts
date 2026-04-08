@@ -5,15 +5,17 @@ export class AppInput extends HTMLElement {
   private _type = "text";
   private _placeholder = "";
   private _name = "";
+  private _initialized = false;
 
   get value() { return (this.querySelector("input") as HTMLInputElement)?.value || this._value; }
-  set value(val: string) { this._value = val; this.render(); }
+  set value(val: string) { this._value = val; if(this._initialized) this.render(); }
   
-  set type(val: string) { this._type = val; this.render(); }
-  set placeholder(val: string) { this._placeholder = val; this.render(); }
-  set name(val: string) { this._name = val; this.render(); }
+  set type(val: string) { this._type = val; if(this._initialized) this.render(); }
+  set placeholder(val: string) { this._placeholder = val; if(this._initialized) this.render(); }
+  set name(val: string) { this._name = val; if(this._initialized) this.render(); }
 
   connectedCallback() {
+    this._initialized = true;
     this.render();
   }
 
@@ -24,7 +26,7 @@ export class AppInput extends HTMLElement {
       name: this._name,
       value: this._value,
       placeholder: this._placeholder,
-      style: "width: 100%; height: 48px; padding: 0 16px; border-radius: 10px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); font-size: 14px; font-weight: 500; transition: all 0.2s;"
+      style: "width: 100%; height: 48px; padding: 0 16px; border-radius: 10px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); font-size: 14px; font-weight: 500; transition: all 0.2s; outline: none;"
     });
 
     input.addEventListener("focus", () => {

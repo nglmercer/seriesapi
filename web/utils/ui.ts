@@ -1,5 +1,9 @@
 import { h } from "./dom";
 import i18next from "i18next";
+// allways import the components to use it, import types not work for register the component
+import "../components/shared/app-field";
+import "../components/shared/app-input";
+import "../components/shared/app-select";
 import { AppField } from "../components/shared/app-field";
 import { AppInput } from "../components/shared/app-input";
 import { AppSelect } from "../components/shared/app-select";
@@ -28,13 +32,16 @@ class UI {
       className: "card modal-card",
       style: `
         width: 100%;
-        max-width: ${wide ? '600px' : '400px'};
+        max-width: ${wide ? '800px' : '500px'};
         max-height: 90vh;
         overflow-y: auto;
         margin: 20px;
-        padding: 24px;
+        padding: 32px;
+        border-radius: 20px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
         animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
       `
     });
 
@@ -198,17 +205,17 @@ class UI {
         return field;
       });
 
-      const formContent = h("div", { className: "ui-form", style: "display: flex; flex-direction: column; gap: 24px;" },
-        h("h3", { style: "margin: 0; font-size: 20px; font-weight: 800; border-bottom: 2px solid var(--border-color); padding-bottom: 16px; color: var(--text-primary);" }, title),
-        h("div", { style: "display: flex; flex-wrap: wrap; gap: 20px;" }, ...fieldElements),
-        h("div", { style: "display:flex; justify-content: flex-end; gap: 12px; margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 20px;" },
+      const formContent = h("div", { className: "ui-form", style: "display: flex; flex-direction: column; gap: 28px;" },
+        h("h3", { style: "margin: 0; font-size: 24px; font-weight: 900; border-bottom: 2px solid var(--border-color); padding-bottom: 20px; color: var(--text-primary); letter-spacing: -0.5px;" }, title),
+        h("div", { style: "display: flex; flex-wrap: wrap; gap: 24px;" }, ...fieldElements),
+        h("div", { style: "display:flex; justify-content: flex-end; gap: 16px; margin-top: 12px; border-top: 2px solid var(--border-color); padding-top: 24px;" },
           h("button", { 
-            style: "background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); font-weight: 600;",
+            style: "background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); font-weight: 700; height: 48px; padding: 0 24px; border-radius: 12px;",
             onclick: () => { close(); resolve(null); } 
           }, i18next.language === 'es' ? "Cancelar" : "Cancel"),
           h("button", { 
             className: "primary", 
-            style: "font-weight: 700; padding: 0 32px;",
+            style: "font-weight: 800; padding: 0 40px; height: 48px; border-radius: 12px; box-shadow: 0 4px 12px rgba(255, 71, 87, 0.2);",
             onclick: () => {
               const res: any = {};
               fields.forEach(f => {
