@@ -1,24 +1,35 @@
+import { LitElement, html, css } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
 import { api, type MediaItem, type EpisodeItem, type SeasonItem, type RelationItem } from "../../services/api-service";
 import i18next from "../../utils/i18n";
-import { h } from "../../utils/dom";
 import { ui } from "../../utils/ui";
 import { ICONS } from "../../utils/icons";
 import "./admin-season-list";
 import "./admin-episode-list";
 import "./admin-relation-list";
 
-import { AdminSeasonList } from "./admin-season-list";
-import { AdminEpisodeList } from "./admin-episode-list";
-import { AdminRelationList } from "./admin-relation-list";
+@customElement("admin-content-manager")
+export class AdminContentManager extends LitElement {
+  static override styles = css`
+    :host { display: block; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    .card { background: var(--bg-secondary); margin-bottom: 24px; padding: 24px; border-radius:16px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .admin-tabs { display: flex; gap: 24px; border-bottom: 2px solid var(--border-color); margin-bottom: 24px; }
+    .tab-btn { border-radius:0; border:none; background:transparent; cursor:pointer; padding: 12px 4px; font-weight:700; font-size:15px; color:var(--text-secondary); }
+    .tab-btn.active { border-bottom: 4px solid var(--accent-color); color:var(--accent-color); }
+    .tab-btn.disabled { cursor: not-allowed; opacity: 0.4; }
+    .content-grid { display: grid; grid-template-columns: 300px 1fr; gap: 24px; }
+    @media (max-width: 900px) { .content-grid { grid-template-columns: 1fr; } }
+    .back-btn { margin-bottom: 24px; padding: 10px 20px; font-weight: 700; border-radius:10px; display:flex; align-items:center; gap:8px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); cursor: pointer; }
+  `;
 
-export class AdminContentManager extends HTMLElement {
-  private mediaId: number | null = null;
-  private media: MediaItem | null = null;
-  private seasons: SeasonItem[] = [];
-  private selectedSeasonId: number | null = null;
-  private episodes: EpisodeItem[] = [];
-  private relations: RelationItem[] = [];
-  private currentTab: "episodes" | "relations" = "episodes";
+  @state() private mediaId: number | null = null;
+  @state() private media: MediaItem | null = null;
+  @state() private seasons: SeasonItem[] = [];
+  @state() private selectedSeasonId: number | null = null;
+  @state() private episodes: EpisodeItem[] = [];
+  @state() private relations: RelationItem[] = [];
+  @state() private currentTab: "episodes" | "relations" = "episodes";
 
   setMedia(id: number) {
     this.mediaId = id;
@@ -41,8 +52,6 @@ export class AdminContentManager extends HTMLElement {
     }
     if (sRes.ok) this.seasons = sRes.data;
     if (rRes.ok) this.relations = rRes.data;
-    
-    this.render();
   }
 
   private async fetchEpisodes(seasonId: number) {
@@ -51,7 +60,6 @@ export class AdminContentManager extends HTMLElement {
     if (res.ok) {
       this.episodes = res.data;
     }
-    this.render();
   }
 
   // Season & Episode Handlers
@@ -152,7 +160,7 @@ export class AdminContentManager extends HTMLElement {
       if (data) {
           const res = await api.createMediaRelation({ sourceId: this.mediaId, ...data });
           if (res.ok) await this.fetchData();
-          else await ui.alert(i18next.language === 'es' ? "ID no válido o error" : "Invalid ID or error");
+          else await ui.alert(i18next.language === 'es' ? "ID no válido or error" : "Invalid ID or error");
       }
   }
 
@@ -164,75 +172,97 @@ export class AdminContentManager extends HTMLElement {
       }
   }
 
-  render() {
-    this.innerHTML = "";
+  override render() {
     if (!this.media) {
-      this.appendChild(h("div", { className: "card" }, i18next.t("admin.loading_media_info")));
-      return;
+      return html`<div class="card">${i18next.t("admin.loading_media_info")}</div>`;
     }
-
-    const backBtn = h("button", { 
-        onclick: () => this.dispatchEvent(new CustomEvent("back", { bubbles: true })),
-        style: "margin-bottom: 24px; padding: 10px 20px; font-weight: 700; border-radius:10px; display:flex; align-items:center; gap:8px;"
-    }, h("span", { innerHTML: ICONS.back.toString() }), i18next.t("admin.back_to_media_list"));
-
-    const header = h("div", { className: "card", style: "background: var(--bg-secondary); margin-bottom: 24px; padding: 24px; border-radius:16px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05);" },
-      h("h2", { style: "margin:0 0 8px 0; font-size:24px; font-weight:900; color:var(--text-primary);" }, i18next.t("admin.managing", { title: this.media.title })),
-      h("p", { style: "margin:0; color: var(--text-secondary); font-size:15px; font-weight:500;" }, i18next.t("admin.content_mgmt_desc"))
-    );
 
     const isEpisodic = !["movie", "short"].includes(this.media.content_type);
 
-    const tabs = h("div", { className: "admin-tabs", style: "display: flex; gap: 24px; border-bottom: 2px solid var(--border-color); margin-bottom: 24px;" },
-      h("button", {
-        onclick: () => { if(isEpisodic) { this.currentTab = "episodes"; this.render(); } },
-        style: `border-radius:0; border:none; background:transparent; cursor:${isEpisodic ? 'pointer' : 'not-allowed'}; opacity:${isEpisodic ? '1' : '0.4'}; padding: 12px 4px; font-weight:700; font-size:15px; ${this.currentTab === 'episodes' ? 'border-bottom: 4px solid var(--accent-color); color:var(--accent-color);' : 'color:var(--text-secondary);'}`
-      }, i18next.t("admin.episodes")),
-      h("button", {
-        onclick: () => { this.currentTab = "relations"; this.render(); },
-        style: `border-radius:0; border:none; background:transparent; cursor:pointer; padding: 12px 4px; font-weight:700; font-size:15px; ${this.currentTab === 'relations' ? 'border-bottom: 4px solid var(--accent-color); color:var(--accent-color);' : 'color:var(--text-secondary);'}`
-      }, i18next.language === 'es' ? "Relaciones / Trilogías" : "Relations / Trilogies")
-    );
+    return html`
+      <div class="container">
+        <button class="back-btn" @click=${() => this.dispatchEvent(new CustomEvent("back", { bubbles: true }))}>
+          <span>${ICONS.back}</span> ${i18next.t("admin.back_to_media_list")}
+        </button>
 
-    let content;
+        <div class="card">
+          <h2 style="margin:0 0 8px 0; font-size:24px; font-weight:900; color:var(--text-primary);">
+            ${i18next.t("admin.managing", { title: this.media.title })}
+          </h2>
+          <p style="margin:0; color: var(--text-secondary); font-size:15px; font-weight:500;">
+            ${i18next.t("admin.content_mgmt_desc")}
+          </p>
+        </div>
+
+        <div class="admin-tabs">
+          <button 
+            class="tab-btn ${this.currentTab === 'episodes' ? 'active' : ''} ${!isEpisodic ? 'disabled' : ''}"
+            @click=${() => { if(isEpisodic) this.currentTab = "episodes"; }}
+          >
+            ${i18next.t("admin.episodes")}
+          </button>
+          <button 
+            class="tab-btn ${this.currentTab === 'relations' ? 'active' : ''}"
+            @click=${() => this.currentTab = "relations"}
+          >
+            ${i18next.language === 'es' ? "Relaciones / Trilogías" : "Relations / Trilogies"}
+          </button>
+        </div>
+
+        <div class="tab-content">
+          ${this.renderTabContent(isEpisodic)}
+        </div>
+      </div>
+    `;
+  }
+
+  private renderTabContent(isEpisodic: boolean) {
     if (this.currentTab === "episodes" && isEpisodic) {
-        const style = h("style", {}, `
-            .content-grid { display: grid; grid-template-columns: 300px 1fr; gap: 24px; }
-            @media (max-width: 900px) { .content-grid { grid-template-columns: 1fr; } }
-        `);
-        this.appendChild(style);
-
-        const seasonList = document.createElement("admin-season-list") as AdminSeasonList;
-        seasonList.data = { seasons: this.seasons, selectedId: this.selectedSeasonId };
-        seasonList.addEventListener("select-season", (e: Event) => this.fetchEpisodes((e as CustomEvent<number>).detail));
-        seasonList.addEventListener("add-season", () => this.handleAddSeason());
-        seasonList.addEventListener("edit-season", (e: Event) => this.handleEditSeason((e as CustomEvent<SeasonItem>).detail));
-
-        const episodeList = document.createElement("admin-episode-list") as AdminEpisodeList;
-        episodeList.data = { episodes: this.episodes, seasonId: this.selectedSeasonId };
-        episodeList.addEventListener("add-episode", () => this.handleAddEpisode());
-        episodeList.addEventListener("edit-episode", (e: Event) => this.handleEditEpisode((e as CustomEvent<EpisodeItem>).detail));
-        episodeList.addEventListener("delete-episode", (e: Event) => this.handleDeleteEpisode((e as CustomEvent<number>).detail));
-
-        content = h("div", { className: "content-grid" }, seasonList, episodeList);
-    } else if(this.currentTab === "episodes" && !isEpisodic) {
-        content = h("div", { className: "card", style: "text-align:center; padding: 60px 40px; color: var(--text-secondary); border-radius:16px; border:1px solid var(--border-color); background:var(--bg-secondary);" },
-            h("div", { style: "font-size: 48px; margin-bottom: 24px;" }, "🎬"),
-            h("h3", { style: "font-size:20px; font-weight:800; color:var(--text-primary); margin-bottom:8px;" }, i18next.language === 'es' ? "Contenido no episódico" : "Non-episodic content"),
-            h("p", { style: "font-weight:500;" }, i18next.language === 'es' ? "Las temporadas no son aplicables. Usa la pestaña 'Relaciones' para conectar secuelas o trilogías." : "Seasons are not applicable. Use the 'Relations' tab to connect sequels or trilogies.")
-        );
+      return html`
+        <div class="content-grid">
+          <admin-season-list 
+            .seasons=${this.seasons} 
+            .selectedId=${this.selectedSeasonId}
+            @select-season=${(e: CustomEvent<number>) => this.fetchEpisodes(e.detail)}
+            @add-season=${this.handleAddSeason}
+            @edit-season=${(e: CustomEvent<SeasonItem>) => this.handleEditSeason(e.detail)}
+          ></admin-season-list>
+          <admin-episode-list 
+            .episodes=${this.episodes} 
+            .seasonId=${this.selectedSeasonId}
+            @add-episode=${this.handleAddEpisode}
+            @edit-episode=${(e: CustomEvent<EpisodeItem>) => this.handleEditEpisode(e.detail)}
+            @delete-episode=${(e: CustomEvent<number>) => this.handleDeleteEpisode(e.detail)}
+          ></admin-episode-list>
+        </div>
+      `;
+    } else if (this.currentTab === "episodes" && !isEpisodic) {
+      return html`
+        <div class="card" style="text-align:center; padding: 60px 40px; color: var(--text-secondary);">
+          <div style="font-size: 48px; margin-bottom: 24px;">🎬</div>
+          <h3 style="font-size:20px; font-weight:800; color:var(--text-primary); margin-bottom:8px;">
+            ${i18next.language === 'es' ? "Contenido no episódico" : "Non-episodic content"}
+          </h3>
+          <p style="font-weight:500;">
+            ${i18next.language === 'es' ? "Las temporadas no son aplicables. Usa la pestaña 'Relaciones' para conectar secuelas o trilogías." : "Seasons are not applicable. Use the 'Relations' tab to connect sequels or trilogies."}
+          </p>
+        </div>
+      `;
     } else {
-        const relationList = document.createElement("admin-relation-list") as AdminRelationList;
-        relationList.data = this.relations;
-        relationList.addEventListener("add-relation", () => this.handleAddRelation());
-        relationList.addEventListener("delete-relation", (e: Event) => this.handleDeleteRelation((e as CustomEvent<number>).detail));
-        content = relationList;
+      return html`
+        <admin-relation-list 
+          .relations=${this.relations}
+          @add-relation=${this.handleAddRelation}
+          @delete-relation=${(e: CustomEvent<number>) => this.handleDeleteRelation(e.detail)}
+        ></admin-relation-list>
+      `;
     }
-
-    const mainContainer = h("div", { className: "container", style: "max-width: 1200px; margin: 0 auto; padding: 24px;" }, backBtn, header, tabs, content);
-    this.appendChild(mainContainer);
   }
 }
 
-customElements.define("admin-content-manager", AdminContentManager);
+declare global {
+  interface HTMLElementTagNameMap {
+    "admin-content-manager": AdminContentManager;
+  }
+}
 
