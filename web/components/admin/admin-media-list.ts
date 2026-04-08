@@ -2,6 +2,7 @@ import { LitElement, html, css } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import i18next from "../../utils/i18n";
 import type { MediaItem } from "../../services/api-service";
+import "../shared/app-pagination";
 
 @customElement("admin-media-list")
 export class AdminMediaList extends LitElement {

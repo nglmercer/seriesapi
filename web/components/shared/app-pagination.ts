@@ -1,4 +1,5 @@
-import { h } from "../../utils/dom";
+import { LitElement, html, css } from "lit";
+import { customElement, property } from "lit/decorators.js";
 import i18next from "../../utils/i18n";
 
 export interface PaginationInfo {
@@ -7,87 +8,153 @@ export interface PaginationInfo {
   total: number;
 }
 
-export class AppPagination extends HTMLElement {
-  private _info: PaginationInfo = { page: 1, pageSize: 20, total: 0 };
+@customElement("app-pagination")
+export class AppPagination extends LitElement {
+  static override styles = css`
+    :host {
+      display: block;
+    }
 
-  get info(): PaginationInfo {
-    return this._info;
+    .pagination-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-top: 30px;
+      padding: 20px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .pagination-btn {
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 600;
+      transition: all 0.2s;
+      border: 1px solid var(--border-color);
+    }
+
+    .prev-btn {
+      cursor: pointer;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+    }
+
+    .prev-btn:disabled {
+      cursor: not-allowed;
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+    }
+
+    .next-btn {
+      cursor: pointer;
+      background: var(--accent-color);
+      color: white;
+      border: none;
+    }
+
+    .next-btn:disabled {
+      cursor: not-allowed;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      color: white;
+    }
+
+    .info-text {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .current-page {
+      color: var(--text-primary);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .total-items {
+      color: var(--text-secondary);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+  `;
+
+  @property({ type: Number })
+  currentPage = 1;
+
+  @property({ type: Number })
+  pageSize = 20;
+
+  @property({ type: Number })
+  totalItems = 0;
+
+  // For backward compatibility if needed, but we'll focus on the new props
+  set info(val: PaginationInfo) {
+    this.currentPage = val.page;
+    this.pageSize = val.pageSize;
+    this.totalItems = val.total;
   }
 
-  set info(val: PaginationInfo) {
-    this._info = val;
-    this.render();
+  get info(): PaginationInfo {
+    return { page: this.currentPage, pageSize: this.pageSize, total: this.totalItems };
   }
 
   private onPageChange(page: number) {
-    this.dispatchEvent(new CustomEvent("page-change", { detail: page }));
+    this.dispatchEvent(new CustomEvent("page-change", { 
+      detail: page,
+      bubbles: true,
+      composed: true
+    }));
   }
 
-  render() {
-    this.innerHTML = "";
-    const { page, pageSize, total } = this._info;
+  override render() {
+    const page = this.currentPage;
+    const pageSize = this.pageSize;
+    const total = this.totalItems;
     const totalPages = Math.ceil(total / pageSize);
-    if (totalPages <= 1) return;
+    if (totalPages <= 1) return html``;
 
-    const container = h("div", { 
-      style: "display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 30px; padding: 20px; border-top: 1px solid var(--border-color);" 
-    });
+    return html`
+      <div class="pagination-container">
+        <button
+          class="pagination-btn prev-btn"
+          ?disabled=${page <= 1}
+          @click=${() => this.onPageChange(page - 1)}
+        >
+          ${i18next.t("pagination.prev", { defaultValue: "← Previous" })}
+        </button>
 
-    const prevBtn = h("button", {
-      className: "pagination-btn",
-      disabled: page <= 1,
-      onclick: () => this.onPageChange(page - 1),
-      style: `
-        padding: 10px 18px; 
-        border-radius: 10px; 
-        cursor: ${page <= 1 ? 'not-allowed' : 'pointer'}; 
-        background: ${page <= 1 ? 'var(--bg-secondary)' : 'var(--bg-primary)'};
-        color: ${page <= 1 ? 'var(--text-secondary)' : 'var(--text-primary)'};
-        border: 1px solid var(--border-color);
-        font-weight: 600;
-        transition: all 0.2s;
-      `
-    }, i18next.t("pagination.prev", { defaultValue: "← Previous" }));
+        <div class="info-text">
+          <span class="current-page">
+            ${i18next.t("pagination.current", {
+              page,
+              totalPages,
+              defaultValue: `${page} / ${totalPages}`,
+            })}
+          </span>
+          <span class="total-items">
+            ${i18next.t("pagination.total", {
+              total,
+              defaultValue: `${total} items`,
+            })}
+          </span>
+        </div>
 
-    const nextBtn = h("button", {
-      className: "pagination-btn",
-      disabled: page >= totalPages,
-      onclick: () => this.onPageChange(page + 1),
-      style: `
-        padding: 10px 18px; 
-        border-radius: 10px; 
-        cursor: ${page >= totalPages ? 'not-allowed' : 'pointer'}; 
-        background: ${page >= totalPages ? 'var(--bg-secondary)' : 'var(--accent-color)'};
-        color: white;
-        border: none;
-        font-weight: 600;
-        transition: all 0.2s;
-      `
-    }, i18next.t("pagination.next", { defaultValue: "Next →" }));
-
-    const infoText = h("div", {
-      style: "display: flex; flex-direction: column; align-items: center; gap: 2px;"
-    }, 
-      h("span", {
-        style: "color: var(--text-primary); font-size: 15px; font-weight: 700;"
-      }, i18next.t("pagination.current", { 
-        page, 
-        totalPages, 
-        defaultValue: `${page} / ${totalPages}` 
-      })),
-      h("span", {
-        style: "color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 1px;"
-      }, i18next.t("pagination.total", { 
-        total, 
-        defaultValue: `${total} items` 
-      }))
-    );
-
-    container.appendChild(prevBtn);
-    container.appendChild(infoText);
-    container.appendChild(nextBtn);
-    this.appendChild(container);
+        <button
+          class="pagination-btn next-btn"
+          ?disabled=${page >= totalPages}
+          @click=${() => this.onPageChange(page + 1)}
+        >
+          ${i18next.t("pagination.next", { defaultValue: "Next →" })}
+        </button>
+      </div>
+    `;
   }
 }
 
-customElements.define("app-pagination", AppPagination);
+declare global {
+  interface HTMLElementTagNameMap {
+    "app-pagination": AppPagination;
+  }
+}

@@ -99,7 +99,6 @@ export class AdminView extends LitElement {
     return html`
       <div class="container">
         <div class="admin-header">
-          <h1>${i18next.t("admin.title")}</h1>
           <div class="admin-nav">
             <button class="nav-btn ${this.currentTab === 'media' ? 'active' : ''}" @click=${() => this.currentTab = "media"}>
               ${i18next.t("admin.media_mgmt")}
