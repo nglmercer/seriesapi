@@ -1,5 +1,5 @@
 import { initializeDatabase, getDb } from "./src/init";
-import { createRateLimiter, handlePreflight, corsHeaders, HttpMethod, HttpHeader, ContentType } from "./src/middleware/ratelimit";
+import { createRateLimiter, handlePreflight, corsHeaders, HttpMethod, HttpHeader, ContentType, HttpStatus } from "./src/middleware/ratelimit";
 
 // ── route handlers ────────────────────────────────────────────────────────────
 import {
@@ -218,7 +218,7 @@ const server = Bun.serve({
       return new Response(
         JSON.stringify({ ok: false, data: null, error: "Internal Server Error" }),
         {
-          status: 500,
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
           headers: { [HttpHeader.CONTENT_TYPE]: ContentType.JSON, ...corsHeaders(req.headers.get(HttpHeader.ORIGIN.toLowerCase())) },
         },
       );

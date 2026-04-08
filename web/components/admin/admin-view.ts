@@ -6,7 +6,10 @@ import { AdminMediaForm } from "./admin-media-form";
 import "./admin-genres-view";
 import "./admin-reports-view";
 import "./admin-content-manager";
+import "./admin-bulk-bar";
+import "./admin-media-list";
 import "../shared/search-box";
+import "../shared/app-pagination";
 import "../media/media-filters";
 import type { MediaFiltersState } from "../media/media-filters";
 
@@ -18,6 +21,11 @@ export class AdminView extends HTMLElement {
   private editingMediaId: number | null = null; // Used for Content Manager
   private showFilters = false;
   private selectedIds: Set<number> = new Set();
+  
+  // Pagination
+  private currentPage = 1;
+  private pageSize = 20;
+  private totalItems = 0;
 
   async connectedCallback() {
     await this.fetchMedia();
@@ -34,9 +42,12 @@ export class AdminView extends HTMLElement {
       if (!filters[k]) delete filters[k];
     });
 
-    const res = await api.getMedia(1, 40, filters);
+    const res = await api.getMedia(this.currentPage, this.pageSize, filters);
     if (res.ok) {
       this.mediaList = res.data;
+      // The API returns pagination info in 'meta' according to the provided example
+      const meta = (res as any).meta;
+      this.totalItems = meta?.total || res.data.length;
     }
   }
 
@@ -59,6 +70,12 @@ export class AdminView extends HTMLElement {
   }
 
   private async handleBulkAction(action: string) {
+    if (action === "cancel") {
+      this.selectedIds.clear();
+      this.render();
+      return;
+    }
+
     if (this.selectedIds.size === 0) return;
 
     const ids = Array.from(this.selectedIds);
@@ -97,13 +114,35 @@ export class AdminView extends HTMLElement {
 
   private handleFiltersChange(e: CustomEvent<MediaFiltersState>) {
     this.filters = e.detail;
+    this.currentPage = 1;
     this.fetchMedia().then(() => this.render());
   }
 
   private async handleSearch(e: CustomEvent) {
     this.searchQuery = e.detail || "";
+    this.currentPage = 1;
     await this.fetchMedia();
     this.render();
+  }
+
+  private async handlePageChange(e: CustomEvent<number>) {
+    this.currentPage = e.detail;
+    await this.fetchMedia();
+    this.render();
+  }
+
+  private async handleItemAction(e: CustomEvent<{ action: string, id: number }>) {
+    const { action, id } = e.detail;
+    const item = this.mediaList.find(m => m.id === id);
+    if (!item) return;
+
+    if (action === "content_mgr") {
+      this.openContentManager(id);
+    } else if (action === "edit") {
+      this.openEditMedia(item);
+    } else if (action === "delete") {
+      this.handleDeleteMedia(id);
+    }
   }
 
   private openEditMedia(media: MediaItem | null) {
@@ -145,7 +184,7 @@ export class AdminView extends HTMLElement {
     const nav = h("div", { className: "admin-tabs", style: "display: flex; gap: 20px; border-bottom: 2px solid var(--border-color); margin-bottom: 20px;" },
       h("button", {
         className: this.currentTab === 'media' ? 'active' : '',
-        onclick: () => { this.currentTab = 'media'; this.render(); },
+        onclick: () => { this.currentTab = 'media'; this.currentPage = 1; this.render(); },
         style: `border-radius:0; border:none; background:transparent; cursor:pointer; padding: 10px; ${this.currentTab === 'media' ? 'border-bottom: 3px solid var(--accent-color)' : ''}`
       }, i18next.t("admin.media")),
       h("button", {
@@ -162,34 +201,19 @@ export class AdminView extends HTMLElement {
 
     let content;
     if (this.currentTab === 'media') {
-      const bulkBar = this.selectedIds.size > 0 ? h("div", { 
-        className: "bulk-actions", 
-        style: "background: var(--accent-color); color: white; padding: 12px 20px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; animation: slideDown 0.3s ease;" 
-      },
-        h("div", { style: "display: flex; align-items: center; gap: 15px;" },
-          h("strong", {}, i18next.t("admin.selected_count", { count: this.selectedIds.size, defaultValue: `${this.selectedIds.size} selected` })),
-          h("button", { 
-            onclick: () => this.handleBulkAction("status"),
-            style: "background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;"
-          }, i18next.t("admin.change_status", { defaultValue: "Change Status" })),
-          h("button", { 
-            onclick: () => this.handleBulkAction("add_tag"),
-            style: "background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;"
-          }, i18next.t("admin.add_tag", { defaultValue: "Add Tag" })),
-          h("button", { 
-            onclick: () => this.handleBulkAction("replace_tags"),
-            style: "background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;"
-          }, i18next.t("admin.replace_tags", { defaultValue: "Replace Tags" })),
-          h("button", { 
-            onclick: () => this.handleBulkAction("clear_tags"),
-            style: "background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;"
-          }, i18next.t("admin.clear_tags", { defaultValue: "Clear Tags" }))
-        ),
-        h("button", { 
-          onclick: () => { this.selectedIds.clear(); this.render(); },
-          style: "background: transparent; border: 1px solid rgba(255,255,255,0.5); color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;"
-        }, i18next.t("admin.cancel", { defaultValue: "Cancel" }))
-      ) : null;
+      const bulkBar = document.createElement("admin-bulk-bar") as any;
+      bulkBar.selectedCount = this.selectedIds.size;
+      bulkBar.addEventListener("bulk-action", (e: any) => this.handleBulkAction(e.detail));
+
+      const mediaList = document.createElement("admin-media-list") as any;
+      mediaList.data = { list: this.mediaList, selected: this.selectedIds };
+      mediaList.addEventListener("toggle-select", (e: any) => this.toggleSelect(e.detail));
+      mediaList.addEventListener("toggle-select-all", () => this.toggleSelectAll());
+      mediaList.addEventListener("item-action", (e: any) => this.handleItemAction(e));
+
+      const pagination = document.createElement("app-pagination") as any;
+      pagination.info = { page: this.currentPage, pageSize: this.pageSize, total: this.totalItems };
+      pagination.addEventListener("page-change", (e: any) => this.handlePageChange(e));
 
       content = h("div", {},
         h("div", { style: "display:flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 20px;" },
@@ -220,40 +244,8 @@ export class AdminView extends HTMLElement {
              "onfilters-change": (e: CustomEvent) => this.handleFiltersChange(e)
            } as any)
         ) : null,
-        h("div", { style: "margin-bottom: 10px; display: flex; align-items: center; gap: 10px; padding: 0 15px;" },
-          h("input", { 
-            type: "checkbox", 
-            checked: this.selectedIds.size === this.mediaList.length && this.mediaList.length > 0,
-            onchange: () => this.toggleSelectAll()
-          }),
-          h("span", { style: "font-size: 13px; color: var(--text-secondary);" }, i18next.t("admin.select_all", { defaultValue: "Select All" }))
-        ),
-        h("div", { className: "media-admin-list", style: "display: grid; gap: 10px;" },
-          ...this.mediaList.map(item => h("div", { className: `card ${this.selectedIds.has(item.id) ? 'selected' : ''}`, style: `display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; ${this.selectedIds.has(item.id) ? 'border: 2px solid var(--accent-color); background: var(--bg-secondary);' : ''}` },
-            h("div", { style: "display: flex; align-items: center; gap: 12px;" },
-              h("input", { 
-                type: "checkbox", 
-                checked: this.selectedIds.has(item.id),
-                onclick: (e: Event) => e.stopPropagation(),
-                onchange: () => this.toggleSelect(item.id)
-              }),
-              h("div", { onclick: () => this.toggleSelect(item.id), style: "cursor: pointer;" },
-                h("div", { style: "display:flex; align-items:center; gap:8px;" },
-                  h("strong", {}, item.title),
-                  !item.translation_id ? h("span", { 
-                    style: "background: var(--error-color); color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase;" 
-                  }, i18next.t("admin.missing_translation", { defaultValue: "MISSING " + i18next.language.toUpperCase() })) : null
-                ),
-                h("div", { style: "color:var(--text-secondary); font-size:12px;" }, `${item.content_type} | ID: ${item.id} | Slug: ${item.slug} | Status: ${item.status}`)
-              )
-            ),
-            h("div", { style: "display: flex; gap: 8px;" },
-              h("button", { onclick: () => this.openContentManager(item.id) }, i18next.t("admin.content_mgr")),
-              h("button", { onclick: () => this.openEditMedia(item) }, i18next.t("admin.edit")),
-              h("button", { onclick: () => this.handleDeleteMedia(item.id), className: "danger", style: "background: var(--error-color); color:white;" }, i18next.t("admin.delete"))
-            )
-          ))
-        )
+        mediaList,
+        pagination
       );
     } else if (this.currentTab === 'genres') {
       content = h("admin-genres-view");
@@ -268,4 +260,5 @@ export class AdminView extends HTMLElement {
 }
 
 customElements.define("admin-view", AdminView);
+
 
