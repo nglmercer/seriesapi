@@ -127,11 +127,11 @@ export class MediaController {
       .where("mg.media_id = ?", [id])
       .all();
 
-    const tags = drizzle.select(mediaTagsTable).as("mt2")
+    const tags = (drizzle.select(mediaTagsTable).as("mt2")
       .selectRaw("t.id, t.slug, t.label, mt2.spoiler")
       .join("tags t", "t.id = mt2.tag_id")
       .where("mt2.media_id = ?", [id])
-      .all();
+      .all() as unknown) as { id: number; slug: string; label: string; spoiler: number }[];
 
     const studios = drizzle.select(mediaStudiosTable).as("ms")
       .selectRaw("s.id, s.name, s.logo_url")
