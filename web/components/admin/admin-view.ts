@@ -3,20 +3,21 @@ import i18next from "../../utils/i18n";
 import { h } from "../../utils/dom";
 import { ui } from "../../utils/ui";
 import { AdminMediaForm } from "./admin-media-form";
-import "./admin-genres-view";
-import "./admin-reports-view";
-import "./admin-bulk-bar";
-import "./admin-media-list";
-import "../shared/search-box";
-import "../shared/app-pagination";
-//not delete import its necesary for load and register, when import types or use for types never register the component
-//its necesary allways import the component to use it
 import { AdminContentManager } from "./admin-content-manager";
 import { AdminBulkBar } from "./admin-bulk-bar";
 import { AdminMediaList } from "./admin-media-list";
 import { AppPagination } from "../shared/app-pagination";
 import { MediaFilters } from "../media/media-filters";
 import type { MediaFiltersState } from "../media/media-filters";
+
+//not delete import its necesary for load and register, when import types or use for types never register the component
+//its necesary allways import the component to use it
+import "./admin-genres-view";
+import "./admin-reports-view";
+import "./admin-bulk-bar";
+import "./admin-media-list";
+import "../shared/search-box";
+import "../shared/app-pagination";
 
 export class AdminView extends HTMLElement {
   private mediaList: MediaItem[] = [];

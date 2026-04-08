@@ -67,11 +67,29 @@ export class AdminMediaList extends HTMLElement {
       .card-actions { display: flex; gap: 8px; flex-shrink: 0; }
       
       @media (max-width: 768px) {
-        .admin-card { flex-direction: column; align-items: stretch; gap: 12px; padding: 16px; }
+        .admin-card { flex-direction: column; align-items: stretch; gap: 12px; padding: 16px; position: relative; }
         .card-main { align-items: flex-start; }
         .card-meta .meta-hide-mobile { display: none; }
-        .card-actions { justify-content: flex-end; border-top: 1px solid var(--border-color); pt: 12px; margin-top: 4px; padding-top: 12px; }
-        .card-actions button { flex: 1; padding: 10px; font-size: 12px; }
+        .card-actions { 
+          display: grid; 
+          grid-template-columns: 1fr 1fr; 
+          gap: 8px; 
+          border-top: 1px solid var(--border-color); 
+          padding-top: 12px;
+          margin-top: 4px;
+        }
+        .card-actions button { 
+          padding: 12px; 
+          font-size: 13px; 
+          font-weight: 700;
+          border-radius: 8px;
+        }
+        .card-actions button.danger {
+          grid-column: span 2;
+          background: rgba(239, 68, 68, 0.1) !important;
+          color: #ef4444 !important;
+          border: 1px solid rgba(239, 68, 68, 0.2);
+        }
       }
     `);
     this.appendChild(style);

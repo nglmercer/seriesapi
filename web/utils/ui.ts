@@ -1,5 +1,9 @@
 import { h } from "./dom";
 import i18next from "i18next";
+import { AppField } from "../components/shared/app-field";
+import { AppInput } from "../components/shared/app-input";
+import { AppSelect } from "../components/shared/app-select";
+
 /**
  * Premium UI Utilities for async alerts and prompts.
  */
@@ -147,50 +151,75 @@ class UI {
     });
   }
 
-  static form<T>(title: string, fields: { label: string; name: string; type: string; value?: any; options?: { label: string; value: any }[]; width?: string }[]): Promise<T | null> {
+  static form<T>(title: string, fields: { label: string; name: string; type: string; value?: any; options?: { label: string; value: any }[]; width?: string; placeholder?: string }[]): Promise<T | null> {
     return new Promise((resolve) => {
       const inputs: Record<string, any> = {};
       
       const fieldElements = fields.map(f => {
-        let input;
-        const style = `width: 100%; ${f.type === 'checkbox' ? 'width: auto;' : ''}`;
+        let input: HTMLElement;
         
-        if (f.type === "textarea") {
-          input = h("textarea", { name: f.name, rows: 4, style }, f.value || "");
-        } else if (f.type === "select") {
-          input = h("select", { name: f.name, style }, 
-            ...(f.options || []).map(opt => h("option", { value: opt.value, selected: opt.value === f.value }, opt.label))
-          );
+        if (f.type === "select") {
+          const select = document.createElement("app-select") as AppSelect;
+          select.name = f.name;
+          select.options = f.options || [];
+          select.value = f.value || "";
+          input = select;
         } else if (f.type === "checkbox") {
-          input = h("input", { type: "checkbox", name: f.name, checked: !!f.value });
+          input = h("input", { type: "checkbox", name: f.name, checked: !!f.value, style: "width: 20px; height: 20px; cursor: pointer;" });
+        } else if (f.type === "textarea") {
+          input = h("textarea", { 
+            name: f.name, 
+            style: "width: 100%; min-height: 100px; padding: 12px 16px; border-radius: 10px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); font-size: 14px; font-weight: 500; transition: all 0.2s; outline: none; resize: vertical;" 
+          }, f.value || "");
+          input.addEventListener("focus", () => (input.style.borderColor = "var(--accent-color)"));
+          input.addEventListener("blur", () => (input.style.borderColor = "var(--border-color)"));
         } else {
-          input = h("input", { type: f.type, name: f.name, value: f.value || "", style });
+          const appInput = document.createElement("app-input") as AppInput;
+          appInput.name = f.name;
+          appInput.type = f.type;
+          appInput.value = f.value || "";
+          appInput.placeholder = f.placeholder || "";
+          input = appInput;
         }
         
         inputs[f.name] = input;
         
-        const containerStyle = `display: flex; flex-direction: ${f.type === 'checkbox' ? 'row-reverse' : 'column'}; gap: 6px; ${f.type === 'checkbox' ? 'justify-content: flex-end; align-items: center;' : ''} flex: 1 1 ${f.width || '100%'};`;
+        const field = document.createElement("app-field") as AppField;
+        field.label = f.label;
+        field.style.flex = `1 1 ${f.width || '100%'}`;
+        if (f.type === "checkbox") {
+            field.style.flexDirection = "row-reverse";
+            field.style.justifyContent = "flex-end";
+            field.style.alignItems = "center";
+            field.style.gap = "10px";
+        }
+        field.appendChild(input);
         
-        return h("div", { style: containerStyle },
-          h("label", { style: `font-size: 13px; font-weight: 600; ${f.type === 'checkbox' ? 'margin: 0;' : ''}` }, f.label),
-          input
-        );
+        return field;
       });
 
-      const formContent = h("div", { className: "ui-form", style: "display: flex; flex-direction: column; gap: 20px;" },
-        h("h3", { style: "margin-top:0; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;" }, title),
-        h("div", { style: "display: flex; flex-wrap: wrap; gap: 16px;" }, ...fieldElements),
-        h("div", { style: "display:flex; justify-content: flex-end; gap: 10px; margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 16px;" },
-          h("button", { onclick: () => { close(); resolve(null); } }, i18next.language === 'es' ? "Cancelar" : "Cancel"),
+      const formContent = h("div", { className: "ui-form", style: "display: flex; flex-direction: column; gap: 24px;" },
+        h("h3", { style: "margin: 0; font-size: 20px; font-weight: 800; border-bottom: 2px solid var(--border-color); padding-bottom: 16px; color: var(--text-primary);" }, title),
+        h("div", { style: "display: flex; flex-wrap: wrap; gap: 20px;" }, ...fieldElements),
+        h("div", { style: "display:flex; justify-content: flex-end; gap: 12px; margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 20px;" },
+          h("button", { 
+            style: "background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); font-weight: 600;",
+            onclick: () => { close(); resolve(null); } 
+          }, i18next.language === 'es' ? "Cancelar" : "Cancel"),
           h("button", { 
             className: "primary", 
+            style: "font-weight: 700; padding: 0 32px;",
             onclick: () => {
               const res: any = {};
               fields.forEach(f => {
+                const input = inputs[f.name];
                 if (f.type === "checkbox") {
-                    res[f.name] = (inputs[f.name] as HTMLInputElement).checked;
+                    res[f.name] = (input as HTMLInputElement).checked;
+                } else if (input instanceof AppInput || input instanceof AppSelect) {
+                    res[f.name] = input.value;
+                    if (f.type === "number") res[f.name] = parseFloat(res[f.name] || '0');
                 } else {
-                    res[f.name] = inputs[f.name].value;
+                    res[f.name] = (input as HTMLInputElement | HTMLTextAreaElement).value;
                     if (f.type === "number") res[f.name] = parseFloat(res[f.name] || '0');
                 }
               });
@@ -200,6 +229,7 @@ class UI {
           }, i18next.language === 'es' ? "Guardar" : "Save")
         )
       );
+
       const { close } = this.createModal(formContent, true);
     });
   }
