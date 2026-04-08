@@ -69,13 +69,7 @@ export class AdminContentManager extends LitElement {
 
   // Season & Episode Handlers
   private async handleEditSeason(season: SeasonItem) {
-      const data = await ui.form<Partial<SeasonItem>>(i18next.t("admin.edit_season"), [
-          { label: i18next.t("admin.season_number"), name: "season_number", type: "number", value: season.season_number, width: "50%" },
-          { label: i18next.t("admin.season_title"), name: "name", type: "text", value: season.name || "", width: "50%" },
-          { label: i18next.language === 'es' ? "Fecha Inicio" : "Air Date", name: "air_date", type: "date", value: season.air_date, width: "50%" },
-          { label: i18next.language === 'es' ? "Fecha Fin" : "End Date", name: "end_date", type: "date", value: season.end_date, width: "50%" },
-          { label: i18next.t("admin.form_synopsis"), name: "synopsis", type: "textarea", value: season.synopsis, width: "100%" }
-      ]);
+      const data = await ui.editor<Partial<SeasonItem>>("season", season);
       if (data) {
           await api.updateSeason(season.id, data);
           await this.fetchData();
@@ -83,23 +77,7 @@ export class AdminContentManager extends LitElement {
   }
 
   private async handleEditEpisode(ep: EpisodeItem) {
-      const data = await ui.form<Partial<EpisodeItem>>(i18next.t("admin.edit_episode"), [
-          { label: i18next.t("admin.episode_number"), name: "episode_number", type: "number", value: ep.episode_number, width: "33%" },
-          { label: i18next.language === 'es' ? "Nº Absoluto" : "Absolute №", name: "absolute_number", type: "number", value: ep.absolute_number, width: "33%" },
-          { label: i18next.language === 'es' ? "Título" : "Title", name: "title", type: "text", value: ep.title, width: "33%" },
-          { 
-              label: i18next.language === 'es' ? "Tipo" : "Type", name: "episode_type", type: "select", value: ep.episode_type || "regular", width: "33%",
-              options: [
-                  { label: "Regular", value: "regular" },
-                  { label: "Special", value: "special" },
-                  { label: "Recap", value: "recap" },
-                  { label: "OVA", value: "ova" }
-              ]
-          },
-          { label: i18next.language === 'es' ? "Fecha Air" : "Air Date", name: "air_date", type: "date", value: ep.air_date, width: "33%" },
-          { label: i18next.language === 'es' ? "Duración" : "Runtime", name: "runtime_minutes", type: "number", value: ep.runtime_minutes, width: "33%" },
-          { label: i18next.t("admin.episode_synopsis"), name: "synopsis", type: "textarea", value: ep.synopsis || "", width: "100%" }
-      ]);
+      const data = await ui.editor<Partial<EpisodeItem>>("episode", ep);
       if (data) {
           await api.updateEpisode(ep.id, data);
           if(this.selectedSeasonId) await this.fetchEpisodes(this.selectedSeasonId);
@@ -108,33 +86,31 @@ export class AdminContentManager extends LitElement {
 
   private async handleAddSeason() {
     if (!this.mediaId) return;
-    const data = await ui.form<{ seasonNumber: number; title: string; air_date: string }>(i18next.t("admin.new_season"), [
-        { label: i18next.t("admin.season_number"), name: "seasonNumber", type: "number", value: this.seasons.length + 1, width: "50%" },
-        { label: i18next.t("admin.season_title"), name: "title", type: "text", width: "50%" },
-        { label: i18next.language === 'es' ? "Fecha Inicio" : "Air Date", name: "air_date", type: "date", width: "50%" }
-    ]);
+    const data = await ui.editor<{ season_number: number; name: string; air_date: string }>("season", {
+        season_number: this.seasons.length + 1
+    }, i18next.t("admin.new_season"));
     if (!data) return;
-    const res = await api.createSeason({ mediaId: this.mediaId, ...data });
+    const res = await api.createSeason({ 
+        mediaId: this.mediaId, 
+        seasonNumber: data.season_number,
+        title: data.name
+    });
     if (res.ok) await this.fetchData();
   }
 
   private async handleAddEpisode() {
     if (!this.mediaId || !this.selectedSeasonId) return;
-    const data = await ui.form<{ number: number; title: string; episode_type: string; synopsis: string }>(i18next.t("admin.new_episode"), [
-        { label: i18next.t("admin.episode_number"), name: "number", type: "number", value: this.episodes.length + 1, width: "33%" },
-        { label: i18next.t("admin.episode_title"), name: "title", type: "text", width: "33%" },
-        { label: i18next.language === 'es' ? "Tipo" : "Type", name: "episode_type", type: "select", value: "regular", width: "33%",
-            options: [
-                { label: "Regular", value: "regular" },
-                { label: "Special", value: "special" },
-                { label: "Recap", value: "recap" },
-                { label: "OVA", value: "ova" }
-            ]
-        },
-        { label: i18next.t("admin.episode_synopsis"), name: "synopsis", type: "textarea", width: "100%" }
-    ]);
+    const data = await ui.editor<{ episode_number: number; title: string; episode_type: string; synopsis: string }>("episode", {
+        episode_number: this.episodes.length + 1
+    }, i18next.t("admin.new_episode"));
     if (!data) return;
-    const res = await api.createEpisode({ mediaId: this.mediaId, seasonId: this.selectedSeasonId, ...data });
+    const res = await api.createEpisode({ 
+        mediaId: this.mediaId, 
+        seasonId: this.selectedSeasonId, 
+        number: data.episode_number,
+        title: data.title,
+        synopsis: data.synopsis
+    });
     if (res.ok) await this.fetchEpisodes(this.selectedSeasonId);
   }
 

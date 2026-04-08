@@ -145,8 +145,11 @@ export class AdminMediaList extends LitElement {
               </div>
             </div>
             <div class="actions">
+              <button class="action-btn" @click=${() => this.dispatchEvent(new CustomEvent("quick-edit", { detail: item }))}>
+                ${i18next.t("admin.quick_edit", { defaultValue: "Quick Edit" })}
+              </button>
               <button class="action-btn" @click=${() => this.dispatchEvent(new CustomEvent("edit-media", { detail: item.id }))}>
-                ${i18next.t("admin.edit")}
+                ${i18next.t("admin.manage", { defaultValue: "Manage" })}
               </button>
               <button class="action-btn danger" @click=${() => this.dispatchEvent(new CustomEvent("delete-media", { detail: item.id }))}>
                 ${i18next.t("admin.delete")}

@@ -56,9 +56,7 @@ export class AdminGenresView extends LitElement {
   }
 
   private async handleAdd() {
-    const data = await ui.form<{ name: string }>(i18next.t("admin.new_genre"), [
-        { label: i18next.t("admin.genre_name"), name: "name", type: "text" }
-    ]);
+    const data = await ui.editor<{ name: string }>("genre", null, i18next.t("admin.new_genre"));
     if (data?.name) {
       const res = await api.createGenre(data.name);
       if (res.ok) {
@@ -70,9 +68,7 @@ export class AdminGenresView extends LitElement {
   }
 
   private async handleEdit(id: string | number, oldName: string) {
-    const data = await ui.form<{ name: string }>(i18next.t("admin.edit_genre"), [
-        { label: i18next.t("admin.genre_name"), name: "name", type: "text", value: oldName }
-    ]);
+    const data = await ui.editor<{ name: string }>("genre", { name: oldName });
     if (data?.name && data.name !== oldName) {
       const res = await api.updateGenre(id, data.name);
       if (res.ok) {

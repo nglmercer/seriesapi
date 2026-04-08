@@ -167,6 +167,7 @@ export class AdminView extends LitElement {
           .totalItems=${this.totalItems}
           @toggle-select=${(e: CustomEvent<number>) => this.toggleSelect(e.detail)}
           @toggle-select-all=${() => this.toggleSelectAll()}
+          @quick-edit=${(e: CustomEvent<MediaItem>) => this.handleQuickEdit(e.detail)}
           @edit-media=${(e: CustomEvent<number>) => this.editingMediaId = e.detail}
           @delete-media=${(e: CustomEvent<number>) => this.handleDeleteMedia(e.detail)}
           @page-change=${(e: CustomEvent<number>) => { this.currentPage = e.detail; this.fetchMedia(); }}
@@ -176,28 +177,21 @@ export class AdminView extends LitElement {
   }
 
   private async handleAddMedia() {
-    const data = await ui.form<Partial<MediaItem>>(i18next.t("admin.add_new_media"), [
-        { label: i18next.t("admin.form_title"), name: "title", type: "text", width: "100%" },
-        { 
-            label: i18next.t("admin.form_type"), name: "content_type", type: "select", width: "50%",
-            options: [
-                { label: "Serie", value: "serie" },
-                { label: "Anime", value: "anime" },
-                { label: "Movie", value: "movie" },
-                { label: "Short", value: "short" }
-            ]
-        },
-        { label: i18next.t("admin.form_status"), name: "status", type: "select", width: "50%",
-            options: [
-                { label: i18next.language === 'es' ? "En emisión" : "Ongoing", value: "ongoing" },
-                { label: i18next.language === 'es' ? "Finalizado" : "Completed", value: "completed" },
-                { label: i18next.language === 'es' ? "Próximamente" : "Upcoming", value: "upcoming" }
-            ]
-        }
-    ]);
+    const data = await ui.editor<Partial<MediaItem>>("media", null, i18next.t("admin.add_new_media"));
     if (data) {
         const res = await api.createMedia(data);
         if (res.ok) await this.fetchMedia();
+    }
+  }
+
+  private async handleQuickEdit(item: MediaItem) {
+    const data = await ui.editor<Partial<MediaItem>>("media", item);
+    if (data) {
+        const res = await api.updateMedia(item.id, data);
+        if (res.ok) {
+            ui.toast(i18next.t("admin.updated_success", { defaultValue: "Updated successfully" }), "success");
+            await this.fetchMedia();
+        }
     }
   }
 
