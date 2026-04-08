@@ -16,7 +16,7 @@
  * */
 
 export { sqliteNapi, getTableSQL, getTablesSQL } from "./driver";
-export { sqliteTable, type SQLiteTable } from "./table";
+export { sqliteTable, type SQLiteTable, type InferRow } from "./table";
 export {
   integer,
   text,

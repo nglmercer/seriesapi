@@ -22,8 +22,8 @@ export async function handleReportCreate(req: Request) {
       entity_type,
       entity_id,
       report_type,
-      locale: reportLocale || null,
-      message: message || null,
+      locale: reportLocale || undefined,
+      message: message || undefined,
       status: "pending",
       created_at: now
     }).run();

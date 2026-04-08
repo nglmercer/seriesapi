@@ -122,21 +122,6 @@ export function sqliteTable<
  */
 export type InferRow<T> = T extends SQLiteTable<infer C> 
   ? {
-      [K in keyof C]: C[K] extends Column ? ColumnValue<C[K]> : never;
+      [K in keyof C]: C[K] extends Column<infer V> ? V : never;
     }
   : never;
-
-/**
- * Get the value type from a column
- */
-type ColumnValue<C> = C extends { getSQLType: () => infer T } 
-  ? T extends 'INTEGER' 
-    ? number 
-    : T extends 'TEXT' 
-      ? string 
-      : T extends 'REAL' 
-        ? number 
-        : T extends 'BLOB' 
-          ? Uint8Array 
-          : unknown
-  : unknown;

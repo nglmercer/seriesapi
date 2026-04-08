@@ -7,7 +7,8 @@
     "dev": "bun --watch index.ts",
     "start": "bun index.ts",
     "web": "bun --watch ./web/index.html",
-    "import:mal": "bun script/import-mal.ts"
+    "import:mal": "bun script/import-mal.ts",
+    "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist/types --noEmit false"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.8.9",

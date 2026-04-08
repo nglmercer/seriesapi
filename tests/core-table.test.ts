@@ -33,7 +33,7 @@ describe("Core Table", () => {
       id: integer("id"),
     });
     // mock primary key because modifiers might return a new instance
-    const pkCol = { name: "id", primaryKey: true, notNull: true, default: undefined, unique: true, autoIncrement: true, toSQL: () => "id INTEGER PRIMARY KEY", getSQLType: () => "INTEGER" };
+    const pkCol = { name: "id", primaryKey: true, notNull: true, default: undefined, unique: true, autoIncrement: true, toSQL: () => "id INTEGER PRIMARY KEY", getSQLType: () => "INTEGER", _type: 0 };
     const table = new Table({
       name: "test",
       columns: [pkCol]

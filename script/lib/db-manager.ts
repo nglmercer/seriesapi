@@ -33,24 +33,24 @@ export class DbManager {
    * Initialize caches from DB to avoid redundant lookups.
    */
   async initCaches(): Promise<void> {
-    const genres = this.drizzle.select(genresTable).all() as GenreRow[];
+    const genres = this.drizzle.select(genresTable).all();
     for (const g of genres) {
-        if (g.id !== undefined && g.slug) this.genreCache.set(g.slug as string, g.id as number);
+        if (g.id !== undefined && g.slug) this.genreCache.set(g.slug, g.id);
     }
 
-    const studios = this.drizzle.select(studiosTable).all() as StudioRow[];
+    const studios = this.drizzle.select(studiosTable).all();
     for (const s of studios) {
-        if (s.id !== undefined && s.name) this.studioCache.set(s.name as string, s.id as number);
+        if (s.id !== undefined && s.name) this.studioCache.set(s.name, s.id);
     }
 
-    const types = this.drizzle.select(contentTypesTable).all() as ContentTypeRow[];
+    const types = this.drizzle.select(contentTypesTable).all();
     for (const t of types) {
-        if (t.id !== undefined && t.slug) this.contentTypeCache.set(t.slug as string, t.id as number);
+        if (t.id !== undefined && t.slug) this.contentTypeCache.set(t.slug, t.id);
     }
 
-    const langs = this.drizzle.select(languagesTable).all() as LanguageRow[];
+    const langs = this.drizzle.select(languagesTable).all();
     for (const l of langs) {
-        if (l.id !== undefined && l.code) this.languageCache.set(l.code as string, l.id as number);
+        if (l.id !== undefined && l.code) this.languageCache.set(l.code, l.id);
     }
   }
 
@@ -172,8 +172,8 @@ export class DbManager {
       original_title: malData.title,
       original_language: "ja",
       status,
-      release_date: releaseDate,
-      end_date: endDate,
+      release_date: releaseDate ?? undefined,
+      end_date: endDate ?? undefined,
       runtime_minutes: parseInt(malData.duration?.match(/\d+/)?.[0] ?? "0", 10),
       total_episodes: parseInt(malData.episodes ?? "0", 10),
       score: parseFloat(malData.score ?? "0"),
@@ -191,8 +191,8 @@ export class DbManager {
       media_id: mediaId,
       locale: "en",
       title: malData.title,
-      synopsis: malData.synopsis ?? null,
-      synopsis_short: malData.synopsis?.substring(0, 280) ?? null,
+      synopsis: malData.synopsis ?? undefined,
+      synopsis_short: malData.synopsis?.substring(0, 280) ?? undefined,
     }).run();
 
     // 6. Image

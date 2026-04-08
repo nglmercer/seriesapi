@@ -13,7 +13,7 @@
  */
 
 import type { Database } from "sqlite-napi";
-import { ok, notFound, serverError } from "../response";
+import { ok, notFound, badRequest, serverError } from "../response";
 import { MediaController } from "../controllers/media.controller";
 import { MediaView } from "../views/media.view";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";

@@ -25,21 +25,24 @@ export interface ColumnBuilderConfig {
 // Base Column
 // ============================================
 
-export abstract class Column {
+export abstract class Column<T = unknown> {
   readonly name: string;
   readonly table?: Table;
   readonly notNull: boolean = false;
-  readonly default: unknown = undefined;
+  readonly default: T | undefined = undefined;
   readonly primaryKey: boolean = false;
   readonly unique: boolean = false;
   readonly references?: { table: string; column: string };
   readonly autoIncrement: boolean = false;
 
+  // Added for type inference
+  readonly _type!: T;
+
   constructor(config: ColumnBuilderConfig) {
     this.name = config.name;
     this.table = config.table;
     this.notNull = config.notNull ?? false;
-    this.default = config.default;
+    this.default = config.default as T;
     this.primaryKey = config.primaryKey ?? false;
     this.unique = config.unique ?? false;
     this.references = config.references;
@@ -94,43 +97,43 @@ export abstract class Column {
   }
 }
 
-export type AnyColumn = Column;
+export type AnyColumn = Column<any>;
 
 // ============================================
 // Column Types
 // ============================================
 
-export class IntegerColumn extends Column {
+export class IntegerColumn extends Column<number> {
   getSQLType(): string {
     return "INTEGER";
   }
 }
 
-export class TextColumn extends Column {
+export class TextColumn extends Column<string> {
   getSQLType(): string {
     return "TEXT";
   }
 }
 
-export class RealColumn extends Column {
+export class RealColumn extends Column<number> {
   getSQLType(): string {
     return "REAL";
   }
 }
 
-export class BlobColumn extends Column {
+export class BlobColumn extends Column<Uint8Array> {
   getSQLType(): string {
     return "BLOB";
   }
 }
 
-export class BooleanColumn extends Column {
+export class BooleanColumn extends Column<number> {
   getSQLType(): string {
     return "INTEGER";
   }
 }
 
-export class NumericColumn extends Column {
+export class NumericColumn extends Column<number> {
   getSQLType(): string {
     return "NUMERIC";
   }

@@ -24,7 +24,7 @@ export class EpisodeController {
     ).get([id]);
 
     const episode = {
-      ...row as any,
+      ...row,
       rating_average: ratingInfo?.avgScore || 0,
       rating_count: ratingInfo?.count || 0
     };
@@ -112,8 +112,8 @@ export class EpisodeController {
       drizzle.insert(episodeTranslationsTable).values({
         episode_id: Number(episodeId),
         locale,
-        title: data.title || null,
-        synopsis: data.synopsis || null
+        title: data.title || undefined,
+        synopsis: data.synopsis || undefined
       }).run();
     }
 
@@ -150,8 +150,8 @@ export class EpisodeController {
         drizzle.insert(episodeTranslationsTable).values({
           episode_id: id,
           locale,
-          title: data.title || null,
-          synopsis: data.synopsis || null
+          title: data.title || undefined,
+          synopsis: data.synopsis || undefined
         }).run();
       }
     }

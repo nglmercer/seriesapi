@@ -49,12 +49,12 @@ export class CommentController {
     const result = drizzle.insert(commentsTable).values({
       entity_type,
       entity_id,
-      parent_id,
+      parent_id: parent_id || undefined,
       display_name: display_name.trim(),
       ip_hash,
       locale: commentLocale || locale,
       body: text.trim(),
-      contains_spoilers: contains_spoilers
+      contains_spoilers: contains_spoilers ? 1 : 0
     }).run();
 
     const created = drizzle.select(commentsTable)
