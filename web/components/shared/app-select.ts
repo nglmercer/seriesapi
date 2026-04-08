@@ -1,46 +1,75 @@
-import { h } from "../../utils/dom";
+import { LitElement, html, css } from "lit";
+import { property } from "lit/decorators.js";
 import { CHEVRON_DOWN_ICON } from "../../utils/icons";
 
-export class AppSelect extends HTMLElement {
-  private _value = "";
-  private _options: { label: string; value: any }[] = [];
-  private _name = "";
-  private _initialized = false;
+export class AppSelect extends LitElement {
+  @property({ type: String }) value = "";
+  @property({ type: Array }) options: { label: string; value: any }[] = [];
+  @property({ type: String }) name = "";
+  @property({ type: Boolean }) disabled = false;
 
-  get value() { return (this.querySelector("select") as HTMLSelectElement)?.value || this._value; }
-  set value(val: string) { this._value = val; if(this._initialized) this.render(); }
-  
-  set options(val: { label: string; value: any }[]) { this._options = val; if(this._initialized) this.render(); }
-  set name(val: string) { this._name = val; if(this._initialized) this.render(); }
+  static override styles = css`
+    :host {
+      display: block;
+      width: 100%;
+    }
+    select {
+      width: 100%;
+      height: 48px;
+      padding: 0 16px;
+      border-radius: 10px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      font-size: 14px;
+      font-weight: 500;
+      appearance: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      outline: none;
+      box-sizing: border-box;
+      background-repeat: no-repeat;
+      background-position: right .7em top 50%;
+      background-size: .65em auto;
+    }
+    select:focus:not(:disabled) {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 2px rgba(255, 71, 87, 0.1);
+    }
+    select:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  `;
 
-  connectedCallback() {
-    this._initialized = true;
-    this.render();
+  override render() {
+    return html`
+      <select
+        .name="${this.name}"
+        ?disabled="${this.disabled}"
+        style="background-image: url('${CHEVRON_DOWN_ICON}');"
+        @change="${this._onChange}"
+      >
+        ${this.options.map(
+          (opt) => html`
+            <option
+              value="${opt.value}"
+              ?selected="${String(opt.value) === String(this.value)}"
+            >
+              ${opt.label}
+            </option>
+          `
+        )}
+      </select>
+    `;
   }
 
-  render() {
-    this.innerHTML = "";
-    const select = h("select", {
-      name: this._name,
-      style: `width: 100%; height: 48px; padding: 0 16px; border-radius: 10px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); font-size: 14px; font-weight: 500; appearance: none; cursor: pointer; transition: all 0.2s; outline: none; background-image: url('${CHEVRON_DOWN_ICON}'); background-repeat: no-repeat, repeat; background-position: right .7em top 50%, 0 0; background-size: .65em auto, 100%;`
-    }, 
-      ...this._options.map(opt => h("option", { 
-        value: opt.value, 
-        selected: String(opt.value) === String(this._value) 
-      }, opt.label))
-    );
-
-    select.addEventListener("focus", () => {
-        select.style.borderColor = "var(--accent-color)";
-        select.style.boxShadow = "0 0 0 2px rgba(255, 71, 87, 0.1)";
-    });
-    select.addEventListener("blur", () => {
-        select.style.borderColor = "var(--border-color)";
-        select.style.boxShadow = "none";
-    });
-
-    this.appendChild(select);
+  private _onChange(e: Event) {
+    this.value = (e.target as HTMLSelectElement).value;
+    this.dispatchEvent(new CustomEvent("change", { detail: { value: this.value } }));
   }
 }
 
-customElements.define("app-select", AppSelect);
+if (!customElements.get("app-select")) {
+  customElements.define("app-select", AppSelect);
+}

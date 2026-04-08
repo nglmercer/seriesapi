@@ -1,45 +1,61 @@
-import { h } from "../../utils/dom";
+import { LitElement, html, css } from "lit";
+import { property } from "lit/decorators.js";
 
-export class AppInput extends HTMLElement {
-  private _value = "";
-  private _type = "text";
-  private _placeholder = "";
-  private _name = "";
-  private _initialized = false;
+export class AppInput extends LitElement {
+  @property({ type: String }) value = "";
+  @property({ type: String }) type = "text";
+  @property({ type: String }) placeholder = "";
+  @property({ type: String }) name = "";
+  @property({ type: Boolean }) disabled = false;
 
-  get value() { return (this.querySelector("input") as HTMLInputElement)?.value || this._value; }
-  set value(val: string) { this._value = val; if(this._initialized) this.render(); }
-  
-  set type(val: string) { this._type = val; if(this._initialized) this.render(); }
-  set placeholder(val: string) { this._placeholder = val; if(this._initialized) this.render(); }
-  set name(val: string) { this._name = val; if(this._initialized) this.render(); }
+  static override styles = css`
+    :host {
+      display: block;
+      width: 100%;
+    }
+    input {
+      width: 100%;
+      height: 48px;
+      padding: 0 16px;
+      border-radius: 10px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      outline: none;
+      box-sizing: border-box;
+    }
+    input:focus:not(:disabled) {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 2px rgba(255, 71, 87, 0.1);
+    }
+    input:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  `;
 
-  connectedCallback() {
-    this._initialized = true;
-    this.render();
+  override render() {
+    return html`
+      <input
+        .type="${this.type}"
+        .name="${this.name}"
+        .value="${this.value}"
+        .placeholder="${this.placeholder}"
+        ?disabled="${this.disabled}"
+        @input="${this._onInput}"
+      />
+    `;
   }
 
-  render() {
-    this.innerHTML = "";
-    const input = h("input", {
-      type: this._type,
-      name: this._name,
-      value: this._value,
-      placeholder: this._placeholder,
-      style: "width: 100%; height: 48px; padding: 0 16px; border-radius: 10px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); font-size: 14px; font-weight: 500; transition: all 0.2s; outline: none;"
-    });
-
-    input.addEventListener("focus", () => {
-        input.style.borderColor = "var(--accent-color)";
-        input.style.boxShadow = "0 0 0 2px rgba(255, 71, 87, 0.1)";
-    });
-    input.addEventListener("blur", () => {
-        input.style.borderColor = "var(--border-color)";
-        input.style.boxShadow = "none";
-    });
-
-    this.appendChild(input);
+  private _onInput(e: InputEvent) {
+    this.value = (e.target as HTMLInputElement).value;
+    this.dispatchEvent(new CustomEvent("change", { detail: { value: this.value } }));
   }
 }
 
-customElements.define("app-input", AppInput);
+if (!customElements.get("app-input")) {
+  customElements.define("app-input", AppInput);
+}
