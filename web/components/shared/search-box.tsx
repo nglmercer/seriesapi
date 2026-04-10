@@ -4,6 +4,7 @@ import { api } from "../../services/api-service";
 import { eventBus } from "../../utils/events";
 import i18next from "../../utils/i18n";
 import { ICONS } from "../../utils/icons";
+import styles from './search-box.module.css';
 
 interface SearchBoxProps {
   query?: string;
@@ -30,10 +31,10 @@ export function SearchBox({ query = "", onSearch }: SearchBoxProps) {
   }
 
   return (
-    <div class="search-container">
-      <form class="search-wrapper" onSubmit={handleSubmit}>
-        <div class="input-group">
-          <span class="search-icon">{ICONS.search}</span>
+    <div class={styles.searchContainer}>
+      <form class={styles.searchWrapper} onSubmit={handleSubmit}>
+        <div class={styles.inputGroup}>
+          <span class={styles.searchIcon}>{ICONS.search}</span>
           <input
             type="text"
             name="q"

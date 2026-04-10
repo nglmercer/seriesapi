@@ -3,6 +3,7 @@ import { toggleTheme } from "../../utils/dom";
 import i18next from "../../utils/i18n";
 import { ICONS } from "../../utils/icons";
 import type { AuthUser } from "../../services/auth-store";
+import styles from './admin-header.module.css';
 
 interface AdminHeaderProps {
   user?: AuthUser | null;
@@ -18,29 +19,29 @@ export function AdminHeader({ user, isMenuOpen = false, onToggleMenu, onLogout }
   }
 
   return (
-    <header>
-      <a class="logo" href="/">Admin</a>
+    <header class={styles.header}>
+      <a class={styles.logo} href="/">Admin</a>
 
-      <div class="header-actions">
-        <div class="lang-switcher">
-          <button class={`lang-btn ${i18next.language === "en" ? "active" : ""}`} onClick={() => handleLanguageChange("en")}>EN</button>
-          <button class={`lang-btn ${i18next.language === "es" ? "active" : ""}`} onClick={() => handleLanguageChange("es")}>ES</button>
+      <div class={styles.headerActions}>
+        <div class={styles.langSwitcher}>
+          <button class={`${styles.langBtn} ${i18next.language === "en" ? styles.active : ""}`} onClick={() => handleLanguageChange("en")}>EN</button>
+          <button class={`${styles.langBtn} ${i18next.language === "es" ? styles.active : ""}`} onClick={() => handleLanguageChange("es")}>ES</button>
         </div>
 
-        <button class="theme-btn" onClick={toggleTheme}>{ICONS.theme}</button>
+        <button class={styles.themeBtn} onClick={toggleTheme}>{ICONS.theme}</button>
 
-        <a class="public-link" href="/">Public Page</a>
+        <a class={styles.publicLink} href="/">Public Page</a>
 
         {user && (
-          <div class="user-info">
-            <span class="user-badge">{ICONS.profile} {user.display_name || user.username}</span>
-            <button class="sign-out-btn" onClick={onLogout}>
+          <div class={styles.userInfo}>
+            <span class={styles.userBadge}>{ICONS.profile} {user.display_name || user.username}</span>
+            <button class={styles.signOutBtn} onClick={onLogout}>
               Sign Out
             </button>
           </div>
         )}
 
-        <button class="menu-toggle" onClick={onToggleMenu} aria-label="Toggle Menu">
+        <button class={styles.menuToggle} onClick={onToggleMenu} aria-label="Toggle Menu">
           {isMenuOpen ? ICONS.close : ICONS.menu}
         </button>
       </div>

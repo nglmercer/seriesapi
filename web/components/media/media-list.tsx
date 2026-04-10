@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'preact/hooks';
 import { mediaService } from "../../services/media-service";
 import { eventBus } from "../../utils/events";
 import type { MediaItem } from "../../services/api-service";
+import styles from './media-list.module.css';
 
 interface MediaListProps {
   mediaList?: MediaItem[];
@@ -66,7 +67,6 @@ export function MediaList({ mediaList: externalList }: MediaListProps) {
   }
 
   async function load() {
-    console.log("[media-list] load called, page:", page, "pageSize:", pageSize);
     setLoading(true);
     try {
       const result = await mediaService.fetchMediaList(page, pageSize, filters);
@@ -105,10 +105,10 @@ export function MediaList({ mediaList: externalList }: MediaListProps) {
     }
 
     return (
-      <div class="pagination">
+      <div class={styles.pagination}>
         <button disabled={page === 1} onClick={() => goToPage(page - 1)}>&lt;</button>
         {pages.map(p => (
-          <button class={p === page ? 'active' : ''} onClick={() => goToPage(p)}>{p}</button>
+          <button class={p === page ? styles.active : ''} onClick={() => goToPage(p)}>{p}</button>
         ))}
         <button disabled={page === totalPages} onClick={() => goToPage(page + 1)}>&gt;</button>
       </div>
@@ -117,12 +117,12 @@ export function MediaList({ mediaList: externalList }: MediaListProps) {
 
   if (loading && items.length === 0) {
     return (
-      <div class="media-grid">
-        {Array(pageSize).fill(0).map(() => (
-          <div class="card">
-            <div class="skeleton skeleton-img"></div>
-            <div class="skeleton skeleton-title"></div>
-            <div class="skeleton skeleton-meta"></div>
+      <div class={styles.mediaGrid}>
+        {Array(pageSize).fill(0).map((_, i) => (
+          <div class={styles.card}>
+            <div class={`${styles.skeleton} ${styles.skeletonImg}`}></div>
+            <div class={`${styles.skeleton} ${styles.skeletonTitle}`}></div>
+            <div class={`${styles.skeleton} ${styles.skeletonMeta}`}></div>
           </div>
         ))}
       </div>
@@ -130,18 +130,18 @@ export function MediaList({ mediaList: externalList }: MediaListProps) {
   }
 
   if (items.length === 0) {
-    return <div class="no-items">No items found</div>;
+    return <div class={styles.noItems}>No items found</div>;
   }
 
   const visibleItems = items.slice(0, pageSize);
 
   return (
-    <div ref={containerRef} class="media-grid" style={loading ? 'opacity: 0.7; pointer-events: none;' : ''}>
+    <div ref={containerRef} class={styles.mediaGrid} style={loading ? 'opacity: 0.7; pointer-events: none;' : ''}>
       {visibleItems.map(item => (
-        <div class="card" onClick={() => handleMediaClick(item.id)}>
+        <div class={styles.card} onClick={() => handleMediaClick(item.id)}>
           <img src={item.poster_url || item.image_url} alt={item.title} loading="lazy" />
-          <div class="title">{item.title}</div>
-          <div class="meta">
+          <div class={styles.title}>{item.title}</div>
+          <div class={styles.meta}>
             {item.content_type} | {item.status || ""}
           </div>
         </div>

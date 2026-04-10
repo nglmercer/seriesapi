@@ -2,6 +2,7 @@ import { h } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 import { api, type Genres, type Tag } from "../../services/api-service";
 import i18next from "../../utils/i18n";
+import styles from './media-filters.module.css';
 
 export interface MediaFiltersState {
   type: string;
@@ -71,9 +72,9 @@ export function MediaFilters({ state: initialState = {}, onFilterChange }: Media
   const currentYear = new Date().getFullYear();
 
   return (
-    <div class="filters-container">
-      <div class="filters-grid">
-        <div class="filter-group">
+    <div class={styles.filtersContainer}>
+      <div class={styles.filtersGrid}>
+        <div class={styles.filterGroup}>
           <label>Type</label>
           <select value={type} onChange={(e) => { setType((e.target as HTMLSelectElement).value); emitChange(); }}>
             <option value="">All</option>
@@ -86,7 +87,7 @@ export function MediaFilters({ state: initialState = {}, onFilterChange }: Media
           </select>
         </div>
 
-        <div class="filter-group">
+        <div class={styles.filterGroup}>
           <label>Status</label>
           <select value={status} onChange={(e) => { setStatus((e.target as HTMLSelectElement).value); emitChange(); }}>
             <option value="">All</option>
@@ -97,7 +98,7 @@ export function MediaFilters({ state: initialState = {}, onFilterChange }: Media
           </select>
         </div>
 
-        <div class="filter-group">
+        <div class={styles.filterGroup}>
           <label>Genre</label>
           <select value={genre} onChange={(e) => { setGenre((e.target as HTMLSelectElement).value); emitChange(); }}>
             <option value="">All</option>
@@ -105,7 +106,7 @@ export function MediaFilters({ state: initialState = {}, onFilterChange }: Media
           </select>
         </div>
 
-        <div class="filter-group">
+        <div class={styles.filterGroup}>
           <label>Tag</label>
           <select value={tag} onChange={(e) => { setTag((e.target as HTMLSelectElement).value); emitChange(); }}>
             <option value="">All</option>
@@ -113,7 +114,7 @@ export function MediaFilters({ state: initialState = {}, onFilterChange }: Media
           </select>
         </div>
 
-        <div class="filter-group">
+        <div class={styles.filterGroup}>
           <label>Year Range</label>
           <div style="display: flex; gap: 8px;">
             <input
@@ -135,7 +136,7 @@ export function MediaFilters({ state: initialState = {}, onFilterChange }: Media
           </div>
         </div>
 
-        <div class="filter-group">
+        <div class={styles.filterGroup}>
           <label>Score</label>
           <select value={score_from} onChange={(e) => { setScoreFrom((e.target as HTMLSelectElement).value); emitChange(); }}>
             <option value="">Any</option>
@@ -146,7 +147,7 @@ export function MediaFilters({ state: initialState = {}, onFilterChange }: Media
           </select>
         </div>
 
-        <div class="filter-group">
+        <div class={styles.filterGroup}>
           <label>Sort By</label>
           <select value={sort_by} onChange={(e) => { setSortBy((e.target as HTMLSelectElement).value); emitChange(); }}>
             <option value="popularity">Popularity</option>
@@ -157,8 +158,8 @@ export function MediaFilters({ state: initialState = {}, onFilterChange }: Media
         </div>
       </div>
 
-      <div class="actions">
-        <button class="btn-reset" onClick={handleReset}>Reset</button>
+      <div class={styles.actions}>
+        <button class={styles.btnReset} onClick={handleReset}>Reset</button>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { h } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 import { api } from "../../services/api-service";
+import styles from './genres-list.module.css';
 
 interface GenreItem {
   id: number;
@@ -36,12 +37,12 @@ export function GenresList({ onGenreSelect }: GenresListProps) {
     }
   }
 
-  if (loading) return <div class="loading">Cargando...</div>;
+  if (loading) return <div class={styles.loading}>Cargando...</div>;
 
   return (
-    <div class="list">
+    <div class={styles.list}>
       {items.map(item => (
-        <div class="tag" onClick={() => handleClick(item.slug)}>
+        <div class={styles.tag} onClick={() => handleClick(item.slug)}>
           {item.name}
         </div>
       ))}

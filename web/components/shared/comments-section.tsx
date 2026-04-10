@@ -8,6 +8,7 @@ import { mediaService } from "../../services/media-service";
 import { api } from "../../services/api-service";
 import i18next from "../../utils/i18n";
 import type { CommentData } from "./comment-item";
+import styles from './comments-section.module.css';
 
 interface CommentsSectionProps {
   entityType?: string;
@@ -101,12 +102,12 @@ export function CommentsSection({ entityType = "", entityId = 0 }: CommentsSecti
   const remaining = total - comments.length;
 
   return (
-    <div class="section">
+    <div class={styles.section}>
       {showAuth && <AuthModal onAuthClose={onAuthClose} />}
 
-      <div class="head">
+      <div class={styles.head}>
         <h3>{i18next.t("comments.title", { defaultValue: "Community" })}</h3>
-        {total > 0 ? <span class="badge">{total}</span> : null}
+        {total > 0 ? <span class={styles.badge}>{total}</span> : null}
       </div>
 
       <CommentCompose
@@ -116,20 +117,21 @@ export function CommentsSection({ entityType = "", entityId = 0 }: CommentsSecti
         onNeedLogin={handleNeedLogin}
       />
 
-      <div class="list">
+      <div class={styles.list}>
         {loading ? (
-          <div class="empty">
-            <div class="empty-icon">💬</div>
+          <div class={styles.empty}>
+            <div class={styles.emptyIcon}>💬</div>
             <p>{i18next.t("common.loading", { defaultValue: "Loading…" })}</p>
           </div>
         ) : comments.length === 0 ? (
-          <div class="empty">
-            <div class="empty-icon">💬</div>
+          <div class={styles.empty}>
+            <div class={styles.emptyIcon}>💬</div>
             <p>{i18next.t("comments.empty", { defaultValue: "No comments yet. Be the first!" })}</p>
           </div>
         ) : (
           comments.map(c => (
             <CommentItem
+              key={c.id}
               comment={c}
               isLoggedIn={user !== null}
               isPosting={postingReply}
@@ -141,8 +143,8 @@ export function CommentsSection({ entityType = "", entityId = 0 }: CommentsSecti
       </div>
 
       {remaining > 0 && (
-        <div class="load-more">
-          <button class="btn-more" onClick={() => setPage(page + 1)}>
+        <div class={styles.loadMore}>
+          <button class={styles.btnMore} onClick={() => setPage(page + 1)}>
             {i18next.t("comments.load_more", { defaultValue: "Load more" })} ({remaining})
           </button>
         </div>

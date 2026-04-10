@@ -1,29 +1,33 @@
-header {
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
   background: var(--header-bg);
   border-bottom: 1px solid var(--border-color);
-  padding: 12px 20px;
+  padding: 0 20px;
+  height: 64px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 20px;
 }
 
 .logo {
   font-size: 18px;
   font-weight: 800;
-  color: var(--accent-color);
+  color: var(--text-primary);
   text-decoration: none;
+  transition: color 0.2s;
 }
 
 .logo:hover {
+  color: var(--accent-color);
   text-decoration: none;
-  opacity: 0.8;
 }
 
 .headerActions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+  margin-left: auto;
 }
 
 .langSwitcher {
@@ -44,8 +48,7 @@ header {
 }
 
 .langBtn:hover {
-  border-color: var(--accent-color);
-  color: var(--accent-color);
+  background: var(--bg-secondary);
   filter: none;
 }
 
@@ -58,32 +61,33 @@ header {
 .themeBtn {
   padding: 8px 12px;
   background: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  font-size: 16px;
+  border: none;
+  font-size: 18px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.2s;
 }
 
 .themeBtn:hover {
-  background: var(--bg-secondary);
+  transform: scale(1.1);
   filter: none;
 }
 
 .publicLink {
-  padding: 8px 14px;
-  background: transparent;
+  padding: 8px 16px;
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   text-decoration: none;
   transition: all 0.2s;
 }
 
 .publicLink:hover {
-  background: var(--bg-secondary);
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: white;
   text-decoration: none;
   filter: none;
 }
@@ -97,8 +101,8 @@ header {
 .userBadge {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: 8px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -109,7 +113,6 @@ header {
   border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 12px;
-  font-weight: 600;
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -126,19 +129,18 @@ header {
   display: none;
   padding: 8px;
   background: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  font-size: 18px;
+  border: none;
+  font-size: 20px;
   cursor: pointer;
 }
 
 @media (max-width: 768px) {
-  .menuToggle {
-    display: block;
-  }
-
   .langSwitcher,
   .publicLink {
     display: none;
+  }
+
+  .menuToggle {
+    display: block;
   }
 }

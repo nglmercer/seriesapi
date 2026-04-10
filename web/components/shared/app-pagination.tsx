@@ -1,5 +1,5 @@
 import { h } from 'preact';
-import i18next from "../../utils/i18n";
+import styles from './app-pagination.module.css';
 
 interface AppPaginationProps {
   currentPage?: number;
@@ -29,22 +29,22 @@ export function AppPagination({
   }
 
   return (
-    <div class="pagination-container">
+    <div class={styles.paginationContainer}>
       <button
-        class="pagination-btn prev-btn"
+        class={styles.paginationBtn}
         disabled={currentPage <= 1}
         onClick={handlePrev}
       >
         ←
       </button>
 
-      <div class="info-text">
-        <span class="current-page">{currentPage}</span>
-        <span class="total-items">{totalItems} items</span>
+      <div class={styles.infoText}>
+        <span class={styles.currentPage}>{currentPage}</span>
+        <span class={styles.totalItems}>{totalItems} items</span>
       </div>
 
       <button
-        class="pagination-btn next-btn"
+        class={styles.paginationBtn}
         disabled={currentPage >= totalPages}
         onClick={handleNext}
       >

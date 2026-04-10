@@ -1,7 +1,5 @@
 import { h } from 'preact';
-import { useState } from 'preact/hooks';
-import { authStore } from "../../services/auth-store";
-import i18next from "../../utils/i18n";
+import styles from './comment-avatar.module.css';
 
 interface CommentAvatarProps {
   name?: string;
@@ -30,7 +28,7 @@ export function avatarColor(name: string): string {
 
 export function CommentAvatar({ name = "?", size = "md" }: CommentAvatarProps) {
   return (
-    <div class={`av ${size}`} style={{ background: avatarColor(name) }}>
+    <div class={`${styles.av} ${size === "md" ? styles.md : styles.sm}`} style={{ background: avatarColor(name) }}>
       {initials(name)}
     </div>
   );

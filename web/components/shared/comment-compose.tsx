@@ -3,6 +3,7 @@ import { useState } from 'preact/hooks';
 import { CommentAvatar } from "./comment-avatar";
 import type { AuthUser } from "../../services/auth-store";
 import i18next from "../../utils/i18n";
+import styles from './comment-compose.module.css';
 
 interface CommentComposeProps {
   user: AuthUser | null;
@@ -31,23 +32,23 @@ export function CommentCompose({ user, posting = false, onCommentSubmit, onNeedL
   }
 
   return (
-    <div class="row">
+    <div class={styles.row}>
       {user ? (
         <CommentAvatar name={user.display_name} size="md" />
       ) : (
-        <div class="ghost-av">👤</div>
+        <div class={styles.ghostAv}>👤</div>
       )}
 
       {user ? (
-        <div class="compose">
+        <div class={styles.compose}>
           <textarea
             placeholder={i18next.t("comments.body_placeholder", { defaultValue: "Share your thoughts…  (Ctrl+Enter to post)" })}
             value={text}
             onInput={(e) => setText((e.target as HTMLTextAreaElement).value)}
             onKeyDown={handleKeyDown}
           />
-          <div class="footer">
-            <label class={`spoiler-label ${spoilers ? "on" : ""}`}>
+          <div class={styles.footer}>
+            <label class={`${styles.spoilerLabel} ${spoilers ? styles.on : ""}`}>
               <input
                 type="checkbox"
                 checked={spoilers}
@@ -55,7 +56,7 @@ export function CommentCompose({ user, posting = false, onCommentSubmit, onNeedL
               />
               {i18next.t("comments.contains_spoilers", { defaultValue: "Contains Spoilers" })}
             </label>
-            <button class="btn-post" disabled={!text.trim() || posting} onClick={submit}>
+            <button class={styles.btnPost} disabled={!text.trim() || posting} onClick={submit}>
               {posting
                 ? i18next.t("comments.posting", { defaultValue: "Posting…" })
                 : i18next.t("comments.post_button", { defaultValue: "Post" })
@@ -64,12 +65,12 @@ export function CommentCompose({ user, posting = false, onCommentSubmit, onNeedL
           </div>
         </div>
       ) : (
-        <div class="gate">
-          <div class="gate-copy">
+        <div class={styles.gate}>
+          <div class={styles.gateCopy}>
             <strong>{i18next.t("comments.join_discussion", { defaultValue: "Join the conversation" })}</strong>
             {i18next.t("comments.login_required", { defaultValue: "Sign in to comment and interact with the community." })}
           </div>
-          <button class="btn-signin" onClick={onNeedLogin}>
+          <button class={styles.btnSignin} onClick={onNeedLogin}>
             {i18next.t("auth.sign_in", { defaultValue: "Sign In" })}
           </button>
         </div>

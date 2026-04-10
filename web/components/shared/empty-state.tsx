@@ -1,4 +1,5 @@
 import { h } from 'preact';
+import styles from './empty-state.module.css';
 
 interface EmptyStateProps {
   title?: string;
@@ -7,10 +8,10 @@ interface EmptyStateProps {
 
 export function EmptyState({ title = "No content found", message = "The requested content does not exist or has been removed." }: EmptyStateProps) {
   return (
-    <div class="empty">
-      <div class="empty-icon">📭</div>
-      <div class="empty-title">{title}</div>
-      <div class="empty-message">{message}</div>
+    <div class={styles.empty}>
+      <div class={styles.emptyIcon}>📭</div>
+      <div class={styles.emptyTitle}>{title}</div>
+      <div class={styles.emptyMessage}>{message}</div>
     </div>
   );
 }

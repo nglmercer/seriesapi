@@ -4,6 +4,7 @@ import { CommentAvatar } from "./comment-avatar";
 import { ICONS } from "../../utils/icons";
 import i18next from "../../utils/i18n";
 import type { Comment_Item as CommentData } from "../../services/api-service";
+import styles from './comment-item.module.css';
 
 export { type CommentData };
 
@@ -70,34 +71,34 @@ export function CommentItem({ comment, isLoggedIn = false, isPosting = false, on
     setShowReply(false);
   }
 
-  const bodyClass = comment.contains_spoilers && !spoilerRevealed ? "body-text blurred" : "body-text";
+  const bodyClass = comment.contains_spoilers && !spoilerRevealed ? `${styles.bodyText} ${styles.blurred}` : styles.bodyText;
 
   return (
-    <div class="post">
+    <div class={styles.post}>
       <CommentAvatar name={comment.display_name} size="md" />
 
-      <div class="content">
-        <div class="meta">
-          <span class="author">{comment.display_name}</span>
-          <span class="time">{relativeTime(comment.created_at)}</span>
-          {comment.contains_spoilers ? <span class="spoiler-badge">{i18next.t("comments.spoiler_badge", { defaultValue: "SPOILER" })}</span> : null}
+      <div class={styles.content}>
+        <div class={styles.meta}>
+          <span class={styles.author}>{comment.display_name}</span>
+          <span class={styles.time}>{relativeTime(comment.created_at)}</span>
+          {comment.contains_spoilers ? <span class={styles.spoilerBadge}>{i18next.t("comments.spoiler_badge", { defaultValue: "SPOILER" })}</span> : null}
         </div>
 
         <p class={bodyClass} onClick={() => { if (comment.contains_spoilers) setSpoilerRevealed(true); }}>
           {comment.body}
         </p>
 
-        <div class="actions">
-          <button class={`act-btn ${liked ? "active" : ""}`} onClick={handleLike} title={i18next.t("comments.like", { defaultValue: "Like" })}>
+        <div class={styles.actions}>
+          <button class={`${styles.actBtn} ${liked ? styles.active : ""}`} onClick={handleLike} title={i18next.t("comments.like", { defaultValue: "Like" })}>
             <span style={liked ? 'color: currentColor;' : ''}>{ICONS.like}</span>
             {(comment.likes || 0) + (liked ? 1 : 0)}
           </button>
 
-          <button class={`act-btn ${disliked ? "active" : ""}`} onClick={handleDislike} title={i18next.t("comments.dislike", { defaultValue: "Dislike" })}>
+          <button class={`${styles.actBtn} ${disliked ? styles.active : ""}`} onClick={handleDislike} title={i18next.t("comments.dislike", { defaultValue: "Dislike" })}>
             <span style={disliked ? 'color: currentColor;' : ''}>{ICONS.dislike}</span>
           </button>
 
-          <button class={`act-btn ${showReply ? "active" : ""}`} onClick={handleReplyClick}>
+          <button class={`${styles.actBtn} ${showReply ? styles.active : ""}`} onClick={handleReplyClick}>
             {ICONS.reply}
             {i18next.t("comments.reply", { defaultValue: "Reply" })}
             {comment.replies?.length ? <span style="opacity:.6; font-size: 11px; margin-left: -2px;">{comment.replies.length}</span> : null}
@@ -105,17 +106,17 @@ export function CommentItem({ comment, isLoggedIn = false, isPosting = false, on
         </div>
 
         {showReply && (
-          <div class="reply-form">
+          <div class={styles.replyForm}>
             <textarea
               value={replyText}
               onInput={(e) => setReplyText((e.target as HTMLTextAreaElement).value)}
               placeholder={i18next.t("comments.reply_placeholder", { defaultValue: "Write a reply..." })}
             />
-            <div class="reply-footer">
-              <button class="btn-cancel" onClick={() => setShowReply(false)}>
+            <div class={styles.replyFooter}>
+              <button class={styles.btnCancel} onClick={() => setShowReply(false)}>
                 {i18next.t("common.cancel", { defaultValue: "Cancel" })}
               </button>
-              <button class="btn-reply" disabled={!replyText.trim() || isPosting} onClick={submitReply}>
+              <button class={styles.btnReply} disabled={!replyText.trim() || isPosting} onClick={submitReply}>
                 {i18next.t("comments.reply", { defaultValue: "Reply" })}
               </button>
             </div>
@@ -123,16 +124,16 @@ export function CommentItem({ comment, isLoggedIn = false, isPosting = false, on
         )}
 
         {comment.replies && comment.replies.length > 0 && (
-          <div class="replies">
+          <div class={styles.replies}>
             {comment.replies.map(reply => (
-              <div class="reply-post">
+              <div class={styles.replyPost}>
                 <CommentAvatar name={reply.display_name} size="sm" />
-                <div class="reply-content">
-                  <div class="reply-meta">
-                    <span class="reply-author">{reply.display_name}</span>
-                    <span class="reply-time">{relativeTime(reply.created_at)}</span>
+                <div class={styles.replyContent}>
+                  <div class={styles.replyMeta}>
+                    <span class={styles.replyAuthor}>{reply.display_name}</span>
+                    <span class={styles.replyTime}>{relativeTime(reply.created_at)}</span>
                   </div>
-                  <p class="reply-body">{reply.body}</p>
+                  <p class={styles.replyBody}>{reply.body}</p>
                 </div>
               </div>
             ))}

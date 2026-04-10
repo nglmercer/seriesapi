@@ -22,6 +22,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "bun-lightningcss": "^0.2.0",
     "i18next": "^26.0.3",
     "lit": "^3.3.2",
     "lit-i18n": "^4.1.0",
