@@ -1,0 +1,77 @@
+.infobox {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.infoboxTitle {
+  padding: 12px 16px;
+  background: var(--accent-color);
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.infoboxImage {
+  padding: 12px;
+  background: var(--bg-primary);
+}
+
+.infoboxImage img {
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+  display: block;
+}
+
+.infoboxData {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.infoboxData tr {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.infoboxData tr:last-child {
+  border-bottom: none;
+}
+
+.infoboxLabel {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--bg-secondary);
+  width: 40%;
+}
+
+.infoboxValue {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.infoboxSection {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.infoboxSectionTitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.infoboxSectionContent {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}

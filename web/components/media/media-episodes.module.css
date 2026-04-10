@@ -1,0 +1,105 @@
+.header {
+  margin-bottom: 24px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.title small {
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-left: 12px;
+}
+
+.episodesList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.episodeCard {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.episodeCard:hover {
+  border-color: var(--accent-color);
+}
+
+.episodeThumbContainer {
+  flex-shrink: 0;
+  width: 220px;
+}
+
+.episodeThumb {
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--bg-primary);
+}
+
+.episodeInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.episodeTitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.episodeNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  background: var(--accent-color);
+  color: white;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.episodeMeta {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.episodeSynopsis {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .episodeCard {
+    flex-direction: column;
+  }
+
+  .episodeThumbContainer {
+    width: 100%;
+  }
+}
