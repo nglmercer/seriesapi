@@ -1,4 +1,7 @@
-import "./components/index";
-import "./components/layout/admin-app";
+import { render, h } from 'preact';
+import { AdminApp } from './AdminApp';
 
-document.querySelector("#app")?.appendChild(document.createElement("admin-app"));
+const appRoot = document.getElementById('app');
+if (appRoot) {
+  render(h(AdminApp, {}), appRoot);
+}

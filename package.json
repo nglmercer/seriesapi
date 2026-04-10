@@ -26,6 +26,9 @@
     "lit": "^3.3.2",
     "lit-i18n": "^4.1.0",
     "mal-scraper": "^2.13.2",
+    "preact": "^10.29.1",
+    "preact-render-to-string": "^6.6.7",
+    "preact-router": "^4.1.2",
     "sqlite-napi": "^1.0.1",
     "zod": "^4.3.6"
   }

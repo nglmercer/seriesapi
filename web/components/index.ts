@@ -1,30 +1,30 @@
 export * from "../services/api-service";
 
-// Shared components
-export * from "./shared/search-box";
-export * from "./shared/genres-list";
-export * from "./shared/empty-state";
-export * from "./shared/auth-modal";
-export * from "./shared/comment-avatar";
-export * from "./shared/comment-item";
-export * from "./shared/comment-compose";
-export * from "./shared/comments-section";
-export * from "./shared/user-profile";
+export { SearchBox } from "./shared/search-box";
+export { GenresList } from "./shared/genres-list";
+export { EmptyState } from "./shared/empty-state";
+export { AuthModal } from "./shared/AuthModal";
+export { CommentAvatar, initials, avatarColor } from "./shared/comment-avatar";
+export { CommentCompose } from "./shared/comment-compose";
+export { CommentItem, relativeTime } from "./shared/comment-item";
+export { CommentsSection } from "./shared/comments-section";
+export { UserProfile } from "./shared/user-profile";
+export { RatingWidget } from "./shared/rating-widget";
+export { ReportModal } from "./shared/report-modal";
+export { AppField } from "./shared/AppField";
+export { AppInput } from "./shared/AppInput";
+export { AppSelect } from "./shared/AppSelect";
 
-// Media components
-export * from "./media/media-list";
-export * from "./media/media-detail";
-export * from "./media/media-episodes";
-export * from "./media/media-filters";
-export * from "./media/wiki-infobox";
-export * from "./media/people-list";
+export { MediaList } from "./media/media-list";
+export { MediaDetail } from "./media/media-detail";
+export { MediaEpisodes } from "./media/media-episodes";
+export { MediaFilters } from "./media/media-filters";
+export { WikiInfobox } from "./media/wiki-infobox";
+export { PeopleList } from "./media/people-list";
 
-// Admin components
-export * from "./admin/admin-view";
-export * from "./admin/admin-media-form";
-export * from "./admin/admin-genres-view";
-export * from "./admin/admin-content-manager";
+export { AdminView, AdminBulkBar, AdminMediaList, AdminGenresView, AdminReportsView } from "./admin/admin-view";
+export { AdminContentManager } from "./admin/admin-content-manager";
 
-// Layout components
-export * from "./layout/admin-app";
-export * from "./layout/public-app";
+export { PublicHeader } from "./layout/public-header";
+export { MobileMenu } from "./layout/mobile-menu";
+export { AdminHeader } from "./layout/admin-header";
