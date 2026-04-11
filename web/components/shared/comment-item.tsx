@@ -4,7 +4,6 @@ import { CommentAvatar } from "./comment-avatar";
 import { ICONS } from "../../utils/icons";
 import i18next from "../../utils/i18n";
 import type { Comment_Item as CommentData } from "../../services/api-service";
-import styles from './comment-item.module.css';
 
 export { type CommentData };
 
@@ -71,52 +70,53 @@ export function CommentItem({ comment, isLoggedIn = false, isPosting = false, on
     setShowReply(false);
   }
 
-  const bodyClass = comment.contains_spoilers && !spoilerRevealed ? `${styles.bodyText} ${styles.blurred}` : styles.bodyText;
+  const bodyClass = `text-sm leading-relaxed text-primary mb-3 break-words ${comment.contains_spoilers && !spoilerRevealed ? "blur-md cursor-pointer select-none" : ""}`;
 
   return (
-    <div class={styles.post}>
+    <div class="flex gap-3 py-4 border-b border-border last:border-none">
       <CommentAvatar name={comment.display_name} size="md" />
 
-      <div class={styles.content}>
-        <div class={styles.meta}>
-          <span class={styles.author}>{comment.display_name}</span>
-          <span class={styles.time}>{relativeTime(comment.created_at)}</span>
-          {comment.contains_spoilers ? <span class={styles.spoilerBadge}>{i18next.t("comments.spoiler_badge", { defaultValue: "SPOILER" })}</span> : null}
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2.5 mb-2 flex-wrap">
+          <span class="font-bold text-sm text-primary">{comment.display_name}</span>
+          <span class="text-xs text-text-secondary">{relativeTime(comment.created_at)}</span>
+          {comment.contains_spoilers ? <span class="text-[10px] font-bold px-1.5 py-0.5 bg-error text-white rounded uppercase">{i18next.t("comments.spoiler_badge", { defaultValue: "SPOILER" })}</span> : null}
         </div>
 
         <p class={bodyClass} onClick={() => { if (comment.contains_spoilers) setSpoilerRevealed(true); }}>
           {comment.body}
         </p>
 
-        <div class={styles.actions}>
-          <button class={`${styles.actBtn} ${liked ? styles.active : ""}`} onClick={handleLike} title={i18next.t("comments.like", { defaultValue: "Like" })}>
+        <div class="flex gap-2 flex-wrap">
+          <button class={`inline-flex items-center gap-1 px-3 py-1.5 bg-transparent border rounded-md text-xs cursor-pointer transition-all ${liked ? "bg-accent border-accent text-white" : "border-border text-text-secondary hover:bg-secondary"}`} onClick={handleLike} title={i18next.t("comments.like", { defaultValue: "Like" })}>
             <span style={liked ? 'color: currentColor;' : ''}>{ICONS.like}</span>
             {(comment.likes || 0) + (liked ? 1 : 0)}
           </button>
 
-          <button class={`${styles.actBtn} ${disliked ? styles.active : ""}`} onClick={handleDislike} title={i18next.t("comments.dislike", { defaultValue: "Dislike" })}>
+          <button class={`inline-flex items-center gap-1 px-3 py-1.5 bg-transparent border rounded-md text-xs cursor-pointer transition-all ${disliked ? "bg-accent border-accent text-white" : "border-border text-text-secondary hover:bg-secondary"}`} onClick={handleDislike} title={i18next.t("comments.dislike", { defaultValue: "Dislike" })}>
             <span style={disliked ? 'color: currentColor;' : ''}>{ICONS.dislike}</span>
           </button>
 
-          <button class={`${styles.actBtn} ${showReply ? styles.active : ""}`} onClick={handleReplyClick}>
+          <button class={`inline-flex items-center gap-1 px-3 py-1.5 bg-transparent border rounded-md text-xs cursor-pointer transition-all ${showReply ? "bg-accent border-accent text-white" : "border-border text-text-secondary hover:bg-secondary"}`} onClick={handleReplyClick}>
             {ICONS.reply}
             {i18next.t("comments.reply", { defaultValue: "Reply" })}
-            {comment.replies?.length ? <span style="opacity:.6; font-size: 11px; margin-left: -2px;">{comment.replies.length}</span> : null}
+            {comment.replies?.length ? <span class="opacity-60 text-[11px] -ml-0.5">{comment.replies.length}</span> : null}
           </button>
         </div>
 
         {showReply && (
-          <div class={styles.replyForm}>
+          <div class="mt-3 flex flex-col gap-2">
             <textarea
+              class="w-full min-h-[60px] p-2.5 border border-border rounded-lg bg-primary text-primary text-sm font-sans resize-y focus:outline-none focus:border-accent"
               value={replyText}
               onInput={(e) => setReplyText((e.target as HTMLTextAreaElement).value)}
               placeholder={i18next.t("comments.reply_placeholder", { defaultValue: "Write a reply..." })}
             />
-            <div class={styles.replyFooter}>
-              <button class={styles.btnCancel} onClick={() => setShowReply(false)}>
+            <div class="flex gap-2 justify-end">
+              <button class="px-3.5 py-1.5 bg-secondary border border-border rounded-md text-sm text-primary cursor-pointer" onClick={() => setShowReply(false)}>
                 {i18next.t("common.cancel", { defaultValue: "Cancel" })}
               </button>
-              <button class={styles.btnReply} disabled={!replyText.trim() || isPosting} onClick={submitReply}>
+              <button class="px-3.5 py-1.5 bg-accent border-none rounded-md text-sm text-white font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled={!replyText.trim() || isPosting} onClick={submitReply}>
                 {i18next.t("comments.reply", { defaultValue: "Reply" })}
               </button>
             </div>
@@ -124,16 +124,16 @@ export function CommentItem({ comment, isLoggedIn = false, isPosting = false, on
         )}
 
         {comment.replies && comment.replies.length > 0 && (
-          <div class={styles.replies}>
+          <div class="mt-3 pl-4 border-l-2 border-border">
             {comment.replies.map(reply => (
-              <div class={styles.replyPost}>
+              <div class="flex gap-2.5 py-3">
                 <CommentAvatar name={reply.display_name} size="sm" />
-                <div class={styles.replyContent}>
-                  <div class={styles.replyMeta}>
-                    <span class={styles.replyAuthor}>{reply.display_name}</span>
-                    <span class={styles.replyTime}>{relativeTime(reply.created_at)}</span>
+                <div class="flex-1 min-w-0">
+                  <div class="flex gap-2 mb-1">
+                    <span class="font-semibold text-xs text-primary">{reply.display_name}</span>
+                    <span class="text-[11px] text-text-secondary">{relativeTime(reply.created_at)}</span>
                   </div>
-                  <p class={styles.replyBody}>{reply.body}</p>
+                  <p class="text-xs leading-relaxed text-primary">{reply.body}</p>
                 </div>
               </div>
             ))}

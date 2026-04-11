@@ -1,9 +1,36 @@
 @import "tailwindcss";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
+@theme {
+  --color-primary: var(--bg-primary);
+  --color-secondary: var(--bg-secondary);
+  --color-accent: var(--accent-color);
+  --color-accent-hover: var(--accent-hover);
+  --color-border: var(--border-color);
+  --color-error: var(--error-color);
+  --color-success: var(--success-color);
+  --color-card: var(--card-bg);
+  --color-header: var(--header-bg);
+
+  /* Special mappings for text utilities to avoid naming conflicts */
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+
+  --animate-modal-fade-in: modalFadeIn 0.2s ease;
+  --animate-modal-slide-up: modalSlideUp 0.25s ease;
+
+  @keyframes modalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes modalSlideUp {
+    from { transform: translateY(24px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+}
+
+/* Base Light Mode */
 :root {
+  color-scheme: light;
   --bg-primary: #ffffff;
   --bg-secondary: #f8f9fa;
   --text-primary: #202122;
@@ -18,19 +45,40 @@
   --header-bg: #ffffff;
 }
 
-[data-theme="dark"] {
-  --bg-primary: #101418;
-  --bg-secondary: #1a1f24;
-  --text-primary: #eaecf0;
-  --text-secondary: #a2a9b1;
-  --border-color: #3c434a;
-  --accent-color: #6699ff;
-  --accent-hover: #88aaff;
-  --error-color: #ff6666;
-  --success-color: #00d4a3;
-  --card-bg: #1a1f24;
-  --shadow: 0 1px 3px rgba(0,0,0,0.5);
-  --header-bg: #1a1f24;
+/* Dark Mode Overrides (System Preference) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg-primary: #101418;
+    --bg-secondary: #1a1f24;
+    --text-primary: #eaecf0;
+    --text-secondary: #a2a9b1;
+    --border-color: #3c434a;
+    --accent-color: #6699ff;
+    --accent-hover: #88aaff;
+    --error-color: #ff6666;
+    --success-color: #00d4a3;
+    --card-bg: #1a1f24;
+    --shadow: 0 1px 3px rgba(0,0,0,0.5);
+    --header-bg: #1a1f24;
+  }
+}
+
+/* Explicit Light Mode Override (highest priority) */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --text-primary: #202122;
+  --text-secondary: #4c6e8a;
+  --border-color: #a2a9b1;
+  --accent-color: #3366cc;
+  --accent-hover: #2a4b8d;
+  --error-color: #d33;
+  --success-color: #00af89;
+  --card-bg: #ffffff;
+  --shadow: 0 1px 3px rgba(0,0,0,0.1);
+  --header-bg: #ffffff;
 }
 
 body {

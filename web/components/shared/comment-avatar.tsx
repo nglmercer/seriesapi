@@ -1,5 +1,4 @@
 import { h } from 'preact';
-import styles from './comment-avatar.module.css';
 
 interface CommentAvatarProps {
   name?: string;
@@ -27,8 +26,9 @@ export function avatarColor(name: string): string {
 }
 
 export function CommentAvatar({ name = "?", size = "md" }: CommentAvatarProps) {
+  const sizeClasses = size === "md" ? "w-10 h-10 text-sm" : "w-7 h-7 text-[10px]";
   return (
-    <div class={`${styles.av} ${size === "md" ? styles.md : styles.sm}`} style={{ background: avatarColor(name) }}>
+    <div class={`flex items-center justify-center rounded-full color-white font-bold shrink-0 select-none text-white ${sizeClasses}`} style={{ background: avatarColor(name) }}>
       {initials(name)}
     </div>
   );

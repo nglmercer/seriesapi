@@ -9,7 +9,6 @@ import { api } from "../../services/api-service";
 import i18next from "../../utils/i18n";
 import type { CommentData } from "./comment-item";
 import { Modal } from "./Modal";
-import styles from './comments-section.module.css';
 
 interface CommentsSectionProps {
   entityType?: string;
@@ -95,12 +94,12 @@ export function CommentsSection({ entityType = "", entityId = 0 }: CommentsSecti
   const remaining = total - comments.length;
 
   return (
-    <div class={styles.section}>
+    <div class="mt-8">
       {showAuth ? <AuthModal onAuthClose={onAuthClose} /> : null}
 
-      <div class={styles.head}>
-        <h3>{i18next.t("comments.title", { defaultValue: "Community" })}</h3>
-        {total > 0 ? <span class={styles.badge}>{total}</span> : null}
+      <div class="flex items-center gap-3 mb-5">
+        <h3 class="text-xl font-bold text-primary">{i18next.t("comments.title", { defaultValue: "Community" })}</h3>
+        {total > 0 ? <span class="px-2.5 py-1 bg-secondary border border-border rounded-full text-xs font-semibold text-text-secondary">{total}</span> : null}
       </div>
 
       <CommentCompose
@@ -110,16 +109,16 @@ export function CommentsSection({ entityType = "", entityId = 0 }: CommentsSecti
         onNeedLogin={handleNeedLogin}
       />
 
-      <div class={styles.list}>
+      <div class="flex flex-col">
         {loading ? (
-          <div class={styles.empty}>
-            <div class={styles.emptyIcon}>💬</div>
-            <p>{i18next.t("common.loading", { defaultValue: "Loading…" })}</p>
+          <div class="flex flex-col items-center p-10 text-center">
+            <div class="text-4xl mb-3 opacity-50">💬</div>
+            <p class="text-text-secondary text-sm">{i18next.t("common.loading", { defaultValue: "Loading…" })}</p>
           </div>
         ) : comments.length === 0 ? (
-          <div class={styles.empty}>
-            <div class={styles.emptyIcon}>💬</div>
-            <p>{i18next.t("comments.empty", { defaultValue: "No comments yet. Be the first!" })}</p>
+          <div class="flex flex-col items-center p-10 text-center">
+            <div class="text-4xl mb-3 opacity-50">💬</div>
+            <p class="text-text-secondary text-sm">{i18next.t("comments.empty", { defaultValue: "No comments yet. Be the first!" })}</p>
           </div>
         ) : (
           comments.map(c => (
@@ -136,8 +135,8 @@ export function CommentsSection({ entityType = "", entityId = 0 }: CommentsSecti
       </div>
 
       {remaining > 0 && (
-        <div class={styles.loadMore}>
-          <button class={styles.btnMore} onClick={() => setPage(page + 1)}>
+        <div class="flex justify-center py-4">
+          <button class="px-6 py-2.5 bg-secondary border border-border rounded-lg text-sm text-primary cursor-pointer transition-all hover:bg-accent hover:border-accent hover:text-white" onClick={() => setPage(page + 1)}>
             {i18next.t("comments.load_more", { defaultValue: "Load more" })} ({remaining})
           </button>
         </div>

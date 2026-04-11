@@ -38,25 +38,25 @@ export function PeopleList({ page: initialPage = 1, pageSize = 20, onPeopleSelec
     setPage(Math.max(1, page + delta));
   }
 
-  if (loading) return <div class="loading">Loading...</div>;
+  if (loading) return <div class="p-10 text-center text-text-secondary">Loading...</div>;
 
   return (
     <div>
-      <div class="list">
+      <div class="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4 py-5">
         {items.map(item => (
-          <div class="person" onClick={() => handleCardClick(item)}>
-            <img class="avatar" src={item.image || ""} alt={item.name} loading="lazy" />
-            <div class="info">
-              <div class="name">{item.name}</div>
-              <div class="occupation">{item.occupation || "Unknown"}</div>
+          <div class="flex flex-col items-center p-4 bg-secondary border border-border rounded-lg cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg text-center" onClick={() => handleCardClick(item)}>
+            <img class="w-20 h-20 rounded-full object-cover mb-3 bg-primary" src={item.image || ""} alt={item.name} loading="lazy" />
+            <div class="w-full">
+              <div class="text-sm font-bold text-primary mb-1 whitespace-nowrap overflow-hidden text-ellipsis">{item.name}</div>
+              <div class="text-xs text-text-secondary">{item.occupation || "Unknown"}</div>
             </div>
           </div>
         ))}
       </div>
-      <div class="pagination">
-        <button disabled={page <= 1} onClick={() => handlePageChange(-1)}>Prev</button>
-        <span>Page {page} of {Math.ceil(totalItems / pageSize)}</span>
-        <button disabled={page * pageSize >= totalItems} onClick={() => handlePageChange(1)}>Next</button>
+      <div class="flex justify-center items-center gap-3 p-5">
+        <button class="px-4 py-2 bg-secondary border border-border rounded-md text-sm text-primary cursor-pointer transition-all hover:bg-accent hover:border-accent hover:text-white disabled:opacity-40 disabled:cursor-not-allowed" disabled={page <= 1} onClick={() => handlePageChange(-1)}>Prev</button>
+        <span class="text-sm">Page {page} of {Math.ceil(totalItems / pageSize)}</span>
+        <button class="px-4 py-2 bg-secondary border border-border rounded-md text-sm text-primary cursor-pointer transition-all hover:bg-accent hover:border-accent hover:text-white disabled:opacity-40 disabled:cursor-not-allowed" disabled={page * pageSize >= totalItems} onClick={() => handlePageChange(1)}>Next</button>
       </div>
     </div>
   );

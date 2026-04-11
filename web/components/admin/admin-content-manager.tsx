@@ -5,7 +5,6 @@ import { ui } from "../../utils/ui";
 import { ICONS } from "../../utils/icons";
 import i18next from "../../utils/i18n";
 import type { MediaItem, SeasonItem, EpisodeItem, RelationItem } from "../../services/api-service";
-import styles from "./admin-content-manager.module.css";
 
 interface AdminContentManagerProps {
   mediaId?: number | null;
