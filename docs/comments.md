@@ -67,4 +67,27 @@ Get single comment thread.
 }
 ```
 
+---
+
+## GET /api/v1/comments/user
+
+Get comments by current user (requires authentication).
+
+### Response
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "entityType": "media",
+      "entityId": 1,
+      "body": "Great series!",
+      "createdAt": "2024-04-01T00:00:00Z"
+    }
+  ],
+  "params": { "page": 1, "pageSize": 20, "total": 10 }
+}
+```
+
 > Note: IP is hashed before storage. No auth required.
