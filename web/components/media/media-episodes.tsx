@@ -12,15 +12,15 @@ import type { MediaItem, EpisodeItem } from "../../services/api-service";
 interface Season {
   id: number;
   season_number: number;
-  name?: string;
+  name?: string | null;
 }
 
 interface MediaEpisodesProps {
-  mediaId?: number;
-  seasonId?: number;
+  mediaId?: number | null;
+  seasonId?: number | null;
 }
 
-export function MediaEpisodes({ mediaId = 0, seasonId = 0 }: MediaEpisodesProps) {
+export function MediaEpisodes({ mediaId, seasonId }: MediaEpisodesProps) {
   const [episodes, setEpisodes] = useState<EpisodeItem[]>([]);
   const [media, setMedia] = useState<MediaItem | null>(null);
   const [season, setSeason] = useState<Season | null>(null);
@@ -32,7 +32,7 @@ export function MediaEpisodes({ mediaId = 0, seasonId = 0 }: MediaEpisodesProps)
   }, [seasonId]);
 
   async function load() {
-    if (!seasonId) return;
+    if (!seasonId || !mediaId) return;
     setLoading(true);
 
     try {
@@ -43,7 +43,7 @@ export function MediaEpisodes({ mediaId = 0, seasonId = 0 }: MediaEpisodesProps)
       ]);
       setEpisodes(episodesData);
       setMedia(mediaData);
-      setSeason(seasonData);
+      setSeason(seasonData as Season | null);
     } catch (err) {
       console.error("[media-episodes] load error:", err);
       setError(true);

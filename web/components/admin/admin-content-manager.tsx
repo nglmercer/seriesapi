@@ -130,7 +130,7 @@ export function AdminContentManager({ mediaId, onBack }: AdminContentManagerProp
   async function handleDeleteRelation(id: number) {
     if (!mediaId) return;
     if (await ui.confirm("Delete this relation?")) {
-      await api.deleteMediaRelation(id);
+      await api.deleteMediaRelation(mediaId, id);
       await fetchData();
     }
   }

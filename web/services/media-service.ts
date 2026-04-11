@@ -14,7 +14,7 @@ class MediaService {
   async fetchMediaSeasons(mediaId: number): Promise<SeasonItem[]> {
     try {
       const response = await api.getMediaSeasons(mediaId);
-      return response.ok ? response.data.seasons || [] : [];
+      return response.ok ? response.data || [] : [];
     } catch (error) {
       console.error("[media-service] fetchMediaSeasons error:", error);
       return [];

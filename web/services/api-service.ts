@@ -241,11 +241,11 @@ class ApiClient {
   }
 
   getCollections(): Promise<ApiResponse<unknown[]>> {
-    return this.request("/collections");
+    return this.request(`/collections?locale=${this.getLocale()}`);
   }
 
   getCollectionDetail(slug: string): Promise<ApiResponse<unknown>> {
-    return this.request(`/collections/${slug}`);
+    return this.request(`/collections/${slug}?locale=${this.getLocale()}`);
   }
 
   search<T=unknown>(query: string, type?: string): Promise<ApiResponse<T[]>> {
@@ -255,27 +255,27 @@ class ApiClient {
   }
 
   getEpisode(id: number): Promise<ApiResponse<EpisodeItem>> {
-    return this.request(`/episodes/${id}`);
+    return this.request(`/episodes/${id}?locale=${this.getLocale()}`);
   }
 
   getEpisodeCredits(episodeId: number): Promise<ApiResponse<unknown[]>> {
-    return this.request(`/episodes/${episodeId}/credits`);
+    return this.request(`/episodes/${episodeId}/credits?locale=${this.getLocale()}`);
   }
 
   getEpisodeImages(episodeId: number): Promise<ApiResponse<unknown[]>> {
-    return this.request(`/episodes/${episodeId}/images`);
+    return this.request(`/episodes/${episodeId}/images?locale=${this.getLocale()}`);
   }
 
   getSeason(id: number): Promise<ApiResponse<SeasonItem>> {
-    return this.request(`/seasons/${id}`);
+    return this.request(`/seasons/${id}?locale=${this.getLocale()}`);
   }
 
   getSeasonEpisodes(seasonId: number): Promise<ApiResponse<EpisodeItem[]>> {
-    return this.request(`/seasons/${seasonId}/episodes`);
+    return this.request(`/seasons/${seasonId}/episodes?locale=${this.getLocale()}`);
   }
 
   getSeasonImages(seasonId: number): Promise<ApiResponse<unknown[]>> {
-    return this.request(`/seasons/${seasonId}/images`);
+    return this.request(`/seasons/${seasonId}/images?locale=${this.getLocale()}`);
   }
 
   postComment(data: {

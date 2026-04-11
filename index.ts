@@ -62,7 +62,13 @@ function route(req: Request): Response | Promise<Response> {
   const url = new URL(req.url);
   // strip trailing slash, split on /
   const parts = url.pathname.replace(/\/$/, "").split("/").filter(Boolean);
-  // parts[0] = "api", parts[1] = "v1", parts[2] = resource, ...
+  
+  // Verify API prefix: parts[0] = "api", parts[1] = "v1"
+  if (parts[0] !== "api" || parts[1] !== "v1") {
+    return notFound("API Route", locale);
+  }
+
+  // parts[2] = resource, ...
   const [, , resource, p3, p4] = parts;
   const GET = req.method === HttpMethod.GET;
   const POST = req.method === HttpMethod.POST;
@@ -210,9 +216,28 @@ const server = Bun.serve({
     const limited = limiter.check(req);
     if (limited) return limited;
 
+    const url = new URL(req.url);
+    const path = url.pathname;
+
     // Route
     try {
-      return await route(req);
+      // API routes always start with /api/
+      if (path.startsWith("/api/")) {
+        return await route(req);
+      }
+
+      // Static routes
+      if (path === "/" || path === "/index.html") {
+        return new Response(Bun.file("./web/index.html"));
+      }
+      if (path === "/admin") {
+        return new Response(Bun.file("./web/admin.html"));
+      }
+      // if (path.endsWith('.ts') || path.endsWith('.css') || path.endsWith('.html')) {
+      //   return new Response(Bun.file(path));
+      // }
+      // Fallback for SPA: serve index.html for non-API routes
+      return new Response(Bun.file("./web/index.html"));
     } catch (err) {
       console.error("[anima] Unhandled error:", err);
       return new Response(
@@ -224,9 +249,9 @@ const server = Bun.serve({
       );
     }
   },
-  routes:{
-    "/": public_view,
-    "/admin": admin_view
+  routes: {
+    '/': public_view,
+    '/admin': admin_view
   }
 });
 

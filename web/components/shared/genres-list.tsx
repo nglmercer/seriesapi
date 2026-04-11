@@ -1,6 +1,7 @@
 import { h } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 import { api } from "../../services/api-service";
+import i18next from "../../utils/i18n";
 import styles from './genres-list.module.css';
 
 interface GenreItem {
@@ -37,7 +38,7 @@ export function GenresList({ onGenreSelect }: GenresListProps) {
     }
   }
 
-  if (loading) return <div class={styles.loading}>Cargando...</div>;
+  if (loading) return <div class={styles.loading}>{i18next.t("media.loading", "Loading...")}</div>;
 
   return (
     <div class={styles.list}>

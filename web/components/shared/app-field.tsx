@@ -1,4 +1,4 @@
-import { h, ComponentChildren } from 'preact';
+import { h, type ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
 import i18next from "../../utils/i18n";
 

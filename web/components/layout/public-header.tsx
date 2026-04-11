@@ -20,10 +20,12 @@ interface PublicHeaderProps {
 export function PublicHeader({ user, isMenuOpen = false, onToggleMenu, onHomeClick, onProfileClick, onNeedLogin, onLogout }: PublicHeaderProps) {
   const [currentLng, setCurrentLng] = useState(i18next.language);
 
-  function handleLanguageChange(lng: string) {
-    i18next.changeLanguage(lng);
+  async function handleLanguageChange(lng: string) {
+    await i18next.changeLanguage(lng);
     localStorage.setItem("lang", lng);
     setCurrentLng(lng);
+    // Reload page to ensure all components refresh with new language
+    window.location.reload();
   }
 
   return (
@@ -40,7 +42,7 @@ export function PublicHeader({ user, isMenuOpen = false, onToggleMenu, onHomeCli
 
           <button class={styles.themeBtn} onClick={toggleTheme}>{ICONS.theme}</button>
 
-          <a class={styles.adminLink} href="/admin">Admin</a>
+          <a class={styles.adminLink} href="/admin">{i18next.t("header.admin_panel", "Admin Panel")}</a>
 
           {user ? (
             <div class={styles.authChip} onClick={onProfileClick}>

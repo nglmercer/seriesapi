@@ -1,14 +1,15 @@
-import type { SearchResult } from "../components/shared/search-box";
+import type { MediaItem } from "../services/api-service";
 type Listener = (...args: any[]) => void;
 
 interface EventTypes {
   "media-select": { id: number };
+  "search": { query: string };
   "search-result": { id?: number; entity_type?: string };
   "filters-change": Record<string, any>;
   "season-select": { mediaId: number; seasonId: number };
   "back": undefined;
   "auth-close": undefined;
-  "media-list": SearchResult[];
+  "media-list": MediaItem[];
 }
 
 class EventEmitter<T extends Record<string, any>> {

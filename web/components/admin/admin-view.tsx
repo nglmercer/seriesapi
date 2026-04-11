@@ -8,10 +8,7 @@ import { ICONS } from "../../utils/icons";
 import { MediaFilters } from "../media/media-filters";
 import type { MediaItem } from "../../services/api-service";
 import type { MediaFiltersState } from "../media/media-filters";
-import { AdminGenresView } from "./admin-genres-view";
-import { AdminReportsView } from "./admin-reports-view";
-import { AdminBulkBar } from "./admin-bulk-bar";
-import { AdminMediaList } from "./admin-media-list";
+import { AdminContentManager } from "./admin-content-manager";
 
 type AdminTab = "media" | "genres" | "reports";
 
@@ -150,7 +147,7 @@ export function AdminView({ onBack }: AdminViewProps) {
 
   if (editingMediaId) {
     return (
-      <admin-content-manager
+      <AdminContentManager
         mediaId={editingMediaId}
         onBack={() => { setEditingMediaId(null); fetchMedia(); }}
       />
