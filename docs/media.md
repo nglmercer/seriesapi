@@ -113,3 +113,35 @@ Related titles (sequels, spinoffs, adaptations).
 ## GET /api/v1/media/:id/comments
 
 Public comments.
+
+---
+
+## POST /api/v1/media/bulk
+
+Bulk update media entries (admin only).
+
+### Headers
+
+```
+Authorization: Bearer <admin_token>
+```
+
+### Request Body
+
+```json
+{
+  "updates": [
+    { "id": 1, "title": "Updated Title", "status": "finished" },
+    { "id": 2, "status": "current" }
+  ]
+}
+```
+
+### Response
+
+```json
+{
+  "data": { "message": "Bulk update completed" },
+  "params": { "locale": "en" }
+}
+```
