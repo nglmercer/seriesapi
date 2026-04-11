@@ -553,9 +553,9 @@ export const handleUserDelete = withAdmin(async (req: Request) => {
 });
 
 /**
- * ADMIN: List all roles.
+ * List all roles (public endpoint for users to see available roles).
  */
-export const handleRoleList = withAdmin(async (req: Request) => {
+export const handleRoleList = async (req: Request): Promise<Response> => {
   const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
   try {
     const drizzle = getDrizzle();
@@ -564,7 +564,7 @@ export const handleRoleList = withAdmin(async (req: Request) => {
   } catch (err) {
     return serverError(err, locale);
   }
-});
+};
 
 /**
  * ADMIN: Create a new role.
