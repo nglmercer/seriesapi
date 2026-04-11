@@ -224,8 +224,13 @@ export const episodeUpdateSchema = z.object({
   season_id: idSchema.optional(),
 }).transform((data) => {
   const result = { ...data };
-  if (data.episode_number !== undefined) {
-    (result as any).number = data.episode_number;
+  if (!data.number && !data.episode_number) {
+    data.number = 0;
+    data.episode_number = 0;
+  } else if (data.number && !data.episode_number) {
+    data.episode_number = data.number;
+  } else if (data.episode_number && !data.number) {
+    data.number = data.episode_number;
   }
   if (data.duration) {
     const runtimeMinutes = parseDurationToMinutes(data.duration);
