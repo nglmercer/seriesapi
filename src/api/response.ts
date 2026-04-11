@@ -22,7 +22,7 @@ export interface ApiResponse<T> {
 
 const BASE_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
-  "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+  "Cache-Control": "no-cache, no-store, must-revalidate", // Prevent caching issues after updates
   ...corsHeaders(),
 };
 
