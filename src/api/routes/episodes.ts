@@ -8,11 +8,12 @@
  */
 
 import type { Database } from "sqlite-napi";
-import { ok, notFound, serverError } from "../response";
+import { ok, notFound, serverError, badRequest } from "../response";
 import { EpisodeController } from "../controllers/episode.controller";
 import { EpisodeView } from "../views/episode.view";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
 import { withAdmin } from "./auth";
+import { validateParams, episodeCreateSchema } from "../validation";
 
 export function handleEpisodeDetail(req: Request, _db: Database, id: number): Response {
   try {
@@ -54,13 +55,15 @@ export function handleEpisodeComments(req: Request, _db: Database, episodeId: nu
 }
 
 export const handleEpisodeCreate = withAdmin(async (req: Request) => {
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
   try {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     const body = await req.json();
-    const result = EpisodeController.create(body, locale);
+    const validation = validateParams(episodeCreateSchema, body, locale);
+    if (!validation.success) return validation.error;
+    const result = EpisodeController.create(validation.data, locale);
     return ok(result, { locale });
   } catch (err) {
-    return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
+    return serverError(err, locale);
   }
 });
 

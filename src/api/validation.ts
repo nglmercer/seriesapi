@@ -152,3 +152,46 @@ export const translationRequestSchema = z.object({
 export const roleChallengeSchema = z.object({
   target_role: z.enum(["user", "editor", "admin"]),
 });
+
+export const episodeCreateSchema = z.object({
+  animeId: idSchema,
+  seasonId: idSchema.optional(),
+  number: z.coerce.number().int().positive(),
+  title: z.string().trim().max(500).optional(),
+  synopsis: z.string().trim().max(2000).optional(),
+  thumbnail: z.string().url().optional(),
+  duration: z.string().trim().optional(),
+}).transform((data) => {
+  const runtimeMinutes = data.duration ? parseDurationToMinutes(data.duration) : undefined;
+  const result: {
+    mediaId: number;
+    seasonId?: number;
+    number: number;
+    title?: string;
+    synopsis?: string;
+    thumbnail?: string;
+    runtimeMinutes?: number;
+  } = {
+    mediaId: data.animeId,
+    seasonId: data.seasonId,
+    number: data.number,
+    title: data.title,
+    synopsis: data.synopsis,
+    thumbnail: data.thumbnail,
+  };
+  if (runtimeMinutes !== undefined) {
+    result.runtimeMinutes = runtimeMinutes;
+  }
+  return result;
+});
+
+function parseDurationToMinutes(duration: string): number | undefined {
+  const parts = duration.split(":").map(Number);
+  if (parts.length === 2 && parts[0] !== undefined && parts[1] !== undefined && !isNaN(parts[0]) && !isNaN(parts[1])) {
+    return parts[0] * 60 + parts[1];
+  }
+  if (parts.length === 1 && parts[0] !== undefined && !isNaN(parts[0])) {
+    return parts[0];
+  }
+  return undefined;
+}

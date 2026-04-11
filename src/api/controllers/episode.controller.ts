@@ -95,17 +95,20 @@ export class EpisodeController {
     return { rows, locale, page, pageSize, total };
   }
 
-  static create(data: { mediaId: number; seasonId: number; number: number; title?: string; synopsis?: string }, locale = DEFAULT_LOCALE) {
+  static create(data: { mediaId: number; seasonId?: number; number: number; title?: string; synopsis?: string; runtimeMinutes?: number }, locale = DEFAULT_LOCALE) {
     const drizzle = getDrizzle();
     const now = new Date().toISOString();
 
-    const res = drizzle.insert(episodesTable).values({
+    const insertData: Record<string, unknown> = {
       media_id: data.mediaId,
-      season_id: data.seasonId,
       episode_number: data.number,
       created_at: now,
       updated_at: now
-    }).run();
+    };
+    if (data.seasonId) insertData.season_id = data.seasonId;
+    if (data.runtimeMinutes) insertData.runtime_minutes = data.runtimeMinutes;
+
+    const res = drizzle.insert(episodesTable).values(insertData).run();
     const episodeId = res.lastInsertRowid;
 
     if (data.title || data.synopsis) {
