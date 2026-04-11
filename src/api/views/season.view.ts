@@ -44,4 +44,39 @@ export class SeasonView {
       vote_average: img.vote_average
     }));
   }
+
+  static formatComments(comments: any[]) {
+    return comments.map(comment => {
+      let parsedReplies: any[] = [];
+      if (typeof comment.replies === "string") {
+        try {
+          const parsed = JSON.parse(comment.replies);
+          parsedReplies = Array.isArray(parsed) ? parsed : [];
+        } catch {
+          parsedReplies = [];
+        }
+      } else if (Array.isArray(comment.replies)) {
+        parsedReplies = comment.replies;
+      }
+
+      return {
+        id: comment.id,
+        parent_id: comment.parent_id,
+        display_name: comment.display_name,
+        locale: comment.locale,
+        body: comment.body,
+        contains_spoilers: Boolean(comment.contains_spoilers),
+        likes: comment.likes,
+        dislikes: comment.dislikes,
+        created_at: comment.created_at,
+        replies: parsedReplies.map((r: any) => ({
+          id: r.id,
+          display_name: r.display_name,
+          body: r.body,
+          likes: r.likes,
+          created_at: r.created_at
+        }))
+      };
+    });
+  }
 }

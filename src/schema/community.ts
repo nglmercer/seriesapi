@@ -45,8 +45,11 @@ export const sessionsTable = sqliteTable("sessions", {
  */
 export const commentsTable = sqliteTable("comments", {
   id: primaryKey(integer("id")),
-  entity_type: notNull(text("entity_type")),
+  entity_type: notNull(text("entity_type")), // media, season, episode
   entity_id: notNull(integer("entity_id")),
+  media_id: integer("media_id"), // Optional denormalized ref for easier analysis
+  season_id: integer("season_id"), // Optional denormalized ref
+  episode_id: integer("episode_id"), // Optional denormalized ref
   parent_id: references(integer("parent_id"), { table: "comments", column: "id" }),
   display_name: notNull(text("display_name")),
   ip_hash: notNull(text("ip_hash")),
@@ -66,8 +69,11 @@ export const commentsTable = sqliteTable("comments", {
  */
 export const ratingsTable = sqliteTable("ratings", {
   id: primaryKey(integer("id")),
-  entity_type: notNull(text("entity_type")),
+  entity_type: notNull(text("entity_type")), // media, season, episode
   entity_id: notNull(integer("entity_id")),
+  media_id: integer("media_id"), // Optional denormalized ref for easier analysis
+  season_id: integer("season_id"), // Optional denormalized ref
+  episode_id: integer("episode_id"), // Optional denormalized ref
   user_id: notNull(references(integer("user_id"), { table: "users", column: "id" })),
   ip_hash: notNull(text("ip_hash")),
   score: notNull(integer("score")),

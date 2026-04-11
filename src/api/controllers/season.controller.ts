@@ -1,9 +1,42 @@
-import { seasonsTable, seasonTranslationsTable, episodesTable, episodeTranslationsTable, imagesTable } from "../../schema";
+import { seasonsTable, seasonTranslationsTable, episodesTable, episodeTranslationsTable, imagesTable, commentsTable } from "../../schema";
 import { getDrizzle } from "../../init";
 import { validateParams, paginationSchema } from "../validation";
 import { getLocaleFromRequest, SUPPORTED_LOCALES, DEFAULT_LOCALE } from "../../i18n";
 
 export class SeasonController {
+  static getComments(req: Request, seasonId: number) {
+    const url = new URL(req.url);
+    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+    const drizzle = getDrizzle();
+
+    const queryParams = Object.fromEntries(url.searchParams);
+    const v = validateParams(paginationSchema, queryParams, locale);
+    if (!v.success) return { error: v.error };
+
+    const { page, limit: pageSize } = v.data;
+    const offset = (page - 1) * pageSize;
+
+    const totalRes = drizzle.select(commentsTable)
+      .selectRaw("COUNT(*) as c")
+      .where("entity_type = 'season' AND entity_id = ? AND is_hidden = 0 AND parent_id IS NULL", [seasonId])
+      .get() as { c: number } | undefined;
+    const total = totalRes ? totalRes.c : 0;
+
+    const repliesSubquery = `(SELECT JSON_GROUP_ARRAY(JSON_OBJECT('id', r.id, 'display_name', r.display_name, 'body', r.body, 'locale', r.locale, 'likes', r.likes, 'created_at', r.created_at)) FROM comments r WHERE r.parent_id = c.id AND r.is_hidden = 0)`;
+
+    const rows = drizzle.select(commentsTable).as("c")
+      .selectRaw(`c.id, c.parent_id, c.display_name, c.locale, c.body, c.contains_spoilers, c.likes, c.dislikes, c.created_at, ${repliesSubquery} AS replies`)
+      .where("c.entity_type = 'season' AND c.entity_id = ?", [seasonId])
+      .andWhere("c.is_hidden = 0 AND c.parent_id IS NULL")
+      .orderBy("c.likes", "desc")
+      .orderBy("c.created_at", "desc")
+      .limit(pageSize)
+      .offset(offset)
+      .all();
+
+    return { rows, locale, page, pageSize, total };
+  }
+
   static getDetail(req: Request, id: number) {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     const drizzle = getDrizzle();

@@ -56,6 +56,7 @@ export const handleUserComments = withAuth(async (req: Request, user) => {
       SELECT c.id, c.entity_type, c.entity_id, c.parent_id, c.body, c.contains_spoilers, c.created_at,
              CASE 
                WHEN c.entity_type = 'media' THEN (SELECT title FROM media_translations mt WHERE mt.media_id = c.entity_id AND mt.locale = ?)
+               WHEN c.entity_type = 'season' THEN (SELECT name FROM season_translations st WHERE st.season_id = c.entity_id AND st.locale = ?)
                WHEN c.entity_type = 'episode' THEN (SELECT title FROM episode_translations et WHERE et.episode_id = c.entity_id AND et.locale = ?)
                ELSE NULL
              END as title
@@ -63,7 +64,7 @@ export const handleUserComments = withAuth(async (req: Request, user) => {
       WHERE c.display_name = ?
       ORDER BY c.created_at DESC
       LIMIT ? OFFSET ?
-    `).all([locale, locale, user.username, limit, offset]);
+    `).all([locale, locale, locale, user.username, limit, offset]);
 
     const total = drizzle.query<{ count: number }>(
       "SELECT count(id) as count FROM comments WHERE display_name = ?"

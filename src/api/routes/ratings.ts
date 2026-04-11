@@ -44,15 +44,41 @@ export const handleRatingPost = withAuth(async (req: Request, user) => {
         [body.entity_type, body.entity_id, user.id])
       .get() as { id: number } | undefined;
       
+    let mediaId: number | undefined = undefined;
+    let seasonId: number | undefined = undefined;
+    let episodeId: number | undefined = undefined;
+
+    if (body.entity_type === "media") {
+      mediaId = body.entity_id;
+    } else if (body.entity_type === "season") {
+      const s = drizzle.query<{ media_id: number }>("SELECT media_id FROM seasons WHERE id = ?").get([body.entity_id]);
+      mediaId = s?.media_id ?? undefined;
+      seasonId = body.entity_id;
+    } else if (body.entity_type === "episode") {
+      const e = drizzle.query<{ media_id: number, season_id: number | null }>("SELECT media_id, season_id FROM episodes WHERE id = ?").get([body.entity_id]);
+      mediaId = e?.media_id ?? undefined;
+      seasonId = e?.season_id ?? undefined;
+      episodeId = body.entity_id;
+    }
+
     if (existing) {
       drizzle.update(ratingsTable)
-        .set({ score: body.score, updated_at: new Date().toISOString() })
+        .set({ 
+          score: body.score, 
+          media_id: mediaId,
+          season_id: seasonId,
+          episode_id: episodeId,
+          updated_at: new Date().toISOString() 
+        })
         .where("id = ?", [existing.id])
         .run();
     } else {
       drizzle.insert(ratingsTable).values({
         entity_type: body.entity_type,
         entity_id: body.entity_id,
+        media_id: mediaId,
+        season_id: seasonId,
+        episode_id: episodeId,
         user_id: user.id,
         ip_hash: ipHash,
         score: body.score
@@ -152,6 +178,15 @@ export async function handleTopRatings(req: Request) {
         ORDER BY m.score DESC, m.score_count DESC
         LIMIT ?
       `).all([locale, min_votes, limit]);
+    } else if (entity_type === "season") {
+      results = drizzle.query(`
+        SELECT s.id, s.media_id, s.season_number, s.score, s.score_count, st.name as title
+        FROM seasons s
+        JOIN season_translations st ON s.id = st.season_id AND st.locale = ?
+        WHERE s.score_count >= ?
+        ORDER BY s.score DESC, s.score_count DESC
+        LIMIT ?
+      `).all([locale, min_votes, limit]);
     } else if (entity_type === "episode") {
       results = drizzle.query(`
         SELECT e.id, e.media_id, e.season_id, e.episode_number, e.score, e.score_count, et.title
@@ -183,18 +218,21 @@ export const handleUserRatings = withAuth(async (req: Request, user) => {
       SELECT r.id, r.entity_type, r.entity_id, r.score, r.created_at,
              CASE 
                WHEN r.entity_type = 'media' THEN (SELECT title FROM media_translations mt WHERE mt.media_id = r.entity_id AND mt.locale = ?)
+               WHEN r.entity_type = 'season' THEN (SELECT name FROM season_translations st WHERE st.season_id = r.entity_id AND st.locale = ?)
                WHEN r.entity_type = 'episode' THEN (SELECT title FROM episode_translations et WHERE et.episode_id = r.entity_id AND et.locale = ?)
                ELSE NULL
              END as title,
              CASE 
                WHEN r.entity_type = 'media' THEN (SELECT slug FROM media m WHERE m.id = r.entity_id)
+               WHEN r.entity_type = 'season' THEN (SELECT m.slug FROM media m JOIN seasons s ON s.media_id = m.id WHERE s.id = r.entity_id)
+               WHEN r.entity_type = 'episode' THEN (SELECT m.slug FROM media m JOIN episodes e ON e.media_id = m.id WHERE e.id = r.entity_id)
                ELSE NULL
              END as slug
       FROM ratings r
       WHERE r.user_id = ?
       ORDER BY r.created_at DESC
       LIMIT ? OFFSET ?
-    `).all([locale, locale, user.id, limit, offset]);
+    `).all([locale, locale, locale, user.id, limit, offset]);
 
     const total = drizzle.query<{ count: number }>(
       "SELECT count(id) as count FROM ratings WHERE user_id = ?"

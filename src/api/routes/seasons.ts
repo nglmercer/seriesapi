@@ -4,6 +4,7 @@
  * GET  /api/v1/seasons/:id            – season detail
  * GET  /api/v1/seasons/:id/episodes   – episodes in season
  * GET  /api/v1/seasons/:id/images     – season images
+ * GET  /api/v1/seasons/:id/comments   – season comments
  */
 
 import type { Database } from "sqlite-napi";
@@ -12,6 +13,18 @@ import { SeasonController } from "../controllers/season.controller";
 import { SeasonView } from "../views/season.view";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
 import { withAdmin } from "./auth";
+
+export function handleSeasonComments(req: Request, _db: Database, seasonId: number): Response {
+  try {
+    const result = SeasonController.getComments(req, seasonId);
+    if ("error" in result) return result.error as Response;
+
+    const { rows, locale, page, pageSize, total } = result;
+    return ok(SeasonView.formatComments(rows), { locale, page, pageSize, total });
+  } catch (err) {
+    return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
+  }
+}
 
 export function handleSeasonDetail(req: Request, _db: Database, id: number): Response {
   try {

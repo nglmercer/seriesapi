@@ -18,6 +18,7 @@ import {
   handleSeasonDetail,
   handleSeasonEpisodes,
   handleSeasonImages,
+  handleSeasonComments,
   handleSeasonCreate,
   handleSeasonUpdate,
   handleSeasonDelete,
@@ -139,6 +140,7 @@ function route(req: Request): Response | Promise<Response> {
       if (!p4) return handleSeasonDetail(req, db, id);
       if (p4 === "episodes") return handleSeasonEpisodes(req, db, id);
       if (p4 === "images")   return handleSeasonImages(req, db, id);
+      if (p4 === "comments") return handleSeasonComments(req, db, id);
       return notFound("Resource", locale);
     }
     
