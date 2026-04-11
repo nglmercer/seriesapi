@@ -225,13 +225,10 @@ const server = Bun.serve({
     if (path.startsWith("/api/")) {
       return await route(req);
     }
-    return new Response(
-      JSON.stringify({ ok: false, data: null, error: "Internal Server Error" }),
-      {
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
-        headers: { [HttpHeader.CONTENT_TYPE]: ContentType.JSON, ...corsHeaders(req.headers.get(HttpHeader.ORIGIN.toLowerCase())) },
-      },
-    );
+    return new Response("Not Found", {
+      status: HttpStatus.NOT_FOUND,
+      headers: { [HttpHeader.CONTENT_TYPE]: ContentType.PLAIN },
+    });
   },
   routes: {
     '/': public_view,

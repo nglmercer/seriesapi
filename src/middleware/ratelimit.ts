@@ -55,6 +55,7 @@ export enum HttpHeader {
 export enum ContentType {
   JSON = "application/json",
   HTML = "text/html",
+  PLAIN = "text/plain",
 }
 
 const DURATIONS = {
@@ -193,8 +194,8 @@ export function createRateLimiter(opts: RateLimiterOptions = {}): RateLimiter {
 export function corsHeaders(origin?: string | null): Record<string, string> {
   return {
     [HttpHeader.CORS_ALLOW_ORIGIN]: origin ?? "*",
-    [HttpHeader.CORS_ALLOW_METHODS]: `${HttpMethod.GET}, ${HttpMethod.OPTIONS}`,
-    [HttpHeader.CORS_ALLOW_HEADERS]: `${HttpHeader.CONTENT_TYPE}, Accept-Language`,
+    [HttpHeader.CORS_ALLOW_METHODS]: "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+    [HttpHeader.CORS_ALLOW_HEADERS]: `${HttpHeader.CONTENT_TYPE}, Accept-Language, Authorization`,
     [HttpHeader.CORS_MAX_AGE]: String(DURATIONS.CORS_MAX_AGE),
   };
 }
