@@ -158,24 +158,30 @@ export function App() {
 
     return (
       <Fragment>
-        <section class="bg-secondary py-16 text-center">
-          <div class="container mx-auto px-5 max-w-4xl">
-            <h1 class="text-4xl font-bold mb-4">{i18next.t("hero.title", "Track Your Series & Movies")}</h1>
-            <p class="text-xl text-secondary mb-8">{i18next.t("hero.subtitle", "Your personal dashboard to keep up with everything you're watching.")}</p>
+        <section class="bg-base-200 py-24 text-center relative overflow-hidden">
+          <div class="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,#fff,rgba(255,255,255,0.6))] dark:bg-grid-slate-700/25 dark:[mask-image:linear-gradient(0deg,rgba(255,255,255,0.1),rgba(255,255,255,0.5))]"></div>
+          <div class="container mx-auto px-5 max-w-4xl relative z-10">
+            <h1 class="text-5xl md:text-6xl font-black mb-6 tracking-tight text-base-content">
+              {i18next.t("hero.title", "Track Your Series & Movies")}
+            </h1>
+            <p class="text-xl text-base-content/60 mb-12 max-w-2xl mx-auto leading-relaxed">
+              {i18next.t("hero.subtitle", "Your personal dashboard to keep up with everything you're watching.")}
+            </p>
             <SearchBox />
           </div>
         </section>
 
-        <main class="container mx-auto px-5 py-10">
-          <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+        <main class="container mx-auto px-5 py-16">
+          <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
             <div>
-              <h2 class="text-2xl font-bold">{i18next.t("media.latest", "Latest Media")}</h2>
-              <p class="text-secondary mt-1">{i18next.t("media.latest_subtitle", "Discover something new to watch today.")}</p>
+              <h2 class="text-3xl font-black text-base-content tracking-tight">{i18next.t("media.latest", "Latest Media")}</h2>
+              <p class="text-base-content/50 mt-2 font-medium">{i18next.t("media.latest_subtitle", "Discover something new to watch today.")}</p>
             </div>
-            <MediaFilters />
           </div>
+          
+          <MediaFilters />
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
             <MediaList mediaList={mediaList} />
           </div>
         </main>

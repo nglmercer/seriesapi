@@ -43,10 +43,10 @@ export function AdminApp() {
   };
 
   return (
-    <div class="min-h-screen bg-primary text-primary transition-colors duration-300">
+    <div class="min-h-screen bg-base-100 text-base-content transition-colors duration-300">
       {authLoading ? (
         <div class="flex items-center justify-center h-screen" key="loading">
-          <div class="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+          <span class="loading loading-spinner loading-lg text-primary"></span>
         </div>
       ) : !user || user.role !== "admin" ? (
         <div class="flex flex-col min-h-screen" key="login">
@@ -64,59 +64,66 @@ export function AdminApp() {
             onLogout={doLogout}
           />
 
-          <div class="min-h-[80vh] flex items-center justify-center p-6">
-            <div class="bg-secondary border border-border rounded-3xl p-10 w-full max-w-md shadow-2xl">
-              <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-red-600 flex items-center justify-center text-3xl mb-6 mx-auto shadow-lg">
-                🔒
-              </div>
-              <h2 class="text-2xl font-extrabold text-center mb-1">{i18next.t("admin.access", "Admin Access")}</h2>
-              <p class="text-sm text-text-secondary text-center mb-8">
-                {i18next.t("admin.signin_prompt", "Sign in with an administrator account")}
-              </p>
-
-              {loginError && (
-                <div class="bg-error/10 border border-error/30 text-error rounded-xl p-4 text-sm mb-6 flex items-center gap-2">
-                  ⚠ {loginError}
+          <div class="min-h-[80vh] flex items-center justify-center p-6 bg-base-200/50">
+            <div class="card bg-base-100 border border-base-content/10 shadow-2xl w-full max-w-md overflow-hidden">
+              <div class="card-body p-10">
+                <div class="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-4xl mb-8 mx-auto shadow-inner border border-primary/20">
+                  <span class="drop-shadow-sm">🔒</span>
                 </div>
-              )}
+                <h2 class="card-title text-3xl font-black justify-center mb-2 tracking-tight">{i18next.t("admin.access", "Admin Access")}</h2>
+                <p class="text-sm text-base-content/60 text-center mb-10 font-medium">
+                  {i18next.t("admin.signin_prompt", "Sign in with an administrator account")}
+                </p>
 
-              <div class="mb-5 flex flex-col gap-1.5">
-                <label class="text-[11px] font-bold uppercase tracking-wider text-text-secondary">
-                  {i18next.t("auth.username_or_email", "Username or Email")}
-                </label>
-                <input
-                  class="w-full px-4 py-3 bg-primary border border-border rounded-xl text-primary text-base focus:outline-none focus:ring-2 focus:ring-accent transition-all"
-                  type="text"
-                  value={loginUsername}
-                  placeholder="admin"
-                  autoComplete="username"
-                  onInput={(e) => setLoginUsername((e.target as HTMLInputElement).value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") doLogin(); }}
-                />
+                {loginError && (
+                  <div class="alert alert-error text-sm mb-8 rounded-xl py-3 border-none bg-error/10 text-error font-bold flex items-center gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    {loginError}
+                  </div>
+                )}
+
+                <div class="form-control w-full mb-6">
+                  <label class="label pt-0">
+                    <span class="label-text text-[10px] font-black uppercase tracking-widest opacity-50">{i18next.t("auth.username_or_email", "Username or Email")}</span>
+                  </label>
+                  <input
+                    class="input input-bordered w-full h-12 bg-base-200 border-base-content/5 focus:border-primary focus:outline-none transition-all rounded-xl font-medium"
+                    type="text"
+                    value={loginUsername}
+                    placeholder="admin"
+                    autoComplete="username"
+                    onInput={(e) => setLoginUsername((e.target as HTMLInputElement).value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") doLogin(); }}
+                  />
+                </div>
+
+                <div class="form-control w-full mb-10">
+                  <label class="label pt-0">
+                    <span class="label-text text-[10px] font-black uppercase tracking-widest opacity-50">{i18next.t("auth.password", "Password")}</span>
+                  </label>
+                  <input
+                    class="input input-bordered w-full h-12 bg-base-200 border-base-content/5 focus:border-primary focus:outline-none transition-all rounded-xl font-medium"
+                    type="password"
+                    value={loginPassword}
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    onInput={(e) => setLoginPassword((e.target as HTMLInputElement).value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") doLogin(); }}
+                  />
+                </div>
+
+                <div class="card-actions">
+                  <button
+                    class="btn btn-primary btn-block h-14 rounded-xl text-lg font-black shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all border-none disabled:opacity-50"
+                    onClick={doLogin}
+                    disabled={loginLoading}
+                  >
+                    {loginLoading ? (
+                      <span class="loading loading-spinner"></span>
+                    ) : i18next.t("auth.sign_in", "Sign In")}
+                  </button>
+                </div>
               </div>
-
-              <div class="mb-8 flex flex-col gap-1.5">
-                <label class="text-[11px] font-bold uppercase tracking-wider text-text-secondary">
-                  {i18next.t("auth.password", "Password")}
-                </label>
-                <input
-                  class="w-full px-4 py-3 bg-primary border border-border rounded-xl text-primary text-base focus:outline-none focus:ring-2 focus:ring-accent transition-all"
-                  type="password"
-                  value={loginPassword}
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  onInput={(e) => setLoginPassword((e.target as HTMLInputElement).value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") doLogin(); }}
-                />
-              </div>
-
-              <button
-                class="w-full py-4 bg-gradient-to-br from-accent to-red-600 text-white font-bold text-base rounded-xl hover:shadow-xl transition-all shadow-md disabled:opacity-60"
-                onClick={doLogin}
-                disabled={loginLoading}
-              >
-                {loginLoading ? i18next.t("auth.signing_in", "Signing in…") : i18next.t("auth.sign_in", "Sign In")}
-              </button>
             </div>
           </div>
         </div>
@@ -136,7 +143,7 @@ export function AdminApp() {
             onLogout={doLogout}
           />
 
-          <main class="flex-1 pt-5">
+          <main class="flex-1 bg-base-200/30">
             <AdminView />
           </main>
         </div>

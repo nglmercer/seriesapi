@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "daisyui";
 
 @theme {
   --color-primary: var(--bg-primary);
@@ -11,7 +12,7 @@
   --color-card: var(--card-bg);
   --color-header: var(--header-bg);
 
-  /* Special mappings for text utilities to avoid naming conflicts */
+  /* Special mappings for text utilities */
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
 
@@ -28,7 +29,7 @@
   }
 }
 
-/* Base Light Mode */
+/* Base Variables */
 :root {
   color-scheme: light;
   --bg-primary: #ffffff;
@@ -45,9 +46,43 @@
   --header-bg: #ffffff;
 }
 
-/* Dark Mode Overrides (System Preference) */
+/* DaisyUI Theme Mapping */
+[data-theme="light"] {
+  --p: 220 70% 50%; /* #3366cc */
+  --s: 210 17% 98%; /* #f8f9fa */
+  --a: 220 70% 50%;
+  --n: 210 4% 13%;
+  --b1: 0 0% 100%;
+  --bc: 210 4% 13%;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-primary: #101418;
+  --bg-secondary: #1a1f24;
+  --text-primary: #eaecf0;
+  --text-secondary: #a2a9b1;
+  --border-color: #3c434a;
+  --accent-color: #6699ff;
+  --accent-hover: #88aaff;
+  --error-color: #ff6666;
+  --success-color: #00d4a3;
+  --card-bg: #1a1f24;
+  --shadow: 0 1px 3px rgba(0,0,0,0.5);
+  --header-bg: #1a1f24;
+
+  /* DaisyUI Dark Theme Mapping */
+  --p: 220 100% 70%; /* #6699ff */
+  --s: 210 16% 12%; /* #1a1f24 */
+  --a: 220 100% 70%;
+  --n: 210 16% 12%;
+  --b1: 210 20% 8%;  /* #101418 */
+  --bc: 210 17% 93%; /* #eaecf0 */
+}
+
+/* System dark preference sync */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     color-scheme: dark;
     --bg-primary: #101418;
     --bg-secondary: #1a1f24;
@@ -61,24 +96,14 @@
     --card-bg: #1a1f24;
     --shadow: 0 1px 3px rgba(0,0,0,0.5);
     --header-bg: #1a1f24;
+    
+    --p: 220 100% 70%;
+    --s: 210 16% 12%;
+    --a: 220 100% 70%;
+    --n: 210 16% 12%;
+    --b1: 210 20% 8%;
+    --bc: 210 17% 93%;
   }
-}
-
-/* Explicit Light Mode Override (highest priority) */
-:root[data-theme="light"] {
-  color-scheme: light;
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --text-primary: #202122;
-  --text-secondary: #4c6e8a;
-  --border-color: #a2a9b1;
-  --accent-color: #3366cc;
-  --accent-hover: #2a4b8d;
-  --error-color: #d33;
-  --success-color: #00af89;
-  --card-bg: #ffffff;
-  --shadow: 0 1px 3px rgba(0,0,0,0.1);
-  --header-bg: #ffffff;
 }
 
 body {

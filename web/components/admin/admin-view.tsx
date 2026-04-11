@@ -155,16 +155,25 @@ export function AdminView({ onBack }: AdminViewProps) {
   }
 
   return (
-    <div class="container mx-auto px-5 py-8">
-      <div class="mb-8">
-        <div class="flex gap-2 p-1 bg-secondary rounded-xl w-fit">
-          <button class={`px-6 py-2.5 text-sm font-bold rounded-lg cursor-pointer transition-all ${currentTab === 'media' ? "bg-primary text-accent shadow-sm" : "text-text-secondary hover:text-primary"}`} onClick={() => setCurrentTab("media")}>
+    <div class="container mx-auto px-5 py-10">
+      <div class="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
+        <div class="tabs tabs-boxed bg-base-300/50 p-1.5 rounded-2xl border border-base-content/5">
+          <button 
+            class={`tab tab-lg font-black transition-all rounded-xl h-12 px-8 ${currentTab === 'media' ? "tab-active bg-primary text-primary-content shadow-lg shadow-primary/20" : "hover:bg-base-content/5"}`} 
+            onClick={() => setCurrentTab("media")}
+          >
             {i18next.t("admin.media_mgmt")}
           </button>
-          <button class={`px-6 py-2.5 text-sm font-bold rounded-lg cursor-pointer transition-all ${currentTab === 'genres' ? "bg-primary text-accent shadow-sm" : "text-text-secondary hover:text-primary"}`} onClick={() => setCurrentTab("genres")}>
+          <button 
+            class={`tab tab-lg font-black transition-all rounded-xl h-12 px-8 ${currentTab === 'genres' ? "tab-active bg-primary text-primary-content shadow-lg shadow-primary/20" : "hover:bg-base-content/5"}`} 
+            onClick={() => setCurrentTab("genres")}
+          >
             {i18next.t("admin.genres_mgmt")}
           </button>
-          <button class={`px-6 py-2.5 text-sm font-bold rounded-lg cursor-pointer transition-all ${currentTab === 'reports' ? "bg-primary text-accent shadow-sm" : "text-text-secondary hover:text-primary"}`} onClick={() => setCurrentTab("reports")}>
+          <button 
+            class={`tab tab-lg font-black transition-all rounded-xl h-12 px-8 ${currentTab === 'reports' ? "tab-active bg-primary text-primary-content shadow-lg shadow-primary/20" : "hover:bg-base-content/5"}`} 
+            onClick={() => setCurrentTab("reports")}
+          >
             {i18next.t("admin.reports_mgmt")}
           </button>
         </div>
@@ -173,59 +182,69 @@ export function AdminView({ onBack }: AdminViewProps) {
       {currentTab === "genres" && <AdminGenresView />}
       {currentTab === "reports" && <AdminReportsView />}
       {currentTab === "media" && (
-        <div class="bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
-          <div class="p-6 border-b border-border flex flex-col md:flex-row gap-4 items-center justify-between bg-secondary/30">
-            <div class="flex-1 w-full max-w-md">
-              <div class="relative">
-                <input
-                  class="w-full pl-4 pr-4 py-2.5 bg-primary border border-border rounded-xl text-sm text-primary focus:outline-none focus:ring-2 focus:ring-accent transition-all shadow-sm"
-                  type="text"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onInput={(e) => { setSearchQuery((e.target as HTMLInputElement).value); setCurrentPage(1); }}
-                  onKeyDown={(e) => { if (e.key === "Enter") fetchMedia(); }}
-                />
+        <div class="card bg-base-100 border border-base-content/10 shadow-2xl overflow-hidden rounded-3xl">
+          <div class="card-body p-0">
+            <div class="p-8 border-b border-base-content/5 flex flex-col lg:flex-row gap-6 items-center justify-between bg-base-200/40">
+              <div class="form-control w-full max-w-lg">
+                <div class="relative group">
+                  <span class="absolute left-4 top-1/2 -translate-y-1/2 text-base-content/30 group-focus-within:text-primary transition-colors">{ICONS.search}</span>
+                  <input
+                    class="input input-bordered w-full pl-12 h-12 rounded-2xl bg-base-100 border-base-content/10 focus:border-primary focus:outline-none transition-all shadow-sm font-medium"
+                    type="text"
+                    placeholder="Search media..."
+                    value={searchQuery}
+                    onInput={(e) => { setSearchQuery((e.target as HTMLInputElement).value); setCurrentPage(1); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") fetchMedia(); }}
+                  />
+                </div>
+              </div>
+              <div class="flex items-center gap-3 w-full lg:w-auto">
+                <button 
+                  class={`btn btn-outline h-12 rounded-2xl border-base-content/10 px-6 font-black transition-all group ${showFilters ? "btn-primary bg-primary/10 border-primary/20 text-primary" : "hover:bg-base-content/5"}`} 
+                  onClick={() => setShowFilters(!showFilters)}
+                >
+                  <span class="opacity-50 group-hover:opacity-100 transition-opacity">{ICONS.filter}</span>
+                  {i18next.t("admin.filters")}
+                </button>
+                <button 
+                  class="btn btn-primary h-12 px-8 rounded-2xl font-black shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all border-none flex-1 lg:flex-none" 
+                  onClick={handleAddMedia}
+                >
+                  {i18next.t("admin.add_new_media")}
+                </button>
               </div>
             </div>
-            <div class="flex items-center gap-3 w-full md:w-auto">
-              <button class={`flex items-center gap-2 px-4 py-2.5 border rounded-xl text-sm font-bold transition-all shadow-sm ${showFilters ? "bg-accent/10 border-accent text-accent" : "bg-primary border-border text-text-secondary hover:text-primary"}`} onClick={() => setShowFilters(!showFilters)}>
-                {ICONS.filter} {i18next.t("admin.filters")}
-              </button>
-              <button class="px-6 py-2.5 bg-accent text-white font-bold rounded-xl hover:bg-accent-hover transition-all shadow-md flex-1 md:flex-none" onClick={handleAddMedia}>
-                {i18next.t("admin.add_new_media")}
-              </button>
-            </div>
-          </div>
 
-          {showFilters && (
-            <div class="p-6 bg-secondary/10 border-b border-border">
-              <MediaFilters
-                state={filters}
-                onFilterChange={(f) => { setFilters(f); setCurrentPage(1); }}
+            {showFilters && (
+              <div class="p-8 bg-base-200/20 border-b border-base-content/5 animate-modal-slide-up">
+                <MediaFilters
+                  state={filters}
+                  onFilterChange={(f) => { setFilters(f); setCurrentPage(1); }}
+                />
+              </div>
+            )}
+
+            {selectedIds.size > 0 && (
+              <AdminBulkBar
+                selectedCount={selectedIds.size}
+                onAction={handleBulkAction}
               />
-            </div>
-          )}
+            )}
 
-          {selectedIds.size > 0 && (
-            <AdminBulkBar
-              selectedCount={selectedIds.size}
-              onAction={handleBulkAction}
+            <AdminMediaList
+              media={mediaList}
+              selectedIds={selectedIds}
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onToggleSelect={toggleSelect}
+              onToggleSelectAll={toggleSelectAll}
+              onQuickEdit={handleQuickEdit}
+              onEditMedia={setEditingMediaId}
+              onDeleteMedia={handleDeleteMedia}
+              onPageChange={(page) => setCurrentPage(page)}
             />
-          )}
-
-          <AdminMediaList
-            media={mediaList}
-            selectedIds={selectedIds}
-            currentPage={currentPage}
-            pageSize={pageSize}
-            totalItems={totalItems}
-            onToggleSelect={toggleSelect}
-            onToggleSelectAll={toggleSelectAll}
-            onQuickEdit={handleQuickEdit}
-            onEditMedia={setEditingMediaId}
-            onDeleteMedia={handleDeleteMedia}
-            onPageChange={(page) => setCurrentPage(page)}
-          />
+          </div>
         </div>
       )}
     </div>
@@ -236,22 +255,18 @@ export function AdminBulkBar({ selectedCount, onAction }: { selectedCount: numbe
   if (selectedCount === 0) return null;
 
   return (
-    <div class="bulk-actions">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <strong style={{ fontSize: '16px' }}>
-            {selectedCount} selected
-          </strong>
-          <span style={{ fontSize: '11px', opacity: 0.8, textTransform: 'uppercase', fontWeight: 700 }}>Bulk Actions</span>
+    <div class="bg-primary text-primary-content p-4 px-8 flex items-center justify-between animate-modal-slide-up">
+      <div class="flex items-center gap-6">
+        <div class="flex flex-col">
+          <span class="text-xs font-black uppercase tracking-widest opacity-60">Bulk Actions</span>
+          <strong class="text-xl font-black">{selectedCount} selected</strong>
         </div>
-        <div style={{ height: '30px', width: '1px', background: 'rgba(255,255,255,0.2)' }}></div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button class="bulk-edit-btn" onClick={() => onAction("bulk-edit")}>
-            Bulk Edit
-          </button>
-        </div>
+        <div class="divider divider-horizontal border-primary-content/20 mx-0"></div>
+        <button class="btn btn-ghost btn-sm bg-primary-content/10 hover:bg-primary-content/20 font-black rounded-lg border-none text-primary-content" onClick={() => onAction("bulk-edit")}>
+          Bulk Edit
+        </button>
       </div>
-      <button class="cancel-btn" onClick={() => onAction("cancel")}>
+      <button class="btn btn-ghost btn-sm font-black rounded-lg text-primary-content hover:bg-primary-content/10 border-none" onClick={() => onAction("cancel")}>
         Cancel
       </button>
     </div>
@@ -285,8 +300,10 @@ export function AdminMediaList({
 }) {
   if (media.length === 0) {
     return (
-      <div class="text-center py-10 text-text-secondary">
-        No results found
+      <div class="flex flex-col items-center justify-center py-24 text-center">
+        <div class="text-6xl mb-6 opacity-20">📭</div>
+        <h3 class="text-xl font-black text-base-content/40 tracking-tight">No results found</h3>
+        <p class="text-base-content/30 text-sm mt-2 font-medium">Try adjusting your search or filters</p>
       </div>
     );
   }
@@ -294,60 +311,87 @@ export function AdminMediaList({
   const totalPages = Math.ceil(totalItems / pageSize) || 1;
 
   return (
-    <div>
-      <div class="flex flex-col">
-        {media.map(item => (
-          <div class={`flex items-center gap-4 p-4 border-b border-border hover:bg-secondary/20 transition-colors ${selectedIds.has(item.id) ? "bg-accent/5" : ""}`}>
-            <div class="shrink-0">
+    <div class="overflow-x-auto">
+      <table class="table table-lg w-full">
+        <thead>
+          <tr class="bg-base-200/20 text-base-content/40 border-b border-base-content/5">
+            <th class="w-16">
               <input
-                class="w-5 h-5 accent-accent"
+                class="checkbox checkbox-primary checkbox-sm rounded-lg"
                 type="checkbox"
-                checked={selectedIds.has(item.id)}
-                onChange={() => onToggleSelect(item.id)}
+                checked={selectedIds.size === media.length && media.length > 0}
+                onChange={onToggleSelectAll}
               />
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-1">
-                <div class="text-sm font-bold text-primary truncate">{item.title}</div>
-                <div class="px-2 py-0.5 bg-secondary border border-border rounded text-[10px] font-bold uppercase tracking-wider text-text-secondary">{item.content_type}</div>
-              </div>
-              <div class="text-xs text-text-secondary flex gap-3">
-                <span>ID: {item.id}</span>
-                <span class="capitalize">{item.status}</span>
-              </div>
-            </div>
-            <div class="flex items-center gap-2">
-              <button class="px-3 py-1.5 bg-secondary text-primary text-xs font-bold rounded border border-border hover:bg-border transition-all" onClick={() => onQuickEdit(item)}>
-                Quick Edit
-              </button>
-              <button class="px-3 py-1.5 bg-secondary text-primary text-xs font-bold rounded border border-border hover:bg-border transition-all" onClick={() => onEditMedia(item.id)}>
-                Manage
-              </button>
-              <button class="px-3 py-1.5 bg-secondary text-error text-xs font-bold rounded border border-border hover:bg-error hover:text-white transition-all" onClick={() => onDeleteMedia(item.id)}>
-                Delete
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+            </th>
+            <th class="text-[10px] font-black uppercase tracking-widest">{i18next.t("admin.media_info", "Media Info")}</th>
+            <th class="text-[10px] font-black uppercase tracking-widest">{i18next.t("admin.status", "Status")}</th>
+            <th class="text-right text-[10px] font-black uppercase tracking-widest">{i18next.t("admin.actions", "Actions")}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-base-content/5">
+          {media.map(item => (
+            <tr key={item.id} class={`hover:bg-base-200/40 transition-colors group ${selectedIds.has(item.id) ? "bg-primary/5" : ""}`}>
+              <td>
+                <input
+                  class="checkbox checkbox-primary checkbox-sm rounded-lg"
+                  type="checkbox"
+                  checked={selectedIds.has(item.id)}
+                  onChange={() => onToggleSelect(item.id)}
+                />
+              </td>
+              <td>
+                <div class="flex flex-col gap-1">
+                  <div class="flex items-center gap-3">
+                    <span class="text-base font-black text-base-content tracking-tight">{item.title}</span>
+                    <span class="badge badge-outline badge-xs font-black uppercase tracking-widest py-2 border-base-content/10 opacity-60">{item.content_type}</span>
+                  </div>
+                  <span class="text-[11px] font-black uppercase tracking-widest opacity-30">ID: {item.id}</span>
+                </div>
+              </td>
+              <td>
+                <span class={`badge font-black uppercase tracking-widest text-[10px] py-2 border-none ${
+                  item.status === 'ongoing' ? 'bg-success/10 text-success' : 
+                  item.status === 'completed' ? 'bg-primary/10 text-primary' : 
+                  'bg-base-content/10 text-base-content/50'
+                }`}>
+                  {item.status}
+                </span>
+              </td>
+              <td>
+                <div class="flex items-center justify-end gap-2">
+                  <button class="btn btn-ghost btn-sm font-black rounded-xl text-[11px] h-9 px-4 hover:bg-primary/10 hover:text-primary transition-all" onClick={() => onQuickEdit(item)}>
+                    Quick Edit
+                  </button>
+                  <button class="btn btn-ghost btn-sm font-black rounded-xl text-[11px] h-9 px-4 hover:bg-primary/10 hover:text-primary transition-all" onClick={() => onEditMedia(item.id)}>
+                    Manage
+                  </button>
+                  <button class="btn btn-ghost btn-sm font-black rounded-xl text-[11px] h-9 px-4 hover:bg-error/10 hover:text-error transition-all" onClick={() => onDeleteMedia(item.id)}>
+                    Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
-      <div class="flex items-center justify-between p-6 bg-secondary/10">
+      <div class="flex items-center justify-between p-8 bg-base-200/40 border-t border-base-content/5">
         <button   
-          class="px-4 py-2 bg-primary border border-border rounded-lg text-sm font-bold text-text-secondary hover:text-primary disabled:opacity-40 transition-all shadow-sm"
+          class="btn btn-outline btn-sm h-10 px-6 rounded-xl border-base-content/10 font-black hover:bg-base-content/5 transition-all disabled:opacity-30"
           disabled={currentPage <= 1}
           onClick={() => onPageChange(currentPage - 1)}
         >
-          ←
+          ← Previous
         </button>
-        <div class="text-sm font-bold text-text-secondary">
-          <span class="text-accent">{currentPage}</span> / <span class="text-primary">{totalItems} items</span>
+        <div class="text-xs font-black uppercase tracking-widest text-base-content/30">
+          Page <span class="text-primary opacity-100">{currentPage}</span> of <span class="text-base-content opacity-100">{totalPages}</span> — <span class="text-base-content opacity-100">{totalItems} items</span>
         </div>
         <button
-          class="px-4 py-2 bg-primary border border-border rounded-lg text-sm font-bold text-text-secondary hover:text-primary disabled:opacity-40 transition-all shadow-sm"
+          class="btn btn-outline btn-sm h-10 px-6 rounded-xl border-base-content/10 font-black hover:bg-base-content/5 transition-all disabled:opacity-30"
           disabled={currentPage >= totalPages}
           onClick={() => onPageChange(currentPage + 1)}
         >
-          →
+          Next →
         </button>
       </div>
     </div>

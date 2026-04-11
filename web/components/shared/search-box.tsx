@@ -33,9 +33,9 @@ export function SearchBox({ query = "", onSearch }: SearchBoxProps) {
     <div class="w-full max-w-2xl mx-auto">
       <form class="flex flex-col sm:flex-row gap-3" onSubmit={handleSubmit}>
         <div class="relative flex-1">
-          <span class="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary">{ICONS.search}</span>
+          <span class="absolute left-4 top-1/2 -translate-y-1/2 text-base-content/40">{ICONS.search}</span>
           <input
-            class="w-full pl-12 pr-4 py-3 bg-primary border border-border rounded-xl text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all shadow-sm"
+            class="input input-bordered w-full pl-12 h-14 rounded-2xl bg-base-100 border-base-content/10 focus:border-primary focus:outline-none transition-all shadow-sm"
             type="text"
             name="q"
             value={inputValue}
@@ -43,7 +43,9 @@ export function SearchBox({ query = "", onSearch }: SearchBoxProps) {
             onInput={handleInput}
           />
         </div>
-        <button class="px-8 py-3 bg-accent text-white font-bold rounded-xl hover:bg-accent-hover transition-all shadow-md" type="submit">{i18next.t("search.button", { defaultValue: "Search" })}</button>
+        <button class="btn btn-primary h-14 px-10 rounded-2xl font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all" type="submit">
+          {i18next.t("search.button", { defaultValue: "Search" })}
+        </button>
       </form>
     </div>
   );

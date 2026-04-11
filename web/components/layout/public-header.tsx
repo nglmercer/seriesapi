@@ -28,49 +28,58 @@ export function PublicHeader({ user, isMenuOpen = false, onToggleMenu, onHomeCli
   }
 
   return (
-    <header class="sticky top-0 z-50 bg-header border-b border-border px-5">
-      <div class="flex items-center justify-between h-16 max-w-[1200px] mx-auto px-5">
-        <a class="text-lg font-extrabold text-primary hover:text-accent transition-colors no-underline" href="/" onClick={(e) => { e.preventDefault(); if (onHomeClick) onHomeClick(); }}>
-          {i18next.t("header.explorer", "Series Explorer")}
-        </a>
-        <div class="flex items-center gap-4">
-          <div class="hidden md:flex gap-1">
+    <header class="sticky top-0 z-50 bg-base-100/80 backdrop-blur-md border-b border-base-content/10">
+      <div class="navbar max-w-[1200px] mx-auto px-4 min-h-16">
+        <div class="flex-1">
+          <a class="btn btn-ghost text-xl font-extrabold normal-case tracking-tight hover:bg-transparent" href="/" onClick={(e) => { e.preventDefault(); if (onHomeClick) onHomeClick(); }}>
+            <span class="text-primary">{i18next.t("header.explorer", "Series Explorer")}</span>
+          </a>
+        </div>
+        
+        <div class="flex-none gap-2">
+          <div class="hidden md:flex join">
             <button 
-              class={`px-2.5 py-1.5 bg-transparent border border-border rounded-md text-xs font-bold transition-all hover:bg-secondary ${currentLng === "en" ? "bg-accent border-accent text-white" : "text-text-secondary"}`} 
+              class={`join-item btn btn-xs ${currentLng === "en" ? "btn-primary" : "btn-ghost border-base-content/10"}`} 
               onClick={() => handleLanguageChange("en")}
             >
               EN
             </button>
             <button 
-              class={`px-2.5 py-1.5 bg-transparent border border-border rounded-md text-xs font-bold transition-all hover:bg-secondary ${currentLng === "es" ? "bg-accent border-accent text-white" : "text-text-secondary"}`} 
+              class={`join-item btn btn-xs ${currentLng === "es" ? "btn-primary" : "btn-ghost border-base-content/10"}`} 
               onClick={() => handleLanguageChange("es")}
             >
               ES
             </button>
           </div>
 
-          <button class="p-2 bg-transparent border-none text-lg cursor-pointer transition-transform hover:scale-110" onClick={toggleTheme}>{ICONS.theme}</button>
+          <button class="btn btn-ghost btn-circle btn-sm" onClick={toggleTheme} title={i18next.t("header.toggle_theme", "Toggle Theme")}>
+            <span class="text-lg">{ICONS.theme}</span>
+          </button>
 
-          <a class="hidden md:block px-4 py-2 bg-accent text-white rounded-lg text-[13px] font-semibold no-underline transition-all hover:bg-accent-hover" href="/admin">{i18next.t("header.admin_panel", "Admin Panel")}</a>
+          <a class="hidden md:inline-flex btn btn-primary btn-sm" href="/admin">
+            {i18next.t("header.admin_panel", "Admin Panel")}
+          </a>
 
           {user ? (
-            <div class="hidden md:flex items-center gap-2.5 p-1.5 pr-3 bg-secondary border border-border rounded-full cursor-pointer transition-all hover:border-accent" onClick={onProfileClick}>
-              <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: avatarColor(user.display_name) }}>
-                {initials(user.display_name)}
+            <div class="hidden md:flex items-center gap-3 pl-1 pr-3 py-1 bg-base-200 rounded-full border border-base-content/5 hover:border-primary/30 transition-all cursor-pointer group" onClick={onProfileClick}>
+              <div class="avatar placeholder">
+                <div class="bg-neutral text-neutral-content rounded-full w-8 ring ring-primary ring-offset-base-100 ring-offset-2 ring-0 group-hover:ring-1 transition-all">
+                  <span class="text-xs font-bold">{initials(user.display_name)}</span>
+                </div>
               </div>
-              <span class="text-sm font-semibold text-primary">{user.display_name}</span>
-              <button class="px-2.5 py-1 bg-transparent border border-border rounded-md text-[11px] text-text-secondary cursor-pointer transition-all hover:bg-error hover:border-error hover:text-white" onClick={(e) => { e.stopPropagation(); if (onLogout) onLogout(); }}>
+              <span class="text-sm font-bold opacity-80">{user.display_name}</span>
+              <button class="btn btn-ghost btn-xs text-error hover:bg-error/10" onClick={(e) => { e.stopPropagation(); if (onLogout) onLogout(); }}>
                 {i18next.t("auth.sign_out", "Sign Out")}
               </button>
             </div>
           ) : (
-            <button class="hidden md:block px-5 py-2 bg-accent border-none rounded-lg text-sm font-semibold text-white cursor-pointer transition-all hover:bg-accent-hover" onClick={onNeedLogin}>
+            <button class="hidden md:inline-flex btn btn-primary btn-sm" onClick={onNeedLogin}>
               {i18next.t("auth.sign_in", "Sign In")}
             </button>
           )}
 
-          <button class="md:hidden p-2 bg-transparent border-none text-xl cursor-pointer" onClick={onToggleMenu} aria-label="Toggle Menu">
-            {isMenuOpen ? ICONS.close : ICONS.menu}
+          <button class="btn btn-ghost btn-circle btn-sm md:hidden" onClick={onToggleMenu} aria-label="Toggle Menu">
+            <span class="text-xl">{isMenuOpen ? ICONS.close : ICONS.menu}</span>
           </button>
         </div>
       </div>
