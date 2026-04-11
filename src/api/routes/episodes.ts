@@ -5,6 +5,7 @@
  * GET  /api/v1/episodes/:id/credits   – guest cast & crew for this episode
  * GET  /api/v1/episodes/:id/images    – stills / thumbnails
  * GET  /api/v1/episodes/:id/comments  – threaded comments
+ * GET  /api/v1/episodes/:id/neighbors – previous/next episode
  */
 
 import type { Database } from "sqlite-napi";
@@ -49,6 +50,17 @@ export function handleEpisodeComments(req: Request, _db: Database, episodeId: nu
     if ("error" in result) return result.error as Response;
     const { rows, locale, page, pageSize, total } = result;
     return ok(EpisodeView.formatComments(rows!), { locale: locale!, page, pageSize, total });
+  } catch (err) {
+    return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
+  }
+}
+
+export function handleEpisodeNeighbors(req: Request, _db: Database, episodeId: number): Response {
+  try {
+    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+    const result = EpisodeController.getNeighbors(req, episodeId);
+    if ("error" in result) return result.error as Response;
+    return ok(result, { locale });
   } catch (err) {
     return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
   }

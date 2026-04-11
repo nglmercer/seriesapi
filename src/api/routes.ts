@@ -25,6 +25,7 @@ import {
   handleEpisodeCredits,
   handleEpisodeImages,
   handleEpisodeComments,
+  handleEpisodeNeighbors,
   handleEpisodeCreate,
   handleEpisodeUpdate,
   handleEpisodeDelete,
@@ -133,6 +134,7 @@ export function createRouteHandler(getDbFn: () => any) {
         if (p4 === "credits")  return handleEpisodeCredits(req, db, id);
         if (p4 === "images")   return handleEpisodeImages(req, db, id);
         if (p4 === "comments") return handleEpisodeComments(req, db, id);
+        if (p4 === "neighbors") return handleEpisodeNeighbors(req, db, id);
         return notFound("Resource", locale);
       }
       if (POST) return handleEpisodeCreate(req);

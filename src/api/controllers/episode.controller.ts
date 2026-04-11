@@ -2,6 +2,7 @@ import { episodesTable, episodeTranslationsTable, seasonsTable, imagesTable, com
 import { getDrizzle } from "../../init";
 import { validateParams, paginationSchema } from "../validation";
 import { getLocaleFromRequest, SUPPORTED_LOCALES, DEFAULT_LOCALE } from "../../i18n";
+import { badRequest } from "../response";
 
 export class EpisodeController {
   static getDetail(req: Request, id: number) {
@@ -160,6 +161,36 @@ export class EpisodeController {
     }
 
     return { ok: true };
+  }
+
+  static getNeighbors(req: Request, episodeId: number) {
+    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+    const drizzle = getDrizzle();
+
+    const current = drizzle.select(episodesTable)
+      .selectRaw("e.id, e.media_id, e.season_id, e.episode_number")
+      .as("e")
+      .where("e.id = ?", [episodeId])
+      .get();
+    if (!current) return { error: badRequest("Episode not found", locale) };
+
+    const prev = drizzle.select(episodesTable).as("e")
+      .selectRaw("e.id, e.episode_number, COALESCE(et.title, 'Episode ' || e.episode_number) AS title")
+      .leftJoin("episode_translations et", "et.episode_id = e.id AND et.locale = ?", [locale])
+      .where("e.season_id = ? AND e.episode_number < ?", [current.season_id, current.episode_number])
+      .orderBy("e.episode_number", "desc")
+      .limit(1)
+      .get();
+
+    const next = drizzle.select(episodesTable).as("e")
+      .selectRaw("e.id, e.episode_number, COALESCE(et.title, 'Episode ' || e.episode_number) AS title")
+      .leftJoin("episode_translations et", "et.episode_id = e.id AND et.locale = ?", [locale])
+      .where("e.season_id = ? AND e.episode_number > ?", [current.season_id, current.episode_number])
+      .orderBy("e.episode_number", "asc")
+      .limit(1)
+      .get();
+
+    return { prev, next };
   }
 
   static delete(id: number) {
