@@ -32,6 +32,17 @@ export function MediaFilters({ state: initialState = {}, onFilterChange }: Media
   const [tags, setTags] = useState<Tag[]>([]);
 
   useEffect(() => {
+    setType(initialState.type || "");
+    setStatus(initialState.status || "");
+    setGenre(initialState.genre || "");
+    setTag(initialState.tag || "");
+    setYearFrom(initialState.year_from || "");
+    setYearTo(initialState.year_to || "");
+    setScoreFrom(initialState.score_from || "");
+    setSortBy(initialState.sort_by || "popularity");
+  }, [initialState]);
+
+  useEffect(() => {
     loadGenres();
     loadTags();
   }, []);

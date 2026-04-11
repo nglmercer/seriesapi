@@ -6,11 +6,11 @@ import type { MediaItem } from "../../services/api-service";
 
 interface MediaListProps {
   mediaList?: MediaItem[];
+  filters?: Record<string, string>;
 }
 
-export function MediaList({ mediaList: externalList }: MediaListProps) {
+export function MediaList({ mediaList: externalList, filters: externalFilters }: MediaListProps) {
   const [items, setItems] = useState<MediaItem[]>(externalList || []);
-  const [filters, setFilters] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -21,9 +21,6 @@ export function MediaList({ mediaList: externalList }: MediaListProps) {
   useEffect(() => {
     setupResizeObserver();
     calculatePageSize();
-    if (!externalList && items.length === 0) {
-      load();
-    }
     return () => {
       if (resizeTimeout.current) clearTimeout(resizeTimeout.current);
     };
@@ -35,6 +32,16 @@ export function MediaList({ mediaList: externalList }: MediaListProps) {
     }
   }, [externalList]);
 
+  useEffect(() => {
+    if (externalList === undefined) {
+      load();
+    }
+  }, [page, pageSize, externalFilters]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [externalFilters]);
+
   function setupResizeObserver() {
     if (!containerRef.current) return;
     const observer = new ResizeObserver(() => {
@@ -44,7 +51,6 @@ export function MediaList({ mediaList: externalList }: MediaListProps) {
         calculatePageSize();
         if (oldPageSize !== pageSize && !externalList) {
           setPage(1);
-          load();
         }
       }, 300) as unknown as number;
     });
@@ -68,7 +74,7 @@ export function MediaList({ mediaList: externalList }: MediaListProps) {
   async function load() {
     setLoading(true);
     try {
-      const result = await mediaService.fetchMediaList(page, pageSize, filters);
+      const result = await mediaService.fetchMediaList(page, pageSize, externalFilters);
       setItems(result.items);
       setTotalPages(result.pages);
     } catch (err) {
@@ -83,7 +89,6 @@ export function MediaList({ mediaList: externalList }: MediaListProps) {
   function goToPage(newPage: number) {
     if (newPage >= 1 && newPage <= totalPages && newPage !== page) {
       setPage(newPage);
-      load();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
@@ -104,32 +109,35 @@ export function MediaList({ mediaList: externalList }: MediaListProps) {
     }
 
     return (
-      <div class="col-span-full flex justify-center items-center gap-2 py-5">
-        <button 
-          class="px-3.5 py-2 bg-secondary border border-border rounded-md text-[13px] text-primary cursor-pointer transition-all hover:bg-accent hover:border-accent hover:text-white disabled:opacity-40 disabled:cursor-not-allowed" 
-          disabled={page === 1} 
-          onClick={() => goToPage(page - 1)}
-        >
-          &lt;
-        </button>
-        {pages.map(p => (
+      <div class="col-span-full flex justify-center items-center gap-2 py-10 mt-4">
+        <div class="join">
           <button 
-            class={`px-3.5 py-2 border rounded-md text-[13px] cursor-pointer transition-all hover:bg-accent hover:border-accent hover:text-white ${p === page ? "bg-accent border-accent text-white" : "bg-secondary border-border text-primary"}`} 
-            onClick={() => goToPage(p)}
+            class="join-item btn btn-sm px-4 bg-base-200 border-base-content/10 hover:bg-primary hover:text-primary-content border-none" 
+            disabled={page === 1} 
+            onClick={() => goToPage(page - 1)}
           >
-            {p}
+            &lt;
           </button>
-        ))}
-        <button 
-          class="px-3.5 py-2 bg-secondary border border-border rounded-md text-[13px] text-primary cursor-pointer transition-all hover:bg-accent hover:border-accent hover:text-white disabled:opacity-40 disabled:cursor-not-allowed" 
-          disabled={page === totalPages} 
-          onClick={() => goToPage(page + 1)}
-        >
-          &gt;
-        </button>
+          {pages.map(p => (
+            <button 
+              key={p}
+              class={`join-item btn btn-sm px-4 border-none ${p === page ? "btn-primary" : "bg-base-200 border-base-content/10 hover:bg-primary/20"}`} 
+              onClick={() => goToPage(p)}
+            >
+              {p}
+            </button>
+          ))}
+          <button 
+            class="join-item btn btn-sm px-4 bg-base-200 border-base-content/10 hover:bg-primary hover:text-primary-content border-none" 
+            disabled={page === totalPages} 
+            onClick={() => goToPage(page + 1)}
+          >
+            &gt;
+          </button>
+        </div>
       </div>
-  );
-}
+    );
+  }
 
   if (loading && items.length === 0) {
     return (

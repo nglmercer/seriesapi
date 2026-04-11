@@ -23,7 +23,7 @@ export function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentMedia, setCurrentMedia] = useState<any>(null);
   const [currentSeasons, setCurrentSeasons] = useState<any[]>([]);
-  const [mediaList, setMediaList] = useState<any[]>([]);
+  const [filters, setFilters] = useState<Record<string, string>>({});
   const [mediaLoading, setMediaLoading] = useState(false);
 
   useEffect(() => {
@@ -33,6 +33,12 @@ export function App() {
         setSelectedSeasonId(null);
         setCurrentMedia(null);
         setCurrentSeasons([]);
+        setShowProfile(false);
+      }),
+      eventBus.on("search", (data) => {
+        setFilters(prev => ({ ...prev, q: data.query }));
+        setSelectedMediaId(null);
+        setSelectedSeasonId(null);
         setShowProfile(false);
       }),
       eventBus.on("search-result", (data) => {
@@ -58,14 +64,6 @@ export function App() {
       }),
       eventBus.on("auth-close", () => {
         setShowAuthModal(false);
-      }),
-      eventBus.on("media-list", (data) => {
-        setMediaList(data);
-        setSelectedMediaId(null);
-        setSelectedSeasonId(null);
-        setCurrentMedia(null);
-        setCurrentSeasons([]);
-        setShowProfile(false);
       })
     ];
 
@@ -101,6 +99,7 @@ export function App() {
     setCurrentMedia(null);
     setCurrentSeasons([]);
     setShowProfile(false);
+    setFilters({});
   };
 
   const handleProfileClick = () => {
@@ -179,18 +178,19 @@ export function App() {
             </div>
           </div>
           
-          <MediaFilters />
+          <MediaFilters 
+            state={filters} 
+            onFilterChange={(newFilters) => setFilters(prev => ({ ...prev, ...newFilters }))} 
+          />
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
-            <MediaList mediaList={mediaList} />
-          </div>
+          <MediaList filters={filters} />
         </main>
       </Fragment>
     );
   };
 
   return (
-    <div class="min-h-screen bg-primary text-primary transition-colors duration-300">
+    <div class="min-h-screen text-base-content transition-colors duration-300">
       {authLoading ? (
         <div class="flex items-center justify-center h-screen" key="loading">
           <div class="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
