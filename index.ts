@@ -220,34 +220,16 @@ const server = Bun.serve({
     const path = url.pathname;
 
     // Route
-    try {
-      // API routes always start with /api/
-      if (path.startsWith("/api/")) {
-        return await route(req);
-      }
-
-      // Static routes
-      if (path === "/" || path === "/index.html") {
-        return new Response(Bun.file("./web/index.html"));
-      }
-      if (path === "/admin") {
-        return new Response(Bun.file("./web/admin.html"));
-      }
-      // if (path.endsWith('.ts') || path.endsWith('.css') || path.endsWith('.html')) {
-      //   return new Response(Bun.file(path));
-      // }
-      // Fallback for SPA: serve index.html for non-API routes
-      return new Response(Bun.file("./web/index.html"));
-    } catch (err) {
-      console.error("[anima] Unhandled error:", err);
-      return new Response(
-        JSON.stringify({ ok: false, data: null, error: "Internal Server Error" }),
-        {
-          status: HttpStatus.INTERNAL_SERVER_ERROR,
-          headers: { [HttpHeader.CONTENT_TYPE]: ContentType.JSON, ...corsHeaders(req.headers.get(HttpHeader.ORIGIN.toLowerCase())) },
-        },
-      );
+    if (path.startsWith("/api/")) {
+      return await route(req);
     }
+    return new Response(
+      JSON.stringify({ ok: false, data: null, error: "Internal Server Error" }),
+      {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        headers: { [HttpHeader.CONTENT_TYPE]: ContentType.JSON, ...corsHeaders(req.headers.get(HttpHeader.ORIGIN.toLowerCase())) },
+      },
+    );
   },
   routes: {
     '/': public_view,

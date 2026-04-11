@@ -3,6 +3,7 @@ import { useState } from 'preact/hooks';
 import { api } from "../../services/api-service";
 import i18next from "../../utils/i18n";
 import { Modal } from "./Modal";
+import styles from './ReportModal.module.css';
 
 interface ReportModalProps {
   entityType?: string;
@@ -43,16 +44,7 @@ export function ReportModal({ entityType = "", entityId = 0, open = false, onClo
 
   return (
     <Modal onClose={close}>
-      <div class="report-modal-content">
-        <style dangerouslySetInnerHTML={{ __html: `
-          .report-modal-content h3 { margin-bottom: 20px; font-size: 1.25rem; }
-          .report-modal-content select { width: 100%; margin-bottom: 16px; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); }
-          .report-modal-content textarea { width: 100%; min-height: 100px; margin-bottom: 20px; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); resize: vertical; }
-          .report-modal-content .actions { display: flex; justify-content: flex-end; gap: 12px; }
-          .report-modal-content .btn-cancel { padding: 10px 20px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-primary); cursor: pointer; }
-          .report-modal-content .btn-submit { padding: 10px 20px; border-radius: 8px; border: none; background: var(--accent-color, #3366cc); color: white; cursor: pointer; font-weight: 600; }
-          .report-modal-content .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-        ` }} />
+      <div class={styles.reportModalContent}>
         <h3>{i18next.t("reports.title", { defaultValue: "Report an Issue" })}</h3>
         <form onSubmit={submitReport}>
           <select value={reportType} onChange={(e) => setReportType((e.target as HTMLSelectElement).value)}>
@@ -66,9 +58,9 @@ export function ReportModal({ entityType = "", entityId = 0, open = false, onClo
             onInput={(e) => setReportMessage((e.target as HTMLTextAreaElement).value)}
             placeholder={i18next.t("reports.optional_message", { defaultValue: "Optional message..." })}
           />
-          <div class="actions">
-            <button type="button" class="btn-cancel" onClick={close}>{i18next.t("common.cancel", { defaultValue: "Cancel" })}</button>
-            <button type="submit" class="btn-submit" disabled={reported}>
+          <div class={styles.actions}>
+            <button type="button" class={styles.btnCancel} onClick={close}>{i18next.t("common.cancel", { defaultValue: "Cancel" })}</button>
+            <button type="submit" class={styles.btnSubmit} disabled={reported}>
               {reported ? i18next.t("reports.submitted", { defaultValue: "Submitted" }) : i18next.t("common.submit", { defaultValue: "Submit" })}
             </button>
           </div>

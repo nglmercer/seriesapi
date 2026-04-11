@@ -1,6 +1,6 @@
 import { h, Fragment } from 'preact';
 import { useState } from 'preact/hooks';
-import { authStore } from "../../services/auth-store";
+import { useAuth } from "../../contexts/auth-context";
 import i18next from "../../utils/i18n";
 import { Modal } from "./Modal";
 import styles from './AuthModal.module.css';
@@ -12,6 +12,7 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ onAuthClose }: AuthModalProps) {
+  const { login, register } = useAuth();
   const [mode, setMode] = useState<AuthMode>("login");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -33,7 +34,7 @@ export function AuthModal({ onAuthClose }: AuthModalProps) {
     e.preventDefault();
     if (!username || !password) { setErrorMsg("Please fill in all fields."); return; }
     setLoading(true); setErrorMsg("");
-    const res = await authStore.login(username, password);
+    const res = await login(username, password);
     if (res.ok) {
       closeModal();
     } else {
@@ -47,7 +48,7 @@ export function AuthModal({ onAuthClose }: AuthModalProps) {
     if (!username || !email || !password) { setErrorMsg("Please fill in all fields."); return; }
     if (password.length < 6) { setErrorMsg("Password must be at least 6 characters."); return; }
     setLoading(true); setErrorMsg("");
-    const res = await authStore.register(username, email, password, displayName);
+    const res = await register(username, email, password, displayName);
     if (res.ok) {
       closeModal();
     } else {
@@ -73,15 +74,15 @@ export function AuthModal({ onAuthClose }: AuthModalProps) {
         </div>
 
         {mode === 'login' ? (
-          <Fragment>
+          <div key="login-header">
             <h2 class={styles.title}>{i18next.t("auth.welcome_back", "Welcome back")}</h2>
             <p class={styles.subtitle}>{i18next.t("auth.login_subtitle", "Enter your credentials to continue")}</p>
-          </Fragment>
+          </div>
         ) : (
-          <Fragment>
+          <div key="register-header">
             <h2 class={styles.title}>{i18next.t("auth.join_community", "Join the community")}</h2>
             <p class={styles.subtitle}>{i18next.t("auth.register_subtitle", "Create an account to rate and comment")}</p>
-          </Fragment>
+          </div>
         )}
 
         {errorMsg && <div class={styles.errorMsg}>&#x26A0; {errorMsg}</div>}

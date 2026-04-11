@@ -3,7 +3,7 @@ import { useState, useEffect } from 'preact/hooks';
 import { CommentCompose } from "./comment-compose";
 import { CommentItem } from "./comment-item";
 import { AuthModal } from "./AuthModal";
-import { authStore, type AuthUser } from "../../services/auth-store";
+import { useAuth } from "../../contexts/auth-context";
 import { mediaService } from "../../services/media-service";
 import { api } from "../../services/api-service";
 import i18next from "../../utils/i18n";
@@ -17,21 +17,14 @@ interface CommentsSectionProps {
 }
 
 export function CommentsSection({ entityType = "", entityId = 0 }: CommentsSectionProps) {
+  const { user } = useAuth();
   const [comments, setComments] = useState<CommentData[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
   const [postingReply, setPostingReply] = useState(false);
-  const [user, setUser] = useState<AuthUser | null>(null);
   const [showAuth, setShowAuth] = useState(false);
-
-  useEffect(() => {
-    setUser(authStore.user);
-    const unsub = authStore.subscribe(u => setUser(u));
-    authStore.init().then(() => setUser(authStore.user));
-    return () => unsub();
-  }, []);
 
   useEffect(() => {
     if (entityType && entityId) {
@@ -97,7 +90,6 @@ export function CommentsSection({ entityType = "", entityId = 0 }: CommentsSecti
 
   function onAuthClose() {
     setShowAuth(false);
-    setUser(authStore.user);
   }
 
   const remaining = total - comments.length;

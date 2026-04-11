@@ -12,5 +12,6 @@ interface ShowProps {
  * Ensures that the result is always a valid VNode or fallback (defaulting to null).
  */
 export function Show({ when, fallback = null, children }: ShowProps) {
-  return when ? <Fragment>{children}</Fragment> : <Fragment>{fallback}</Fragment>;
+  if (when) return <div class="show-content">{children}</div>;
+  return fallback ? <div class="show-fallback">{fallback}</div> : null;
 }

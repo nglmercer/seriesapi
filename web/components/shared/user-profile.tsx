@@ -1,6 +1,7 @@
 import { h } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 import { authStore, type AuthUser } from "../../services/auth-store";
+import { useAuth } from "../../contexts/auth-context";
 import i18next from "../../utils/i18n";
 import { initials, avatarColor } from "./comment-avatar";
 
@@ -9,13 +10,13 @@ interface UserProfileProps {
 }
 
 export function UserProfile({ onLogout }: UserProfileProps) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const { user, updateProfile, isLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [activeTab, setActiveTab] = useState<'profile' | 'admin'>('profile');
-  const [displayName, setDisplayName] = useState("");
-  const [email, setEmail] = useState("");
+  const [displayName, setDisplayName] = useState(user?.display_name || "");
+  const [email, setEmail] = useState(user?.email || "");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [challengeCode, setChallengeCode] = useState("");
@@ -26,16 +27,9 @@ export function UserProfile({ onLogout }: UserProfileProps) {
   const [adminLoading, setAdminLoading] = useState(false);
 
   useEffect(() => {
-    setUser(authStore.user);
-    const unsub = authStore.subscribe(u => {
-      const wasAdmin = user?.role === 'admin';
-      setUser(u);
-      if (u && !loading) resetForm();
-      if (u?.role === 'admin' && !wasAdmin) loadUsers();
-    });
+    if (user) resetForm();
     if (user?.role === 'admin') loadUsers();
-    return () => unsub();
-  }, []);
+  }, [user]);
 
   function resetForm() {
     if (!user) return;
@@ -109,7 +103,7 @@ export function UserProfile({ onLogout }: UserProfileProps) {
       return;
     }
 
-    const res = await authStore.updateProfile(updateData);
+    const res = await updateProfile(updateData);
     if (res.ok) {
       setSuccessMsg(i18next.t("profile.update_success", { defaultValue: "Profile updated successfully!" }));
       setPassword("");
@@ -158,6 +152,14 @@ export function UserProfile({ onLogout }: UserProfileProps) {
       setErrorMsg(res.error || "Failed to delete user");
     }
     setAdminLoading(false);
+  }
+
+  if (isLoading) {
+    return (
+      <div class="profile-container">
+        <div class="loading-spinner"></div>
+      </div>
+    );
   }
 
   if (!user) {

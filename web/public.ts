@@ -1,6 +1,6 @@
 import { render, h } from 'preact';
 import { App } from './App';
-import './components/index';
+import { AuthProvider } from './contexts/auth-context';
 import './components/layout/public-header.module.css';
 import './components/layout/mobile-menu.module.css';
 import './components/layout/admin-header.module.css';
@@ -25,5 +25,5 @@ import './components/admin/admin-content-manager.module.css';
 
 const appRoot = document.getElementById('app');
 if (appRoot) {
-  render(h(App, {}), appRoot);
+  render(h(AuthProvider, { children: h(App, {}) }), appRoot);
 }

@@ -1,12 +1,16 @@
-.modalPortalWrapper .modalOverlay {
+.modalOverlay {
   position: fixed;
-  inset: 0;
-  z-index: 2000;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(4px);
+  z-index: 1000;
+  padding: 20px;
   animation: modalFadeIn 0.2s ease;
 }
 
@@ -18,6 +22,7 @@
     opacity: 1;
   }
 }
+
 @keyframes modalSlideUp {
   from {
     transform: translateY(24px);
@@ -29,7 +34,7 @@
   }
 }
 
-.modalPortalWrapper .modalContainer {
+.modalContainer {
   background: var(--bg-primary, #fff);
   border: 1px solid var(--border-color, #eee);
   border-radius: 20px;
@@ -41,7 +46,7 @@
   position: relative;
 }
 
-.modalPortalWrapper .modalClose {
+.modalClose {
   position: absolute;
   top: 16px;
   right: 16px;
@@ -58,9 +63,15 @@
   font-size: 18px;
   line-height: 1;
   transition: background 0.2s;
+  z-index: 10;
 }
 
-.modalPortalWrapper .modalClose:hover {
+.modalClose:hover {
   background: var(--border-color, #ddd);
   color: var(--text-primary, #000);
+}
+
+.modalContent {
+  max-height: 80vh;
+  overflow-y: auto;
 }

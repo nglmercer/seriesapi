@@ -19,11 +19,13 @@ class AuthStore {
   private _user: AuthUser | null = null;
   private _token: string | null = null;
   private _listeners: AuthListener[] = [];
+  private _initialized: boolean = false;
 
   get user(): AuthUser | null { return this._user; }
   get token(): string | null { return this._token; }
   get isLoggedIn(): boolean { return this._user !== null; }
   get isAdmin(): boolean { return this._user?.role === "admin"; }
+  get isInitialized(): boolean { return this._initialized; }
 
   subscribe(fn: AuthListener): () => void {
     this._listeners.push(fn);
@@ -36,7 +38,12 @@ class AuthStore {
 
   async init() {
     const token = localStorage.getItem("token");
-    if (!token) { this._user = null; this.notify(); return; }
+    if (!token) { 
+      this._user = null; 
+      this._initialized = true;
+      this.notify(); 
+      return; 
+    }
     try {
       const res = await fetch("/api/v1/auth/me", {
         headers: { Authorization: `Bearer ${token}` }
@@ -52,6 +59,7 @@ class AuthStore {
     } catch {
       this._user = null;
     }
+    this._initialized = true;
     this.notify();
   }
 

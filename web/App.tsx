@@ -3,6 +3,7 @@ import { useState, useEffect } from 'preact/hooks';
 import { mediaService } from "./services/media-service";
 import { eventBus } from "./utils/events";
 import i18next from "./utils/i18n";
+import { useAuth } from "./contexts/auth-context";
 import { AuthModal } from "./components/shared/AuthModal";
 import { PublicHeader } from "./components/layout/public-header";
 import { MobileMenu } from "./components/layout/mobile-menu";
@@ -12,12 +13,11 @@ import { MediaList } from "./components/media/media-list";
 import { MediaFilters } from "./components/media/media-filters";
 import { UserProfile } from "./components/shared/user-profile";
 import { SearchBox } from "./components/shared/search-box";
-import { Show } from "./components/shared/Show";
 
 export function App() {
+  const { user, logout, isLoading: authLoading } = useAuth();
   const [selectedMediaId, setSelectedMediaId] = useState<number | null>(null);
   const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null);
-  const [user, setUser] = useState<any>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -27,19 +27,6 @@ export function App() {
   const [mediaLoading, setMediaLoading] = useState(false);
 
   useEffect(() => {
-    const setupAuth = async () => {
-      try {
-        const { authStore } = await import("./services/auth-store");
-        setUser(authStore.user);
-        return authStore.subscribe(u => setUser(u));
-      } catch (error) {
-        console.error("[App] auth-store import failed:", error);
-      }
-    };
-
-    let unsubAuth: (() => void) | undefined;
-    setupAuth().then(unsub => { unsubAuth = unsub; });
-
     const listeners = [
       eventBus.on("media-select", (data) => {
         setSelectedMediaId(data.id);
@@ -84,7 +71,6 @@ export function App() {
 
     return () => {
       listeners.forEach(unsub => unsub());
-      if (unsubAuth) unsubAuth();
     };
   }, [selectedSeasonId]);
 
@@ -127,9 +113,7 @@ export function App() {
 
   const doLogout = async () => {
     try {
-      const { authStore } = await import("./services/auth-store");
-      await authStore.logout();
-      setUser(null);
+      await logout();
     } catch (error) {
       console.error("[App] logout failed:", error);
     }
@@ -138,7 +122,7 @@ export function App() {
   const renderContent = () => {
     if (showProfile) {
       return (
-        <div className="container" style={{ padding: '40px 0' }}>
+        <div class="container" style={{ padding: '40px 0' }}>
           <UserProfile />
         </div>
       );
@@ -146,7 +130,7 @@ export function App() {
 
     if (selectedSeasonId) {
       return (
-        <div className="container" style={{ padding: '40px 0' }}>
+        <div class="container" style={{ padding: '40px 0' }}>
           <MediaEpisodes mediaId={selectedMediaId} seasonId={selectedSeasonId} />
         </div>
       );
@@ -155,14 +139,14 @@ export function App() {
     if (selectedMediaId) {
       if (mediaLoading) {
         return (
-          <div className="container loading">
-            <div className="loading-spinner"></div>
+          <div class="container loading">
+            <div class="loading-spinner"></div>
             <span>{i18next.t("media.loading", "Loading...")}</span>
           </div>
         );
       }
       return (
-        <div className="container" style={{ padding: '40px 0' }}>
+        <div class="container" style={{ padding: '40px 0' }}>
           <MediaDetail
             mediaId={selectedMediaId}
             media={currentMedia}
@@ -174,24 +158,24 @@ export function App() {
 
     return (
       <Fragment>
-        <section className="hero">
-          <div className="container hero-content">
+        <section class="hero">
+          <div class="container hero-content">
             <h1>{i18next.t("hero.title", "Track Your Series & Movies")}</h1>
             <p>{i18next.t("hero.subtitle", "Your personal dashboard to keep up with everything you're watching.")}</p>
             <SearchBox />
           </div>
         </section>
 
-        <main className="container">
-          <div className="section-header">
+        <main class="container">
+          <div class="section-header">
             <div>
               <h2>{i18next.t("media.latest", "Latest Media")}</h2>
-              <p className="section-subtitle">{i18next.t("media.latest_subtitle", "Discover something new to watch today.")}</p>
+              <p class="section-subtitle">{i18next.t("media.latest_subtitle", "Discover something new to watch today.")}</p>
             </div>
             <MediaFilters />
           </div>
 
-          <div className="media-grid">
+          <div class="media-grid">
             <MediaList mediaList={mediaList} />
           </div>
         </main>
@@ -201,33 +185,41 @@ export function App() {
 
   return (
     <div class="app-root">
-      <Show when={showAuthModal}>
-        <AuthModal onAuthClose={() => setShowAuthModal(false)} />
-      </Show>
+      {authLoading ? (
+        <div class="container loading" key="loading" style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div class="loading-spinner"></div>
+        </div>
+      ) : (
+        <div class="app-main" key="main">
+          {showAuthModal && (
+            <AuthModal onAuthClose={() => setShowAuthModal(false)} />
+          )}
 
-      <PublicHeader
-        user={user}
-        isMenuOpen={isMenuOpen}
-        onToggleMenu={() => setIsMenuOpen(!isMenuOpen)}
-        onHomeClick={handleHomeClick}
-        onProfileClick={handleProfileClick}
-        onNeedLogin={() => setShowAuthModal(true)}
-        onLogout={doLogout}
-      />
+          <PublicHeader
+            user={user}
+            isMenuOpen={isMenuOpen}
+            onToggleMenu={() => setIsMenuOpen(!isMenuOpen)}
+            onHomeClick={handleHomeClick}
+            onProfileClick={handleProfileClick}
+            onNeedLogin={() => setShowAuthModal(true)}
+            onLogout={doLogout}
+          />
 
-      <MobileMenu
-        open={isMenuOpen}
-        user={user}
-        onClose={() => setIsMenuOpen(false)}
-        onHomeClick={handleHomeClick}
-        onProfileClick={handleProfileClick}
-        onNeedLogin={() => setShowAuthModal(true)}
-        onLogout={doLogout}
-      />
+          <MobileMenu
+            open={isMenuOpen}
+            user={user}
+            onClose={() => setIsMenuOpen(false)}
+            onHomeClick={handleHomeClick}
+            onProfileClick={handleProfileClick}
+            onNeedLogin={() => setShowAuthModal(true)}
+            onLogout={doLogout}
+          />
 
-      <div class="app-content">
-        {renderContent()}
-      </div>
+          <div class="app-content">
+            {renderContent()}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
