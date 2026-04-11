@@ -13,6 +13,7 @@ import { SeasonController } from "../controllers/season.controller";
 import { SeasonView } from "../views/season.view";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
 import { withAdmin } from "./auth";
+import { validateParams, seasonUpdateSchema } from "../validation";
 
 export function handleSeasonComments(req: Request, _db: Database, seasonId: number): Response {
   try {
@@ -69,10 +70,6 @@ export const handleSeasonCreate = withAdmin(async (req: Request) => {
 });
 
 export const handleSeasonUpdate = withAdmin(async (req: Request, user) => {
-  // We need the id which is normally passed separately. 
-  // For consistency with withAdmin, we'll need to handle id extraction.
-  // Actually, handleSeasonUpdate in seasons.ts takes (req, db, id).
-  // Let's modify it to be a higher-order function compatible with index.ts.
   const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
   try {
     const url = new URL(req.url);
@@ -81,7 +78,10 @@ export const handleSeasonUpdate = withAdmin(async (req: Request, user) => {
     if (isNaN(id)) return notFound("Season", locale);
 
     const body = await req.json();
-    const result = SeasonController.update(id, body, locale);
+    const v = validateParams(seasonUpdateSchema, body, locale);
+    if (!v.success) return v.error;
+
+    const result = SeasonController.update(id, v.data, locale);
     return ok(result, { locale });
   } catch (err) {
     return serverError(err, locale);

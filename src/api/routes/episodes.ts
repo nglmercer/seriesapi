@@ -14,7 +14,7 @@ import { EpisodeController } from "../controllers/episode.controller";
 import { EpisodeView } from "../views/episode.view";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
 import { withAdmin } from "./auth";
-import { validateParams, episodeCreateSchema } from "../validation";
+import { validateParams, episodeCreateSchema, episodeUpdateSchema } from "../validation";
 
 export function handleEpisodeDetail(req: Request, _db: Database, id: number): Response {
   try {
@@ -88,7 +88,10 @@ export const handleEpisodeUpdate = withAdmin(async (req: Request, user) => {
     if (isNaN(id)) return notFound("Episode", locale);
 
     const body = await req.json();
-    const result = EpisodeController.update(id, body, locale);
+    const v = validateParams(episodeUpdateSchema, body, locale);
+    if (!v.success) return v.error;
+
+    const result = EpisodeController.update(id, v.data, locale);
     return ok(result, { locale });
   } catch (err) {
     return serverError(err, locale);
@@ -109,3 +112,18 @@ export const handleEpisodeDelete = withAdmin(async (req: Request, user) => {
     return serverError(err, locale);
   }
 });
+
+export const handleEpisodeViews = async (req: Request, _db: Database, id: number): Promise<Response> => {
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+  try {
+    if (isNaN(id)) return notFound("Episode", locale);
+    const result = EpisodeController.incrementView(id);
+    if ("error" in result) {
+      if ((result as any).error.status === 404) return notFound("Episode", locale);
+      return serverError("Internal server error", locale);
+    }
+    return ok(result, { locale });
+  } catch (err) {
+    return serverError(err, locale);
+  }
+};

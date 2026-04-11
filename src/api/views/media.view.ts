@@ -11,6 +11,7 @@ export class MediaView {
       synopsis_short: row.synopsis_short,
       score: row.score,
       popularity: row.popularity,
+      view_count: row.view_count || 0,
       poster_url: row.poster_url
     }));
   }
@@ -32,6 +33,7 @@ export class MediaView {
       score: media.score,
       score_count: media.score_count,
       popularity: media.popularity,
+      view_count: media.view_count || 0,
       age_rating: media.age_rating,
       is_adult: Boolean(media.is_adult),
       external_ids: typeof media.external_ids === "string" ? JSON.parse(media.external_ids) : media.external_ids,

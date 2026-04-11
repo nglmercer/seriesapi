@@ -44,7 +44,7 @@ export class SeasonController {
     const posterSubquery = `(SELECT url FROM images WHERE entity_type='season' AND entity_id=s.id AND image_type='poster' AND is_primary=1 LIMIT 1)`;
 
     const row = drizzle.select(seasonsTable).as("s")
-      .selectRaw(`s.id, s.media_id, s.season_number, s.episode_count, s.air_date, s.end_date, s.score, s.score_count, s.external_ids, COALESCE(st.name, 'Season ' || s.season_number) AS name, st.synopsis, ${posterSubquery} AS poster_url, st.id AS translation_id`)
+      .selectRaw(`s.id, s.media_id, s.season_number, s.episode_count, s.air_date, s.end_date, s.score, s.score_count, s.view_count, s.external_ids, COALESCE(st.name, 'Season ' || s.season_number) AS name, st.synopsis, ${posterSubquery} AS poster_url, st.id AS translation_id`)
       .leftJoin("season_translations st", "st.season_id = s.id AND st.locale = ?", [locale])
       .where("s.id = ?", [id])
       .get();
@@ -73,7 +73,7 @@ export class SeasonController {
     const stillSubquery = `(SELECT url FROM images WHERE entity_type='episode' AND entity_id=e.id AND image_type='still' AND is_primary=1 LIMIT 1)`;
 
     const rows = drizzle.select(episodesTable).as("e")
-      .selectRaw(`e.id, e.episode_number, e.absolute_number, e.episode_type, e.air_date, e.runtime_minutes, e.score, COALESCE(et.title, 'Episode ' || e.episode_number) AS title, et.synopsis, ${stillSubquery} AS still_url, et.id AS translation_id, COALESCE(r.rating_average, 0) AS rating_average, COALESCE(r.rating_count, 0) AS rating_count`)
+      .selectRaw(`e.id, e.episode_number, e.absolute_number, e.episode_type, e.air_date, e.runtime_minutes, e.score, COALESCE(et.title, 'Episode ' || e.episode_number) AS title, et.synopsis, ${stillSubquery} AS still_url, et.id AS translation_id, COALESCE(r.rating_average, 0) AS rating_average, COALESCE(r.rating_count, 0) AS rating_count, e.view_count`)
       .leftJoin("episode_translations et", "et.episode_id = e.id AND et.locale = ?", [locale])
       .leftJoin("(SELECT entity_id, avg(score) as rating_average, count(id) as rating_count FROM ratings WHERE entity_type='episode' GROUP BY entity_id) r", "r.entity_id = e.id")
       .where("e.season_id = ?", [seasonId])
@@ -122,13 +122,20 @@ export class SeasonController {
     return { id: seasonId };
   }
 
-  static update(id: number, data: { seasonNumber?: number; title?: string }, locale = DEFAULT_LOCALE) {
+  static update(id: number, data: { number?: number; season_number?: number; title?: string; air_date?: string | null; end_date?: string | null; external_ids?: string | null }, locale = DEFAULT_LOCALE) {
     const drizzle = getDrizzle();
     const now = new Date().toISOString();
 
-    if (data.seasonNumber !== undefined) {
+    const updateData: Record<string, any> = { updated_at: now };
+    const num = data.season_number ?? data.number;
+    if (num !== undefined) updateData.season_number = num;
+    if (data.air_date !== undefined) updateData.air_date = data.air_date;
+    if (data.end_date !== undefined) updateData.end_date = data.end_date;
+    if (data.external_ids !== undefined) updateData.external_ids = data.external_ids;
+
+    if (Object.keys(updateData).length > 1) {
       drizzle.update(seasonsTable)
-        .set({ season_number: data.seasonNumber, updated_at: now })
+        .set(updateData)
         .where("id = ?", [id])
         .run();
     }

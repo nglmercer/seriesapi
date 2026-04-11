@@ -10,6 +10,7 @@ export class SeasonView {
       end_date: season.end_date,
       score: season.score,
       score_count: season.score_count,
+      view_count: season.view_count || 0,
       external_ids: typeof season.external_ids === "string" ? JSON.parse(season.external_ids) : season.external_ids,
       name: season.name,
       synopsis: season.synopsis,
@@ -26,6 +27,7 @@ export class SeasonView {
       air_date: episode.air_date,
       runtime_minutes: episode.runtime_minutes,
       score: episode.score,
+      view_count: episode.view_count || 0,
       title: episode.title,
       synopsis: episode.synopsis,
       still_url: episode.still_url

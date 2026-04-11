@@ -13,6 +13,7 @@ export class EpisodeView {
       runtime_minutes: episode.runtime_minutes,
       score: episode.score,
       score_count: episode.score_count,
+      view_count: episode.view_count || 0,
       external_ids: typeof episode.external_ids === "string" ? JSON.parse(episode.external_ids) : episode.external_ids,
       title: episode.title,
       synopsis: episode.synopsis,

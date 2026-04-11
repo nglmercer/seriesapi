@@ -12,7 +12,7 @@ export class EpisodeController {
     const stillSubquery = `(SELECT url FROM images WHERE entity_type='episode' AND entity_id=e.id AND image_type='still' AND is_primary=1 LIMIT 1)`;
 
     const row = drizzle.select(episodesTable).as("e")
-      .selectRaw(`e.id, e.media_id, e.season_id, e.episode_number, e.absolute_number, e.episode_type, e.air_date, e.runtime_minutes, e.score, e.score_count, e.external_ids, s.season_number, COALESCE(et.title, 'Episode ' || e.episode_number) AS title, et.synopsis, ${stillSubquery} AS still_url, et.id AS translation_id`)
+      .selectRaw(`e.id, e.media_id, e.season_id, e.episode_number, e.absolute_number, e.episode_type, e.air_date, e.runtime_minutes, e.score, e.score_count, e.view_count, e.external_ids, s.season_number, COALESCE(et.title, 'Episode ' || e.episode_number) AS title, et.synopsis, ${stillSubquery} AS still_url, et.id AS translation_id`)
       .leftJoin("seasons s", "s.id = e.season_id")
       .leftJoin("episode_translations et", "et.episode_id = e.id AND et.locale = ?", [locale])
       .where("e.id = ?", [id])
@@ -124,13 +124,22 @@ export class EpisodeController {
     return { id: episodeId };
   }
 
-  static update(id: number, data: { number?: number; title?: string; synopsis?: string }, locale = DEFAULT_LOCALE) {
+  static update(id: number, data: { number?: number; episode_number?: number; absolute_number?: number | null; episode_type?: string; air_date?: string | null; runtime_minutes?: number | null; title?: string; synopsis?: string; season_id?: number }, locale = DEFAULT_LOCALE) {
     const drizzle = getDrizzle();
     const now = new Date().toISOString();
 
-    if (data.number !== undefined) {
+    const updateData: Record<string, any> = { updated_at: now };
+    const num = data.episode_number ?? data.number;
+    if (num !== undefined) updateData.episode_number = num;
+    if (data.absolute_number !== undefined) updateData.absolute_number = data.absolute_number;
+    if (data.episode_type !== undefined) updateData.episode_type = data.episode_type;
+    if (data.air_date !== undefined) updateData.air_date = data.air_date;
+    if (data.runtime_minutes !== undefined) updateData.runtime_minutes = data.runtime_minutes;
+    if (data.season_id !== undefined) updateData.season_id = data.season_id;
+
+    if (Object.keys(updateData).length > 1) {
       drizzle.update(episodesTable)
-        .set({ episode_number: data.number, updated_at: now })
+        .set(updateData)
         .where("id = ?", [id])
         .run();
     }
@@ -142,12 +151,12 @@ export class EpisodeController {
         .get();
       
       if (existing) {
-        const updateData: Record<string, string | null> = {};
-        if (data.title !== undefined) updateData.title = data.title;
-        if (data.synopsis !== undefined) updateData.synopsis = data.synopsis;
+        const transUpdate: Record<string, string | null> = {};
+        if (data.title !== undefined) transUpdate.title = data.title;
+        if (data.synopsis !== undefined) transUpdate.synopsis = data.synopsis;
         
         drizzle.update(episodeTranslationsTable)
-          .set(updateData)
+          .set(transUpdate)
           .where("episode_id = ? AND locale = ?", [id, locale])
           .run();
       } else {
@@ -197,6 +206,28 @@ export class EpisodeController {
     const drizzle = getDrizzle();
     drizzle.delete(episodesTable).where("id = ?", [id]).run();
     drizzle.delete(episodeTranslationsTable).where("episode_id = ?", [id]).run();
+    return { ok: true };
+  }
+
+  static incrementView(id: number) {
+    const drizzle = getDrizzle();
+    
+    // Get related IDs first
+    const ep = drizzle.select(episodesTable)
+      .selectRaw("media_id, season_id")
+      .where("id = ?", [id])
+      .get() as { media_id: number; season_id: number | null } | undefined;
+      
+    if (!ep) return { error: { message: "Episode not found", status: 404 } };
+    
+    // Execute increment queries directly
+    drizzle.execute("UPDATE episodes SET view_count = view_count + 1 WHERE id = ?", [id]);
+    drizzle.execute("UPDATE media SET view_count = view_count + 1 WHERE id = ?", [ep.media_id]);
+    
+    if (ep.season_id) {
+      drizzle.execute("UPDATE seasons SET view_count = view_count + 1 WHERE id = ?", [ep.season_id]);
+    }
+    
     return { ok: true };
   }
 }

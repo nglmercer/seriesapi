@@ -29,6 +29,7 @@ import {
   handleEpisodeCreate,
   handleEpisodeUpdate,
   handleEpisodeDelete,
+  handleEpisodeViews,
 } from "./routes/episodes";
 import { handlePeopleList, handlePersonDetail, handlePersonCredits } from "./routes/people";
 import { handleGenresList, handleGenreMedia } from "./routes/genres";
@@ -137,7 +138,13 @@ export function createRouteHandler(getDbFn: () => any) {
         if (p4 === "neighbors") return handleEpisodeNeighbors(req, db, id);
         return notFound("Resource", locale);
       }
-      if (POST) return handleEpisodeCreate(req);
+      if (POST) {
+        if (!p3) return handleEpisodeCreate(req);
+        
+        const id = seg(parts, 3);
+        if (!isNaN(id) && p4 === "views") return handleEpisodeViews(req, db, id);
+        return notFound("Resource", locale);
+      }
       if (req.method === "PUT") return handleEpisodeUpdate(req);
       if (req.method === "DELETE") return handleEpisodeDelete(req);
       return methodNotAllowed(locale);

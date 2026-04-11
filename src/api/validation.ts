@@ -178,13 +178,16 @@ export const userRatingsQuerySchema = z.object({
 export const episodeCreateSchema = z.object({
   animeId: idSchema,
   seasonId: idSchema.optional(),
-  number: z.coerce.number().int().positive(),
+  number: z.coerce.number().int().positive().optional(),
+  episode_number: z.coerce.number().int().positive().optional(),
   title: z.string().trim().max(500).optional(),
   synopsis: z.string().trim().max(2000).optional(),
   thumbnail: z.string().url().optional(),
   duration: z.string().trim().optional(),
 }).transform((data) => {
   const runtimeMinutes = data.duration ? parseDurationToMinutes(data.duration) : undefined;
+  const num = data.episode_number ?? data.number;
+
   const result: {
     mediaId: number;
     seasonId?: number;
@@ -196,13 +199,47 @@ export const episodeCreateSchema = z.object({
   } = {
     mediaId: data.animeId,
     seasonId: data.seasonId,
-    number: data.number,
+    number: num ?? 1, // Fallback if somehow both missing, though zod should catch if we made it required
     title: data.title,
     synopsis: data.synopsis,
     thumbnail: data.thumbnail,
   };
   if (runtimeMinutes !== undefined) {
     result.runtimeMinutes = runtimeMinutes;
+  }
+  return result;
+});
+
+export const episodeUpdateSchema = z.object({
+  episode_number: z.coerce.number().int().positive().optional(),
+  number: z.coerce.number().int().positive().optional(),
+  absolute_number: z.coerce.number().int().positive().optional().nullable(),
+  episode_type: z.string().trim().optional(),
+  air_date: z.string().trim().optional().nullable(),
+  runtime_minutes: z.coerce.number().int().positive().optional().nullable(),
+  title: z.string().trim().max(500).optional(),
+  synopsis: z.string().trim().max(2000).optional(),
+  season_id: idSchema.optional(),
+}).transform((data) => {
+  const result = { ...data };
+  if (data.episode_number !== undefined) {
+    (result as any).number = data.episode_number;
+  }
+  return result;
+});
+
+export const seasonUpdateSchema = z.object({
+  season_number: z.coerce.number().int().nonnegative().optional(),
+  number: z.coerce.number().int().nonnegative().optional(),
+  air_date: z.string().trim().optional().nullable(),
+  end_date: z.string().trim().optional().nullable(),
+  external_ids: z.string().trim().optional().nullable(),
+  title: z.string().trim().max(500).optional(),
+  synopsis: z.string().trim().max(2000).optional(),
+}).transform((data) => {
+  const result = { ...data };
+  if (data.season_number !== undefined) {
+    (result as any).number = data.season_number;
   }
   return result;
 });

@@ -32,6 +32,7 @@ export const mediaTable = sqliteTable("media", {
   score: default_(real("score"), 0),
   score_count: default_(integer("score_count"), 0),
   popularity: default_(real("popularity"), 0),
+  view_count: default_(integer("view_count"), 0),
   age_rating: text("age_rating"),
   is_adult: default_(boolean("is_adult"), 0),
   external_ids: text("external_ids"),
