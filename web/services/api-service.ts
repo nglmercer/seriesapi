@@ -126,6 +126,26 @@ export interface RatingItem {
   poster_url?: string;
 }
 
+export interface UserItem {
+  id: number;
+  username: string;
+  email: string;
+  display_name: string | null;
+  role: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RoleItem {
+  id: number;
+  name: string;
+  description: string | null;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 class ApiClient {
   private getLocale() {
     return i18next.language || "es";
@@ -463,6 +483,49 @@ class ApiClient {
       locale: this.getLocale()
     });
     return this.request(`/comments/user?${params}`);
+  }
+
+  // User Management
+  getUsers(): Promise<ApiResponse<UserItem[]>> {
+    return this.request("/auth/users");
+  }
+
+  updateUser(id: number, data: Partial<UserItem> & { password?: string }): Promise<ApiResponse<void>> {
+    return this.request(`/auth/users/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  deleteUser(id: number): Promise<ApiResponse<void>> {
+    return this.request(`/auth/users/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Role Management
+  getRoles(): Promise<ApiResponse<RoleItem[]>> {
+    return this.request("/auth/roles");
+  }
+
+  createRole(data: { name: string; description?: string }): Promise<ApiResponse<void>> {
+    return this.request("/auth/roles", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  updateRole(id: number, data: { name?: string; description?: string }): Promise<ApiResponse<void>> {
+    return this.request(`/auth/roles/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  deleteRole(id: number): Promise<ApiResponse<void>> {
+    return this.request(`/auth/roles/${id}`, {
+      method: "DELETE",
+    });
   }
 }
 

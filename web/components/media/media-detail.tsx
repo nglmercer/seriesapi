@@ -92,14 +92,7 @@ export function MediaDetail({ mediaId = 0, media: propMedia, allSeasons: propSea
             </button>
           </div>
 
-          <div class="mb-12">
-            <RatingWidget
-              entityType="media"
-              entityId={media.id}
-              average={media.rating_average || 0}
-              count={media.rating_count || 0}
-            />
-          </div>
+
 
           <ReportModal
             open={showReportModal}
@@ -165,12 +158,19 @@ export function MediaDetail({ mediaId = 0, media: propMedia, allSeasons: propSea
               </div>
             </div>
           ) : null}
-
           <div class="pt-8 border-t border-base-content/5">
             <h2 class="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-10 flex items-center gap-4">
               {i18next.t("media.community", "Community")}
               <span class="h-px bg-primary/20 flex-1"></span>
             </h2>
+            <div class="mb-12">
+              <RatingWidget
+                entityType="media"
+                entityId={media.id}
+                average={media.rating_average || 0}
+                count={media.rating_count || 0}
+              />
+            </div>
             <CommentsSection entityType="media" entityId={media.id} />
           </div>
         </div>

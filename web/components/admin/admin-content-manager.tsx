@@ -137,21 +137,21 @@ export function AdminContentManager({ mediaId, onBack }: AdminContentManagerProp
 
   return (
     <div class="max-w-[1200px] mx-auto px-5 pb-10">
-      <button class="inline-flex items-center gap-2 px-4 py-2.5 mb-5 bg-secondary border border-border rounded-lg text-sm font-semibold text-primary cursor-pointer transition-all hover:bg-accent hover:border-accent hover:text-white" onClick={onBack}>
+      <button class="inline-flex items-center gap-2 px-4 py-2.5 mb-5 bg-neutral border border-border rounded-lg text-sm font-semibold text-primary cursor-pointer transition-all hover:bg-accent hover:border-accent hover:text-white" onClick={onBack}>
         {ICONS.back} Back
       </button>
 
-      <div class="bg-secondary border border-border rounded-xl p-6">
-        <div class="flex gap-1 mb-6 p-1 bg-primary rounded-lg w-fit">
+      <div class="card border border-border rounded-xl p-6">
+        <div class="flex gap-1 mb-6 p-1 bg-primary/50 rounded-lg w-fit">
           <button
-            class={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${currentTab === "episodes" ? "bg-secondary text-primary shadow-sm" : "text-text-secondary hover:text-primary"} ${(!media || ["movie", "short"].includes(media.content_type)) ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+            class={`btn btn-dash btn-primary transition-all ${currentTab === "episodes" ? "bg-neutral text-primary shadow-sm" : "text-text-secondary"} ${(!media || ["movie", "short"].includes(media.content_type)) ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
             onClick={() => setCurrentTab("episodes")}
             disabled={!media || ["movie", "short"].includes(media.content_type)}
           >
             Episodes
           </button>
           <button
-            class={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all cursor-pointer ${currentTab === "relations" ? "bg-secondary text-primary shadow-sm" : "text-text-secondary hover:text-primary"}`}
+            class={`btn btn-dash btn-primary transition-all cursor-pointer ${currentTab === "relations" ? "bg-neutral text-primary shadow-sm" : "text-text-secondary"}`}
             onClick={() => setCurrentTab("relations")}
           >
             Relations
@@ -163,11 +163,11 @@ export function AdminContentManager({ mediaId, onBack }: AdminContentManagerProp
             <div class="flex flex-col gap-2">
               <div class="flex justify-between items-center mb-4">
                 <h3 class="m-0 text-lg font-extrabold">Seasons</h3>
-                <button class="px-5 py-2.5 bg-accent border-none rounded-lg text-sm font-semibold text-white cursor-pointer transition-all hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed" onClick={handleAddSeason}>+</button>
+                <button class="btn btn-outline btn-primary" onClick={handleAddSeason}>+</button>
               </div>
               {seasons.map(s => (
                 <div
-                  class={`p-6 bg-secondary border rounded-xl cursor-pointer transition-all hover:border-accent ${selectedSeasonId === s.id ? 'border-accent bg-accent/10' : 'border-border'}`}
+                  class={`p-6 bg-neutral border rounded-xl cursor-pointer transition-all hover:border-accent ${selectedSeasonId === s.id ? 'border-accent bg-accent/10' : 'border-border'}`}
                   onClick={() => fetchEpisodes(s.id)}
                 >
                   <div class="flex justify-between items-center">
@@ -178,7 +178,8 @@ export function AdminContentManager({ mediaId, onBack }: AdminContentManagerProp
                       </span>
                     </div>
                     <button
-                      class="p-1.5 bg-primary border border-border rounded-md text-xs text-primary cursor-pointer transition-all hover:bg-accent hover:border-accent hover:text-white"
+                      class="btn btn-dash btn-accent"
+                      disabled={!selectedSeasonId}
                       onClick={(e) => { e.stopPropagation(); handleEditSeason(s); }}
                     >
                       {ICONS.edit}
@@ -194,7 +195,7 @@ export function AdminContentManager({ mediaId, onBack }: AdminContentManagerProp
               <div class="flex-1">
                 <div class="flex justify-between items-center mb-4">
                   <h3 class="m-0 text-lg font-extrabold">Episodes</h3>
-                  <button class="px-5 py-2.5 bg-accent border-none rounded-lg text-sm font-semibold text-white cursor-pointer transition-all hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed" onClick={handleAddEpisode} disabled={!selectedSeasonId}>+</button>
+                  <button class="btn btn-outline btn-primary" onClick={handleAddEpisode} disabled={!selectedSeasonId}>+</button>
                 </div>  
                 {!selectedSeasonId ? (
                   <div class="flex flex-col items-center justify-center py-15 text-center text-text-secondary">
@@ -204,16 +205,16 @@ export function AdminContentManager({ mediaId, onBack }: AdminContentManagerProp
                 ) : (
                   <div class="flex flex-col gap-2">
                     {episodes.map(ep => (
-                      <div class="flex items-center justify-between gap-3 p-3 px-4 bg-secondary border border-border rounded-xl">    
+                      <div class="flex items-center justify-between gap-3 p-3 px-4 bg-neutral border border-border rounded-xl">    
                         <div class="flex items-center gap-3 min-w-0 flex-1">
-                          <div class="inline-flex items-center justify-center min-w-[36px] h-[36px] px-2.5 bg-accent text-white rounded-md text-sm font-bold">E{ep.episode_number}</div>
+                          <div class="inline-flex items-center justify-center min-w-[36px] h-[36px] px-2.5 btn btn-soft btn-accent">E{ep.episode_number}</div>
                           <span class="font-semibold text-sm whitespace-nowrap overflow-hidden text-ellipsis">
                             {ep.title || "No title"}
                           </span>
                         </div>
                         <div class="flex gap-2 shrink-0">
-                          <button class="p-1.5 px-2.5 bg-primary border border-border rounded-md text-xs text-primary cursor-pointer transition-all hover:bg-accent hover:border-accent hover:text-white" onClick={() => handleEditEpisode(ep)}>Edit</button>
-                          <button class="p-1.5 px-3 bg-primary border border-border rounded-md text-xs font-semibold text-error cursor-pointer transition-all hover:bg-error hover:border-error hover:text-white" onClick={() => handleDeleteEpisode(ep.id)}>Delete</button>
+                          <button class="btn btn-dash btn-accent" onClick={() => handleEditEpisode(ep)}>Edit</button>
+                          <button class="btn btn-dash btn-error" onClick={() => handleDeleteEpisode(ep.id)}>Delete</button>
                         </div>
                       </div>
                     ))}
@@ -229,15 +230,15 @@ export function AdminContentManager({ mediaId, onBack }: AdminContentManagerProp
               <div class="flex-1">
                 <div class="flex justify-between items-center mb-4">
                   <h3 class="m-0 text-lg font-extrabold">Relations and Trilogies</h3>
-                  <button class="px-5 py-2.5 bg-accent border-none rounded-lg text-sm font-semibold text-white cursor-pointer transition-all hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed" onClick={handleAddRelation}>+ Add Relation</button>
+                  <button class="btn btn-soft btn-primary" onClick={handleAddRelation}>+ Add Relation</button>
                 </div>
                 <div class="flex flex-col gap-2">
                   {relations.map(rel => (
-                    <div class="flex items-center justify-between gap-3 p-3 px-4 bg-secondary border border-border rounded-xl">
+                    <div class="flex items-center justify-between gap-3 p-3 px-4 bg-neutral border border-border rounded-xl">
                       <div class="flex flex-col gap-1 min-w-0 flex-1">
                         <div class="flex items-center gap-2">
                           <span class="text-[11px] font-bold tracking-wider uppercase text-text-secondary">{rel.relation_type}</span>
-                          {rel.related_type && <span class="text-[11px] px-2 py-0.5 bg-secondary border border-border rounded text-text-secondary">{rel.related_type}</span>}
+                          {rel.related_type && <span class="text-[11px] px-2 py-0.5 bg-neutral border border-border rounded text-text-secondary">{rel.related_type}</span>}
                         </div>
                         <strong class="text-sm whitespace-nowrap overflow-hidden text-ellipsis">
                           {rel.related_title || `Media ID: ${rel.related_media_id}`}

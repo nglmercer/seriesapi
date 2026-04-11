@@ -10,7 +10,7 @@ import type { MediaItem } from "../../services/api-service";
 import type { MediaFiltersState } from "../media/media-filters";
 import { AdminContentManager } from "./admin-content-manager";
 
-type AdminTab = "media" | "genres" | "reports";
+type AdminTab = "media" | "genres" | "reports" | "users" | "roles";
 
 interface AdminViewProps {
   onBack?: () => void;
@@ -176,11 +176,25 @@ export function AdminView({ onBack }: AdminViewProps) {
           >
             {i18next.t("admin.reports_mgmt")}
           </button>
+          <button 
+            class={`tab tab-lg font-black transition-all rounded-xl h-12 px-8 ${currentTab === 'users' ? "tab-active bg-primary text-primary-content shadow-lg shadow-primary/20" : "hover:bg-base-content/5"}`} 
+            onClick={() => setCurrentTab("users")}
+          >
+            {i18next.t("admin.users_mgmt", "Users")}
+          </button>
+          <button 
+            class={`tab tab-lg font-black transition-all rounded-xl h-12 px-8 ${currentTab === 'roles' ? "tab-active bg-primary text-primary-content shadow-lg shadow-primary/20" : "hover:bg-base-content/5"}`} 
+            onClick={() => setCurrentTab("roles")}
+          >
+            {i18next.t("admin.roles_mgmt", "Roles")}
+          </button>
         </div>
       </div>
 
       {currentTab === "genres" && <AdminGenresView />}
       {currentTab === "reports" && <AdminReportsView />}
+      {currentTab === "users" && <AdminUsersView />}
+      {currentTab === "roles" && <AdminRolesView />}
       {currentTab === "media" && (
         <div class="card bg-base-100 border border-base-content/10 shadow-2xl overflow-hidden rounded-3xl">
           <div class="card-body p-0">
@@ -455,15 +469,15 @@ export function AdminGenresView() {
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {genres.map(g => (
-          <div class="p-4 bg-secondary/50 border border-border rounded-xl flex flex-col justify-between gap-4">
+          <div class="p-4 card border border-border rounded-xl flex flex-col justify-between gap-4">
             <div class="flex flex-col gap-1">
               <span class="text-lg font-bold text-primary">{g.name}</span>
               <span class="text-xs text-text-secondary">ID: {g.id}</span>
               <span class="text-xs text-text-secondary">Slug: {g.slug}</span>
             </div>
             <div class="flex items-center gap-2">
-              <button class="flex-1 px-3 py-1.5 bg-primary text-primary text-xs font-bold rounded border border-border hover:bg-border transition-all" onClick={() => handleEdit(g.id, g.name)}>{i18next.t("admin.edit")}</button>
-              <button class="flex-1 px-3 py-1.5 bg-primary text-error text-xs font-bold rounded border border-border hover:bg-error hover:text-white transition-all" onClick={() => handleDelete(g.id)}>{i18next.t("admin.delete")}</button>
+              <button class="btn btn-ghost btn-sm font-black rounded-xl text-[11px] h-9 px-4 hover:bg-primary/10 hover:text-primary transition-all" onClick={() => handleEdit(g.id, g.name)}>{i18next.t("admin.edit")}</button>
+              <button class="btn btn-ghost btn-sm font-black rounded-xl text-[11px] h-9 px-4 hover:bg-error/10 hover:text-error transition-all" onClick={() => handleDelete(g.id)}>{i18next.t("admin.delete")}</button>
             </div>
           </div>
         ))}
@@ -539,6 +553,227 @@ export function AdminReportsView() {
                   </span>
                 </td>
                 <td class="px-4 py-4 text-sm text-text-secondary whitespace-nowrap">{new Date(r.created_at).toLocaleDateString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+export function AdminUsersView() {
+  const [users, setUsers] = useState<any[]>([]);
+  const [roles, setRoles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  async function loadData() {
+    setLoading(true);
+    const [uRes, rRes] = await Promise.all([
+      api.getUsers(),
+      api.getRoles()
+    ]);
+    if (uRes.ok) setUsers(uRes.data);
+    if (rRes.ok) setRoles(rRes.data);
+    setLoading(false);
+  }
+
+  async function handleEdit(user: any) {
+    const data = await ui.form<any>(i18next.t("admin.edit_user", "Edit User"), [
+      { label: i18next.t("admin.display_name", "Display Name"), name: "display_name", type: "text", value: user.display_name || user.username },
+      { label: i18next.t("admin.email", "Email"), name: "email", type: "text", value: user.email },
+      { 
+        label: i18next.t("admin.role", "Role"), 
+        name: "role", 
+        type: "select", 
+        value: user.role,
+        options: roles.map(r => ({ label: r.name, value: r.name }))
+      },
+      { label: i18next.t("admin.is_active", "Is Active"), name: "is_active", type: "checkbox", value: !!user.is_active },
+      { label: i18next.t("admin.password_hint", "New Password (leave empty to keep current)"), name: "password", type: "text" }
+    ]);
+
+    if (data) {
+      const res = await api.updateUser(user.id, data);
+      if (res.ok) {
+        ui.toast(i18next.t("admin.user_updated", "User updated successfully"), "success");
+        await loadData();
+      }
+    }
+  }
+
+  async function handleDelete(id: number) {
+    if (await ui.confirm(i18next.t("admin.delete_user_confirm", "Are you sure you want to delete this user?"))) {
+      const res = await api.deleteUser(id);
+      if (res.ok) {
+        await loadData();
+      }
+    }
+  }
+
+  if (loading) return (
+    <div class="flex items-center justify-center p-20">
+      <div class="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
+
+  return (
+    <div class="bg-card border border-border rounded-2xl shadow-xl overflow-hidden p-6">
+      <h2 class="text-2xl font-bold text-primary mb-8">{i18next.t("admin.manage_users", "Manage Users")}</h2>
+      <div class="overflow-x-auto">
+        <table class="table table-lg w-full">
+          <thead>
+            <tr class="bg-base-200/20">
+              <th>ID</th>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map(u => (
+              <tr key={u.id} class="hover:bg-base-200/40">
+                <td>{u.id}</td>
+                <td>
+                  <div class="font-bold">{u.username}</div>
+                  <div class="text-xs opacity-50">{u.display_name}</div>
+                </td>
+                <td>{u.email}</td>
+                <td><span class="badge badge-outline">{u.role}</span></td>
+                <td>
+                  <span class={`badge ${u.is_active ? 'badge-success' : 'badge-error'}`}>
+                    {u.is_active ? 'Active' : 'Disabled'}
+                  </span>
+                </td>
+                <td class="text-right">
+                  <div class="flex justify-end gap-2">
+                    <button class="btn btn-ghost btn-sm" onClick={() => handleEdit(u)}>{i18next.t("admin.edit")}</button>
+                    <button class="btn btn-ghost btn-sm text-error" onClick={() => handleDelete(u.id)}>{i18next.t("admin.delete")}</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+export function AdminRolesView() {
+  const [roles, setRoles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchRoles();
+  }, []);
+
+  async function fetchRoles() {
+    setLoading(true);
+    const res = await api.getRoles();
+    if (res.ok) {
+      setRoles(res.data);
+    }
+    setLoading(false);
+  }
+
+  async function handleAdd() {
+    const data = await ui.form<any>(i18next.t("admin.add_role", "Add Role"), [
+      { label: i18next.t("admin.role_name", "Role Name"), name: "name", type: "text" },
+      { label: i18next.t("admin.description", "Description"), name: "description", type: "text" }
+    ]);
+
+    if (data?.name) {
+      const res = await api.createRole(data);
+      if (res.ok) {
+        await fetchRoles();
+      }
+    }
+  }
+
+  async function handleEdit(role: any) {
+    if (role.is_default) {
+      ui.toast(i18next.t("admin.cannot_edit_default_role", "Cannot edit default roles"), "error");
+      return;
+    }
+
+    const data = await ui.form<any>(i18next.t("admin.edit_role", "Edit Role"), [
+      { label: i18next.t("admin.role_name", "Role Name"), name: "name", type: "text", value: role.name },
+      { label: i18next.t("admin.description", "Description"), name: "description", type: "text", value: role.description }
+    ]);
+
+    if (data) {
+      const res = await api.updateRole(role.id, data);
+      if (res.ok) {
+        await fetchRoles();
+      }
+    }
+  }
+
+  async function handleDelete(role: any) {
+    if (role.is_default) {
+      ui.toast(i18next.t("admin.cannot_delete_default_role", "Cannot delete default roles"), "error");
+      return;
+    }
+
+    if (await ui.confirm(i18next.t("admin.delete_role_confirm", "Are you sure you want to delete this role?"))) {
+      const res = await api.deleteRole(role.id);
+      if (res.ok) {
+        await fetchRoles();
+      }
+    }
+  }
+
+  if (loading) return (
+    <div class="flex items-center justify-center p-20">
+      <div class="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
+
+  return (
+    <div class="bg-card border border-border rounded-2xl shadow-xl overflow-hidden p-6">
+      <div class="flex items-center justify-between mb-8">
+        <h2 class="text-2xl font-bold text-primary">{i18next.t("admin.manage_roles", "Manage Roles")}</h2>
+        <button class="btn btn-primary" onClick={handleAdd}>{i18next.t("admin.add_role", "Add Role")}</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="table table-lg w-full">
+          <thead>
+            <tr class="bg-base-200/20">
+              <th>ID</th>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Type</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {roles.map(r => (
+              <tr key={r.id} class="hover:bg-base-200/40">
+                <td>{r.id}</td>
+                <td class="font-bold">{r.name}</td>
+                <td>{r.description}</td>
+                <td>
+                  {r.is_default ? (
+                    <span class="badge badge-info text-[10px] font-black uppercase tracking-widest">Default</span>
+                  ) : (
+                    <span class="badge badge-ghost text-[10px] font-black uppercase tracking-widest">Custom</span>
+                  )}
+                </td>
+                <td class="text-right">
+                  {!r.is_default && (
+                    <div class="flex justify-end gap-2">
+                      <button class="btn btn-ghost btn-sm" onClick={() => handleEdit(r)}>{i18next.t("admin.edit")}</button>
+                      <button class="btn btn-ghost btn-sm text-error" onClick={() => handleDelete(r)}>{i18next.t("admin.delete")}</button>
+                    </div>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

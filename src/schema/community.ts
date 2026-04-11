@@ -99,3 +99,15 @@ export const verificationCodesTable = sqliteTable("verification_codes", {
   used: default_(integer("used"), 0),
   created_at: default_(text("created_at"), NOW),
 });
+
+/**
+ * roles  –  user roles (admin can add/edit custom roles)
+ */
+export const rolesTable = sqliteTable("roles", {
+  id: primaryKey(integer("id")),
+  name: notNull(unique(text("name"))),
+  description: text("description"),
+  is_default: default_(boolean("is_default"), 0),
+  created_at: default_(text("created_at"), NOW),
+  updated_at: default_(text("updated_at"), NOW),
+});

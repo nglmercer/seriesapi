@@ -2,10 +2,26 @@ import { getDrizzle } from "../../init";
 import { corsHeaders } from "../../middleware/ratelimit";
 import { validateParams, registerSchema, loginSchema, userUpdateSchema, roleChallengeSchema } from "../validation";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
-import { usersTable, sessionsTable, verificationCodesTable } from "../../schema";
+import { usersTable, sessionsTable, verificationCodesTable, rolesTable } from "../../schema";
 import { ok, badRequest, unauthorized, forbidden, notFound, methodNotAllowed, conflict, serverError } from "../response";
 
 const DAILON_API_KEY = process.env.DAILON_API_KEY ?? "demo_key_123";
+
+/**
+ * Ensures default roles exist in the database.
+ */
+async function ensureDefaultRoles() {
+  const drizzle = getDrizzle();
+  const existing = drizzle.select(rolesTable).all();
+  if (existing.length === 0) {
+    const now = new Date().toISOString();
+    drizzle.insert(rolesTable).values({ name: "admin", description: "System Administrator", is_default: 1, created_at: now, updated_at: now }).run();
+    drizzle.insert(rolesTable).values({ name: "user", description: "Standard User", is_default: 1, created_at: now, updated_at: now }).run();
+    console.log("[auth] Default roles seeded");
+  }
+}
+// Seed roles on load
+ensureDefaultRoles().catch(console.error);
 
 /**
  * Legacy hashing for backward compatibility with old user accounts.
@@ -537,6 +553,99 @@ export const handleUserDelete = withAdmin(async (req: Request) => {
 });
 
 /**
+ * ADMIN: List all roles.
+ */
+export const handleRoleList = withAdmin(async (req: Request) => {
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+  try {
+    const drizzle = getDrizzle();
+    const roles = drizzle.select(rolesTable).all();
+    return ok(roles, { locale });
+  } catch (err) {
+    return serverError(err, locale);
+  }
+});
+
+/**
+ * ADMIN: Create a new role.
+ */
+export const handleRoleCreate = withAdmin(async (req: Request) => {
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+  try {
+    const body = await req.json();
+    if (!body.name) return badRequest("Missing role name", locale);
+    
+    const drizzle = getDrizzle();
+    const existing = drizzle.select(rolesTable).where("name = ?", [body.name]).get();
+    if (existing) return conflict("Role already exists", locale);
+
+    const now = new Date().toISOString();
+    drizzle.insert(rolesTable).values({
+      name: body.name,
+      description: body.description || "",
+      is_default: 0,
+      created_at: now,
+      updated_at: now
+    }).run();
+
+    return ok({ message: "Role created successfully" }, { locale }, 201);
+  } catch (err) {
+    return serverError(err, locale);
+  }
+});
+
+/**
+ * ADMIN: Update a role.
+ */
+export const handleRoleUpdate = withAdmin(async (req: Request) => {
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+  try {
+    const url = new URL(req.url);
+    const parts = url.pathname.replace(/\/$/, "").split("/").filter(Boolean);
+    const roleId = parseInt(parts[4] ?? "", 10);
+    if (isNaN(roleId)) return badRequest("Invalid role ID", locale);
+
+    const body = await req.json();
+    const drizzle = getDrizzle();
+    const role = (drizzle.select(rolesTable).where("id = ?", [roleId]).get()) as any;
+    if (!role) return notFound("Role", locale);
+    if (role.is_default) return forbidden("Cannot edit default roles", locale);
+
+    const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
+    if (body.name !== undefined) updateData.name = body.name;
+    if (body.description !== undefined) updateData.description = body.description;
+
+    drizzle.update(rolesTable).set(updateData).where("id = ?", [roleId]).run();
+    return ok({ message: "Role updated successfully" }, { locale });
+  } catch (err) {
+    return serverError(err, locale);
+  }
+});
+
+/**
+ * ADMIN: Delete a role.
+ */
+export const handleRoleDelete = withAdmin(async (req: Request) => {
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+  try {
+    const url = new URL(req.url);
+    const parts = url.pathname.replace(/\/$/, "").split("/").filter(Boolean);
+    const roleId = parseInt(parts[4] ?? "", 10);
+    if (isNaN(roleId)) return badRequest("Invalid role ID", locale);
+
+    const drizzle = getDrizzle();
+    const role = (drizzle.select(rolesTable).where("id = ?", [roleId]).get()) as any;
+    if (!role) return notFound("Role", locale);
+    if (role.is_default) return forbidden("Cannot delete default roles", locale);
+
+    drizzle.delete(rolesTable).where("id = ?", [roleId]).run();
+    return ok({ message: "Role deleted successfully" }, { locale });
+  } catch (err) {
+    return serverError(err, locale);
+  }
+});
+
+/**
  * Main authentication router that dispatches requests to sub-routes.
  */
 export async function handleAuthRouter(req: Request, parts: string[]): Promise<Response> {
@@ -559,6 +668,14 @@ export async function handleAuthRouter(req: Request, parts: string[]): Promise<R
     if ((PATCH || PUT) && p4) return handleUserUpdateAdmin(req);
     if (DELETE && p4) return handleUserDelete(req);
     return notFound("User management route", locale);
+  }
+
+  if (p3 === "roles") {
+    if (GET && !p4) return handleRoleList(req);
+    if (POST && !p4) return handleRoleCreate(req);
+    if ((PATCH || PUT) && p4) return handleRoleUpdate(req);
+    if (DELETE && p4) return handleRoleDelete(req);
+    return notFound("Role management route", locale);
   }
 
   if (p3 === "verify-code") {

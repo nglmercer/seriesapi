@@ -3,7 +3,7 @@ import { peopleTable, peopleTranslationsTable, creditsTable, episodeCreditsTable
 import { mediaTable, mediaTranslationsTable, mediaGenresTable, mediaTagsTable, mediaStudiosTable, mediaNetworksTable, mediaRelationsTable, collectionsTable, collectionTranslationsTable, collectionItemsTable } from "./media";
 import { seasonsTable, seasonTranslationsTable, episodesTable, episodeTranslationsTable } from "./seasons";
 import { imagesTable, videosTable, rateLimitsTable, apiLogsTable, translationRequestsTable, contentReportsTable } from "./assets";
-import { usersTable, sessionsTable, passwordResetsTable, verificationCodesTable, commentsTable, ratingsTable } from "./community";
+import { usersTable, sessionsTable, passwordResetsTable, verificationCodesTable, commentsTable, ratingsTable, rolesTable } from "./community";
 
 // Re-export all tables for ease of use
 export * from "./lookups";
@@ -72,6 +72,7 @@ export const ALL_TABLES = [
   contentReportsTable,
 
   // user accounts & auth
+  rolesTable,
   usersTable,
   sessionsTable,
   passwordResetsTable,

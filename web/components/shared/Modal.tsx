@@ -34,7 +34,7 @@ export function Modal({ onClose, children, title, className = "" }: ModalProps) 
 
   return (
     <div 
-      class={`fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000] p-4 sm:p-6 animate-modal-fade-in ${className}`} 
+      class={`fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000] p-4 sm:p-6 animate-modal-fade-in`} 
       onClick={onClose}
     >
       <div 
