@@ -217,6 +217,8 @@ export const episodeUpdateSchema = z.object({
   episode_type: z.string().trim().optional(),
   air_date: z.string().trim().optional().nullable(),
   runtime_minutes: z.coerce.number().int().positive().optional().nullable(),
+  duration: z.string().trim().optional(),
+  thumbnail: z.string().url().optional(),
   title: z.string().trim().max(500).optional(),
   synopsis: z.string().trim().max(2000).optional(),
   season_id: idSchema.optional(),
@@ -224,6 +226,12 @@ export const episodeUpdateSchema = z.object({
   const result = { ...data };
   if (data.episode_number !== undefined) {
     (result as any).number = data.episode_number;
+  }
+  if (data.duration) {
+    const runtimeMinutes = parseDurationToMinutes(data.duration);
+    if (runtimeMinutes !== undefined) {
+      (result as any).runtime_minutes = runtimeMinutes;
+    }
   }
   return result;
 });

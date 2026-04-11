@@ -124,7 +124,7 @@ export class EpisodeController {
     return { id: episodeId };
   }
 
-  static update(id: number, data: { number?: number; episode_number?: number; absolute_number?: number | null; episode_type?: string; air_date?: string | null; runtime_minutes?: number | null; title?: string; synopsis?: string; season_id?: number }, locale = DEFAULT_LOCALE) {
+  static update(id: number, data: { number?: number; episode_number?: number; absolute_number?: number | null; episode_type?: string; air_date?: string | null; runtime_minutes?: number | null; title?: string; synopsis?: string; season_id?: number; thumbnail?: string }, locale = DEFAULT_LOCALE) {
     const drizzle = getDrizzle();
     const now = new Date().toISOString();
 
@@ -165,6 +165,28 @@ export class EpisodeController {
           locale,
           title: data.title || undefined,
           synopsis: data.synopsis || undefined
+        }).run();
+      }
+    }
+
+    if (data.thumbnail !== undefined) {
+      const existingImg = drizzle.select(imagesTable)
+        .select("id")
+        .where("entity_type = 'episode' AND entity_id = ? AND image_type = 'still' AND is_primary = 1", [id])
+        .get() as { id: number } | undefined;
+      
+      if (existingImg) {
+        drizzle.update(imagesTable)
+          .set({ url: data.thumbnail })
+          .where("id = ?", [existingImg.id])
+          .run();
+      } else {
+        drizzle.insert(imagesTable).values({
+          entity_type: 'episode',
+          entity_id: id,
+          image_type: 'still',
+          url: data.thumbnail,
+          is_primary: 1
         }).run();
       }
     }
