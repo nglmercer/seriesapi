@@ -1,5 +1,4 @@
 import i18next from "i18next";
-import { initLitI18n } from "lit-i18n";
 
 const resources = {
   en: {
@@ -368,7 +367,7 @@ const resources = {
   }
 };
 
-i18next.use(initLitI18n).init({
+i18next.init({
   resources,
   lng: (typeof localStorage !== "undefined" && localStorage.getItem("lang")) || "es",
   fallbackLng: "en",

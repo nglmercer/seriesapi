@@ -29,8 +29,6 @@
     "bun-lightningcss": "^0.2.0",
     "bun-plugin-tailwind": "^0.1.2",
     "i18next": "^26.0.3",
-    "lit": "^3.3.2",
-    "lit-i18n": "^4.1.0",
     "mal-scraper": "^2.13.2",
     "preact": "^10.29.1",
     "preact-render-to-string": "^6.6.7",

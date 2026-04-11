@@ -34,22 +34,26 @@ export function Modal({ onClose, children, title, className = "" }: ModalProps) 
 
   return (
     <div 
-      class={`fixed inset-0 bg-black/70 backdrop-blur-[4px] flex items-center justify-center z-[1000] p-5 animate-modalFadeIn ${className}`} 
+      class={`fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000] p-4 sm:p-6 animate-modal-fade-in ${className}`} 
       onClick={onClose}
     >
       <div 
-        class="bg-primary border border-border rounded-[20px] w-full max-w-[420px] p-9 shadow-[0_24px_80px_rgba(0,0,0,0.6)] animate-modalSlideUp relative" 
+        class="bg-base-100 border border-base-content/10 rounded-3xl w-full max-w-lg shadow-2xl animate-modal-slide-up relative overflow-hidden" 
         onClick={(e) => e.stopPropagation()}
       >
         <button 
-          class="absolute top-4 right-4 bg-secondary border border-border text-secondary rounded-full w-8 h-8 flex items-center justify-center cursor-pointer text-lg leading-none transition-colors duration-200 z-10 hover:bg-border hover:text-primary" 
+          class="absolute top-4 right-4 btn btn-circle btn-ghost btn-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-all z-20" 
           onClick={onClose} 
           aria-label="Close"
         >
-          &#x2715;
+          ✕
         </button>
-        {title && <h2 style={{ textAlign: 'center', marginBottom: '16px' }}>{title}</h2>}
-        <div class="max-h-[80vh] overflow-y-auto">
+        {title && (
+          <div class="px-8 pt-8 pb-4">
+            <h2 class="text-2xl font-black tracking-tight text-base-content">{title}</h2>
+          </div>
+        )}
+        <div class="max-h-[85vh] overflow-y-auto px-8 pb-8 pt-2">
           {children}
         </div>
       </div>

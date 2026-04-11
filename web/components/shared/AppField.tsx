@@ -4,41 +4,30 @@ interface AppFieldProps {
   label?: string;
   error?: string;
   children?: ComponentChildren;
+  style?: any;
 }
 
 export function AppField({
   label = "",
   error = "",
-  children
+  children,
+  style = {}
 }: AppFieldProps) {
   return (
-    <div className="app-field" style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
-      <style>{`
-        .app-field .label {
-          font-size: 12px;
-          font-weight: 800;
-          color: var(--text-secondary);
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          margin-bottom: 2px;
-          display: block;
-        }
-        .app-field .error {
-          font-size: 11px;
-          color: var(--error-color);
-          margin-top: 4px;
-          font-weight: 600;
-          display: block;
-        }
-        .app-field .field-content {
-          width: 100%;
-        }
-      `}</style>
-      {label && <label className="label">{label}</label>}
-      <div className="field-content">
+    <div className="form-control w-full" style={style}>
+      {label && (
+        <label class="label pt-0">
+          <span class="label-text text-[10px] font-black uppercase tracking-widest opacity-50 text-base-content/60">{label}</span>
+        </label>
+      )}
+      <div class="w-full">
         {children}
       </div>
-      {error && <span className="error">{error}</span>}
+      {error && (
+        <label class="label pb-0">
+          <span class="label-text-alt text-error font-bold">{error}</span>
+        </label>
+      )}
     </div>
   );
 }

@@ -36,7 +36,7 @@ export function PublicHeader({ user, isMenuOpen = false, onToggleMenu, onHomeCli
           </a>
         </div>
         
-        <div class="flex-none gap-2">
+        <div class="flex gap-2">
           <div class="hidden md:flex join">
             <button 
               class={`join-item btn btn-xs ${currentLng === "en" ? "btn-primary" : "btn-ghost border-base-content/10"}`} 

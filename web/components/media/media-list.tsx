@@ -128,17 +128,17 @@ export function MediaList({ mediaList: externalList }: MediaListProps) {
           &gt;
         </button>
       </div>
-    );
-  }
+  );
+}
 
   if (loading && items.length === 0) {
     return (
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 py-5">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 py-8">
         {Array(pageSize).fill(0).map((_, i) => (
-          <div class="bg-card border border-border rounded-lg overflow-hidden">
-            <div class="w-full aspect-[2/3] bg-gradient-to-r from-secondary via-primary to-secondary bg-[length:200%_100%] animate-[shimmer_1.5s_infinite]"></div>
-            <div class="h-5 m-3 bg-gradient-to-r from-secondary via-primary to-secondary bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded"></div>
-            <div class="h-3.5 mx-3 mb-3 w-[60%] bg-gradient-to-r from-secondary via-primary to-secondary bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded"></div>
+          <div class="flex flex-col gap-4">
+            <div class="skeleton w-full aspect-[2/3] rounded-2xl"></div>
+            <div class="skeleton h-4 w-3/4 rounded-lg"></div>
+            <div class="skeleton h-3 w-1/2 rounded-lg"></div>
           </div>
         ))}
       </div>
@@ -146,22 +146,48 @@ export function MediaList({ mediaList: externalList }: MediaListProps) {
   }
 
   if (items.length === 0) {
-    return <div class="col-span-full text-center py-16 text-text-secondary">No items found</div>;
+    return (
+      <div class="flex flex-col items-center justify-center py-32 text-center">
+        <div class="text-7xl mb-6 opacity-20">📭</div>
+        <h3 class="text-2xl font-black text-base-content/40 tracking-tight">No items found</h3>
+        <p class="text-base-content/30 text-sm mt-2 font-medium leading-relaxed max-w-xs">
+          We couldn't find any media matching your criteria. Try adjusting your filters.
+        </p>
+      </div>
+    );
   }
 
   const visibleItems = items.slice(0, pageSize);
 
   return (
-    <div ref={containerRef} class={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 py-5 ${loading ? "opacity-70 pointer-events-none" : ""}`}>
-      {visibleItems.map(item => (
-        <div class="bg-card border border-border rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-xl" onClick={() => handleMediaClick(item.id)}>
-          <img class="w-full aspect-[2/3] object-cover block" src={item.poster_url || item.image_url} alt={item.title} loading="lazy" />
-          <div class="p-3 text-sm font-semibold text-primary truncate">{item.title}</div>
-          <div class="px-3 pb-3 text-xs text-text-secondary">
-            {item.content_type} | {item.status || ""}
+    <div ref={containerRef}>
+      <div class={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 py-8 transition-all duration-500 ${loading ? "opacity-50 grayscale" : ""}`}>
+        {visibleItems.map(item => (
+          <div 
+            key={item.id}
+            class="group relative flex flex-col bg-base-100 rounded-2xl overflow-hidden cursor-pointer shadow-sm hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300 hover:-translate-y-2 border border-base-content/5" 
+            onClick={() => handleMediaClick(item.id)}
+          >
+            <div class="relative aspect-[2/3] overflow-hidden">
+              <img 
+                class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                src={item.poster_url || item.image_url} 
+                alt={item.title} 
+                loading="lazy" 
+              />
+              <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                <span class="badge badge-primary badge-sm font-black uppercase tracking-widest text-[9px] mb-2">{item.content_type}</span>
+              </div>
+            </div>
+            <div class="p-4">
+              <h3 class="text-sm font-black text-base-content truncate group-hover:text-primary transition-colors tracking-tight">{item.title}</h3>
+              <div class="flex items-center gap-2 mt-1">
+                <span class="text-[10px] font-black uppercase tracking-widest text-base-content/30">{item.status || "Unknown"}</span>
+              </div>
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
       {renderPagination()}
     </div>
   );

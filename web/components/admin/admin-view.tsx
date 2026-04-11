@@ -32,7 +32,7 @@ export function AdminView({ onBack }: AdminViewProps) {
     if (currentTab === "media") {
       fetchMedia();
     }
-  }, [currentPage, filters, searchQuery]);
+  }, [currentPage, filters, searchQuery, currentTab]);
 
   async function fetchMedia() {
     const filterParams: Record<string, string> = {};

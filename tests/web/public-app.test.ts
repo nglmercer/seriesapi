@@ -72,10 +72,6 @@ mock.module("../../utils/dom", () => ({
   toggleTheme: mock(() => {})
 }));
 
-mock.module("lit-i18n", () => ({
-  translate: (key: string) => key
-}));
-
 // Import the component after mocks are set up
 import "../../web/components/layout/public-app";
 import { PublicApp } from "../../web/components/layout/public-app";

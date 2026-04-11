@@ -1,22 +1,7 @@
-import { render, html,type TemplateResult } from "lit";
+import { h, render } from 'preact';
 import i18next from "i18next";
-// allways import the components to use it, import types not work for register the component
-import "../components/shared/app-field";
-import "../components/shared/app-input";
-import "../components/shared/app-select";
-import { AppField } from "../components/shared/app-field";
-import { AppInput } from "../components/shared/app-input";
-import { AppSelect } from "../components/shared/app-select";
-
-interface FormField {
-  label: string;
-  name: string;
-  type: string;
-  value?: any;
-  options?: { label: string; value: any }[];
-  width?: string;
-  placeholder?: string;
-}
+import { FormContent, type FormField } from "../components/shared/FormContent";
+import { Modal } from "../components/shared/Modal";
 
 export type FormTemplateName = "media" | "season" | "episode" | "genre";
 
@@ -84,105 +69,61 @@ const FORM_TEMPLATES: Record<FormTemplateName, (data?: any) => FormField[]> = {
 };
 
 /**
- * Premium UI Utilities for async alerts and prompts.
+ * UI Utilities for async alerts and prompts.
  */
 class UI {
-  private static createModal(template: TemplateResult, wide = false): { close: () => void } {
-    const overlay = document.createElement("div");
-    overlay.className = "modal-overlay";
-    overlay.style.cssText = `
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        backdrop-filter: blur(4px);
-        animation: fadeIn 0.2s ease;
-    `;
+  private static renderModal(content: any, wide = false): { close: () => void } {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
 
     const close = () => {
-      overlay.style.opacity = "0";
-      const modal = overlay.querySelector(".modal-card") as HTMLElement;
-      if (modal) modal.style.transform = "translateY(20px)";
-      setTimeout(() => {
-        if (document.body.contains(overlay)) {
-          document.body.removeChild(overlay);
-        }
-      }, 200);
+      render(null, container);
+      if (document.body.contains(container)) {
+        document.body.removeChild(container);
+      }
     };
 
-    const modalTemplate = html`
-      <div class="card modal-card" style="
-        width: 100%;
-        max-width: ${wide ? '800px' : '500px'};
-        max-height: 90vh;
-        overflow-y: auto;
-        margin: 20px;
-        padding: 32px;
-        border-radius: 20px;
-        background: var(--bg-primary);
-        border: 1px solid var(--border-color);
-        animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-      ">
-        ${template}
-      </div>
-    `;
-
-    render(modalTemplate, overlay);
-    document.body.appendChild(overlay);
+    render(h(Modal, { 
+      onClose: close, 
+      className: wide ? "max-w-[800px]" : "max-w-[420px]",
+      children: content
+    }), container);
 
     return { close };
   }
 
   static alert(message: string, title = "Notice"): Promise<void> {
     return new Promise((resolve) => {
-      const { close } = this.createModal(html`
-        <h3 style="margin-top:0;">${title}</h3>
-        <p style="margin-bottom: 24px; color: var(--text-secondary);">${message}</p>
-        <div style="display:flex; justify-content: flex-end;">
-          <button 
-            class="primary"
-            @click="${() => { close(); resolve(); }}"
-          >OK</button>
-        </div>
-      `);
+      const { close } = this.renderModal(
+        h('div', { class: "flex flex-col gap-6" }, [
+          h('h3', { class: "text-xl font-black text-base-content" }, title),
+          h('p', { class: "text-base-content/60" }, message),
+          h('div', { class: "flex justify-end" }, [
+            h('button', { 
+              class: "btn btn-primary h-12 px-8 rounded-xl font-black",
+              onClick: () => { close(); resolve(); }
+            }, "OK")
+          ])
+        ])
+      );
     });
   }
 
   static toast(message: string, type: "success" | "error" | "info" = "info") {
     const toastContainer = document.createElement("div");
-    const toastTemplate = html`
-      <div class="toast toast-${type}" style="
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        padding: 12px 24px;
-        border-radius: 12px;
-        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
-        color: white;
-        font-weight: 600;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        z-index: 10000;
-        animation: slideUp 0.3s ease-out;
-      ">
-        ${message}
-      </div>
-    `;
-
-    render(toastTemplate, toastContainer);
-    const toast = toastContainer.firstElementChild as HTMLElement;
-    document.body.appendChild(toast);
+    toastContainer.className = `fixed bottom-6 right-6 p-4 px-6 rounded-xl font-bold text-white z-[10000] shadow-xl animate-modalSlideUp ${
+      type === 'success' ? 'bg-success' : type === 'error' ? 'bg-error' : 'bg-info'
+    }`;
+    toastContainer.textContent = message;
+    document.body.appendChild(toastContainer);
 
     setTimeout(() => {
-      toast.style.opacity = "0";
-      toast.style.transform = "translateY(20px)";
-      toast.style.transition = "all 0.3s ease";
+      toastContainer.style.opacity = "0";
+      toastContainer.style.transform = "translateY(20px)";
+      toastContainer.style.transition = "all 0.3s ease";
       setTimeout(() => {
-        if (document.body.contains(toast)) {
-          document.body.removeChild(toast);
+        if (document.body.contains(toastContainer)) {
+          document.body.removeChild(toastContainer);
         }
       }, 300);
     }, 3000);
@@ -202,43 +143,41 @@ class UI {
         resolve(null);
       };
 
-      const { close } = this.createModal(html`
-        <h3 style="margin-top:0;">${title}</h3>
-        <p style="margin-bottom: 12px; color: var(--text-secondary);">${message}</p>
-        <input 
-          type="text" 
-          .value="${defaultValue}" 
-          placeholder="Type here..."
-          style="width: 100%; margin-bottom: 24px;"
-          @input="${(e: InputEvent) => inputVal = (e.target as HTMLInputElement).value}"
-          @keydown="${(e: KeyboardEvent) => {
-            if (e.key === "Enter") confirm();
-            if (e.key === "Escape") cancel();
-          }}"
-        />
-        <div style="display:flex; justify-content: flex-end; gap: 10px;">
-          <button @click="${cancel}">Cancel</button>
-          <button class="primary" @click="${confirm}">Confirm</button>
-        </div>
-      `);
-      
-      setTimeout(() => {
-        const input = document.querySelector(".modal-overlay input") as HTMLInputElement;
-        input?.focus();
-      }, 50);
+      const { close } = this.renderModal(
+        h('div', { class: "flex flex-col gap-6" }, [
+          h('h3', { class: "text-xl font-black text-base-content" }, title),
+          h('p', { class: "text-base-content/60" }, message),
+          h('input', {
+            type: "text",
+            class: "input input-bordered w-full h-12 bg-base-200 border-base-content/5 focus:border-primary focus:outline-none transition-all rounded-xl font-medium",
+            value: defaultValue,
+            onInput: (e: any) => inputVal = e.target.value,
+            onKeyDown: (e: any) => {
+              if (e.key === "Enter") confirm();
+              if (e.key === "Escape") cancel();
+            }
+          }),
+          h('div', { class: "flex justify-end gap-3" }, [
+            h('button', { class: "btn btn-ghost", onClick: cancel }, "Cancel"),
+            h('button', { class: "btn btn-primary", onClick: confirm }, "Confirm")
+          ])
+        ])
+      );
     });
   }
 
   static confirm(message: string, title = "Confirm Action"): Promise<boolean> {
     return new Promise((resolve) => {
-      const { close } = this.createModal(html`
-        <h3 style="margin-top:0;">${title}</h3>
-        <p style="margin-bottom: 24px; color: var(--text-secondary);">${message}</p>
-        <div style="display:flex; justify-content: flex-end; gap: 10px;">
-          <button @click="${() => { close(); resolve(false); }}">No</button>
-          <button class="danger" @click="${() => { close(); resolve(true); }}">Yes, Proceed</button>
-        </div>
-      `);
+      const { close } = this.renderModal(
+        h('div', { class: "flex flex-col gap-6" }, [
+          h('h3', { class: "text-xl font-black text-base-content" }, title),
+          h('p', { class: "text-base-content/60" }, message),
+          h('div', { class: "flex justify-end gap-3" }, [
+            h('button', { class: "btn btn-ghost", onClick: () => { close(); resolve(false); } }, "No"),
+            h('button', { class: "btn btn-error", onClick: () => { close(); resolve(true); } }, "Yes, Proceed")
+          ])
+        ])
+      );
     });
   }
 
@@ -250,99 +189,15 @@ class UI {
 
   static form<T>(title: string, fields: FormField[]): Promise<T | null> {
     return new Promise((resolve) => {
-      const formData: Record<string, any> = {};
-      
-      // Initialize form data with default values
-      fields.forEach(f => {
-        formData[f.name] = f.value ?? (f.type === 'checkbox' ? false : "");
-      });
-
-      const handleFieldChange = (name: string, value: any, type: string) => {
-        if (type === "number") {
-          formData[name] = parseFloat(value || '0');
-        } else {
-          formData[name] = value;
-        }
-      };
-
-      const renderField = (f: FormField) => {
-        let input: TemplateResult;
-        
-        if (f.type === "select") {
-          input = html`
-            <app-select
-              .name="${f.name}"
-              .options="${f.options || []}"
-              .value="${String(f.value || '')}"
-              @change="${(e: CustomEvent) => handleFieldChange(f.name, e.detail.value, f.type)}"
-            ></app-select>
-          `;
-        } else if (f.type === "checkbox") {
-          input = html`
-            <input 
-              type="checkbox" 
-              .name="${f.name}" 
-              ?checked="${!!f.value}" 
-              style="width: 20px; height: 20px; cursor: pointer;"
-              @change="${(e: Event) => handleFieldChange(f.name, (e.target as HTMLInputElement).checked, f.type)}"
-            />
-          `;
-        } else if (f.type === "textarea") {
-          input = html`
-            <textarea 
-              .name="${f.name}" 
-              style="width: 100%; min-height: 100px; padding: 12px 16px; border-radius: 10px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); font-size: 14px; font-weight: 500; transition: all 0.2s; outline: none; resize: vertical;"
-              @input="${(e: InputEvent) => handleFieldChange(f.name, (e.target as HTMLTextAreaElement).value, f.type)}"
-            >${f.value || ""}</textarea>
-          `;
-        } else {
-          input = html`
-            <app-input
-              .name="${f.name}"
-              .type="${f.type}"
-              .value="${String(f.value || '')}"
-              .placeholder="${f.placeholder || ''}"
-              @change="${(e: CustomEvent) => handleFieldChange(f.name, e.detail.value, f.type)}"
-            ></app-input>
-          `;
-        }
-        
-        const isCheckbox = f.type === "checkbox";
-        return html`
-          <app-field 
-            .label="${f.label}" 
-            style="flex: 1 1 ${f.width || '100%'}; ${isCheckbox ? 'flex-direction: row-reverse; justify-content: flex-end; align-items: center; gap: 10px;' : ''}"
-          >
-            ${input}
-          </app-field>
-        `;
-      };
-
-      const { close } = this.createModal(html`
-        <div class="ui-form" style="display: flex; flex-direction: column; gap: 28px;">
-          <h3 style="margin: 0; font-size: 24px; font-weight: 900; border-bottom: 2px solid var(--border-color); padding-bottom: 20px; color: var(--text-primary); letter-spacing: -0.5px;">
-            ${title}
-          </h3>
-          <div style="display: flex; flex-wrap: wrap; gap: 24px;">
-            ${fields.map(f => renderField(f))}
-          </div>
-          <div style="display:flex; justify-content: flex-end; gap: 16px; margin-top: 12px; border-top: 2px solid var(--border-color); padding-top: 24px;">
-            <button 
-              style="background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); font-weight: 700; height: 48px; padding: 0 24px; border-radius: 12px;"
-              @click="${() => { close(); resolve(null); }}"
-            >
-              ${i18next.language === 'es' ? "Cancelar" : "Cancel"}
-            </button>
-            <button 
-              class="primary" 
-              style="font-weight: 800; padding: 0 40px; height: 48px; border-radius: 12px; box-shadow: 0 4px 12px rgba(255, 71, 87, 0.2);"
-              @click="${() => { close(); resolve(formData as T); }}"
-            >
-              ${i18next.language === 'es' ? "Guardar" : "Save"}
-            </button>
-          </div>
-        </div>
-      `, true);
+      const { close } = this.renderModal(
+        h(FormContent, {
+          title,
+          fields,
+          onSave: (data) => { close(); resolve(data as T); },
+          onCancel: () => { close(); resolve(null); }
+        }),
+        true
+      );
     });
   }
 }
