@@ -12,6 +12,7 @@ import { MediaList } from "./components/media/media-list";
 import { MediaFilters } from "./components/media/media-filters";
 import { UserProfile } from "./components/shared/user-profile";
 import { SearchBox } from "./components/shared/search-box";
+import { Show } from "./components/shared/Show";
 
 export function App() {
   const [selectedMediaId, setSelectedMediaId] = useState<number | null>(null);
@@ -199,8 +200,10 @@ export function App() {
   };
 
   return (
-    <div className="app-root">
-      {showAuthModal && <AuthModal onAuthClose={() => setShowAuthModal(false)} />}
+    <div class="app-root">
+      <Show when={showAuthModal}>
+        <AuthModal onAuthClose={() => setShowAuthModal(false)} />
+      </Show>
 
       <PublicHeader
         user={user}
@@ -222,7 +225,9 @@ export function App() {
         onLogout={doLogout}
       />
 
-      {renderContent()}
+      <div class="app-content">
+        {renderContent()}
+      </div>
     </div>
   );
 }

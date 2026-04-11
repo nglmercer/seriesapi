@@ -8,6 +8,7 @@ import { mediaService } from "../../services/media-service";
 import { api } from "../../services/api-service";
 import i18next from "../../utils/i18n";
 import type { CommentData } from "./comment-item";
+import { Modal } from "./Modal";
 import styles from './comments-section.module.css';
 
 interface CommentsSectionProps {
@@ -103,7 +104,7 @@ export function CommentsSection({ entityType = "", entityId = 0 }: CommentsSecti
 
   return (
     <div class={styles.section}>
-      {showAuth && <AuthModal onAuthClose={onAuthClose} />}
+      {showAuth ? <AuthModal onAuthClose={onAuthClose} /> : null}
 
       <div class={styles.head}>
         <h3>{i18next.t("comments.title", { defaultValue: "Community" })}</h3>

@@ -76,6 +76,7 @@ export function RatingWidget({ entityType = "", entityId = 0, average = 0, count
         <div class={styles.stars} style={{ opacity: loading ? 0.5 : 1 }}>
           {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map(n => (
             <span
+              key={n}
               class={`${styles.star} ${userRating && n <= userRating ? styles.active : ''}`}
               onClick={() => handleRate(n)}
             >★</span>
