@@ -110,7 +110,7 @@ export const personListParamsSchema = z.object({
 export const commentCreateSchema = z.object({
   entity_type: z.enum(["media", "season", "episode"]),
   entity_id: idSchema,
-  display_name: z.string().trim().min(2).max(64),
+  display_name: z.string().trim().min(2).max(64).optional(),
   body: z.string().trim().min(1).max(2000),
   locale: localeSchema,
   contains_spoilers: z.boolean().optional().default(false),

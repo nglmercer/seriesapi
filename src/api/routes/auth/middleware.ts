@@ -7,6 +7,7 @@ export interface AuthUser {
   id: number;
   role: string;
   username: string;
+  display_name: string;
 }
 
 export function getUserFromToken(req: Request): AuthUser | null {
@@ -16,11 +17,11 @@ export function getUserFromToken(req: Request): AuthUser | null {
   
   const drizzle = getDrizzle();
   const res = (drizzle.select(sessionsTable).as("s")
-    .selectRaw("s.user_id, u.role, u.username, s.expires_at, u.is_active")
+  .selectRaw("s.user_id, u.role, u.username, u.display_name, s.expires_at, u.is_active")
     .join("users u", "s.user_id = u.id")
     .where("s.token = ?", [token])
-    .get()) as { user_id: number; role: string; username: string; expires_at: string; is_active: number } | undefined;
-  
+    .get()) as { user_id: number; role: string; username: string; display_name: string; expires_at: string; is_active: number } | undefined;
+   
   if (!res || !res.is_active || new Date(res.expires_at) < new Date()) {
     if (res && new Date(res.expires_at) < new Date()) {
       drizzle.delete(sessionsTable).where("token = ?", [token]).run();
@@ -28,7 +29,7 @@ export function getUserFromToken(req: Request): AuthUser | null {
     return null;
   }
   
-  return { id: res.user_id, role: res.role, username: res.username };
+  return { id: res.user_id, role: res.role, username: res.username, display_name: res.display_name };
 }
 
 export function withAuth(

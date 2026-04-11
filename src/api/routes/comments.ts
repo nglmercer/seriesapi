@@ -1,13 +1,11 @@
 /**
- * /api/v1/comments  –  Public comment submission (POST only)
+ * /api/v1/comments  –  Comment submission (POST only)
  *
  * POST /api/v1/comments
  *   Body (JSON):
- *     { entity_type, entity_id, display_name, body, locale?,
- *       contains_spoilers?, parent_id? }
+ *     { entity_type, entity_id, body, locale?, contains_spoilers?, parent_id? }
  *
- * No auth required.  IP is hashed before storage.
- * Minimal validation; heavy moderation is out of scope for this layer.
+ * Auth required. display_name is taken from authenticated user.
  *
  * GET /api/v1/comments/:id  – single comment thread
  */
@@ -22,7 +20,7 @@ import { getDrizzle } from "../../init";
 
 export const handleCommentPost = withAuth(async (req: Request, user) => {
   try {
-    const result = await CommentController.createComment(req);
+    const result = await CommentController.createComment(req, user);
     if (result.error) return result.error;
 
     return ok(CommentView.formatCreated(result.data), { locale: result.locale }, 201);

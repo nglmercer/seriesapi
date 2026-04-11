@@ -4,6 +4,7 @@ import { getLocaleFromRequest, SUPPORTED_LOCALES, DEFAULT_LOCALE } from "../../i
 import { badRequest } from "../response";
 import { commentsTable } from "../../schema";
 import { validateParams, commentCreateSchema } from "../validation";
+import type { AuthUser } from "../routes/auth/middleware";
 
 export interface CommentBody {
   entity_type: string;
@@ -22,7 +23,7 @@ function hashIP(req: Request): string {
 }
 
 export class CommentController {
-  static async createComment(req: Request) {
+  static async createComment(req: Request, user?: AuthUser) {
     const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
     let rawBody: unknown;
     try {
@@ -34,7 +35,11 @@ export class CommentController {
     const v = validateParams(commentCreateSchema, rawBody, locale);
     if (!v.success) return { error: v.error };
 
-    const { entity_type, entity_id, display_name, body: text, locale: commentLocale, contains_spoilers, parent_id } = v.data;
+    const { entity_type, entity_id, body: text, locale: commentLocale, contains_spoilers, parent_id } = v.data;
+    const display_name = v.data.display_name || user?.display_name || user?.username;
+    if (!display_name) {
+      return { error: badRequest("display_name is required when not authenticated", locale) };
+    }
     const ip_hash = hashIP(req);
     const drizzle = getDrizzle();
 
@@ -46,29 +51,9 @@ export class CommentController {
       if (!parent) return { error: badRequest("parent_id does not exist or is in a different thread.", locale) };
     }
 
-    let mediaId: number | undefined = undefined;
-    let seasonId: number | undefined = undefined;
-    let episodeId: number | undefined = undefined;
-
-    if (entity_type === "media") {
-      mediaId = entity_id;
-    } else if (entity_type === "season") {
-      const s = drizzle.query<{ media_id: number }>("SELECT media_id FROM seasons WHERE id = ?").get([entity_id]);
-      mediaId = s?.media_id ?? undefined;
-      seasonId = entity_id;
-    } else if (entity_type === "episode") {
-      const e = drizzle.query<{ media_id: number, season_id: number | null }>("SELECT media_id, season_id FROM episodes WHERE id = ?").get([entity_id]);
-      mediaId = e?.media_id ?? undefined;
-      seasonId = e?.season_id ?? undefined;
-      episodeId = entity_id;
-    }
-
     const result = drizzle.insert(commentsTable).values({
       entity_type,
       entity_id,
-      media_id: mediaId,
-      season_id: seasonId,
-      episode_id: episodeId,
       parent_id: parent_id || undefined,
       display_name: display_name.trim(),
       ip_hash,
