@@ -153,6 +153,28 @@ export const roleChallengeSchema = z.object({
   target_role: z.enum(["user", "editor", "admin"]),
 });
 
+export const ratingCreateSchema = z.object({
+  entity_type: z.enum(["media", "season", "episode"]),
+  entity_id: idSchema,
+  score: z.coerce.number().int().min(1).max(10),
+});
+
+export const ratingQuerySchema = z.object({
+  entity_type: z.enum(["media", "season", "episode"]),
+  entity_id: idSchema,
+});
+
+export const topRatingsQuerySchema = z.object({
+  entity_type: z.enum(["media", "season", "episode"]).default("media"),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  min_votes: z.coerce.number().int().min(1).default(5),
+});
+
+export const userRatingsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
 export const episodeCreateSchema = z.object({
   animeId: idSchema,
   seasonId: idSchema.optional(),
