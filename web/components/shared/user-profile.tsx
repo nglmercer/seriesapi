@@ -156,16 +156,16 @@ export function UserProfile({ onLogout }: UserProfileProps) {
 
   if (isLoading) {
     return (
-      <div class="profile-container">
-        <div class="loading-spinner"></div>
+      <div class="flex items-center justify-center p-20">
+        <div class="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div class="profile-container">
-        <p style="text-align: center; color: var(--text-secondary);">
+      <div class="max-w-4xl mx-auto p-8 bg-card border border-border rounded-2xl shadow-xl">
+        <p class="text-center text-text-secondary">
           {i18next.t("auth.login_required", { defaultValue: "Please sign in to view your profile." })}
         </p>
       </div>
@@ -176,23 +176,23 @@ export function UserProfile({ onLogout }: UserProfileProps) {
   const init = initials(user.display_name);
 
   return (
-    <div class="profile-container">
-      <div class="header">
-        <div class="avatar" style={{ background: color }}>{init}</div>
-        <div class="user-info">
-          <h2>{user.display_name}</h2>
-          <p>@{user.username}</p>
-          <div class="role-badge">{user.role}</div>
+    <div class="max-w-4xl mx-auto p-8 bg-card border border-border rounded-2xl shadow-xl">
+      <div class="flex flex-col md:flex-row items-center gap-8 mb-10">
+        <div class="w-24 h-24 rounded-full flex items-center justify-center text-4xl font-bold text-white shadow-lg" style={{ background: color }}>{init}</div>
+        <div class="text-center md:text-left">
+          <h2 class="text-3xl font-bold text-primary mb-1">{user.display_name}</h2>
+          <p class="text-text-secondary font-medium mb-3">@{user.username}</p>
+          <div class="inline-block px-3 py-1 bg-accent/10 text-accent text-xs font-bold uppercase tracking-wider rounded-full border border-accent/20">{user.role}</div>
         </div>
       </div>
 
       {user.role === 'admin' && (
-        <div class="tabs">
-          <div class={`tab ${activeTab === 'profile' ? 'active' : ''}`}
+        <div class="flex gap-2 mb-10 bg-secondary p-1 rounded-xl w-fit">
+          <div class={`px-6 py-2.5 text-sm font-bold cursor-pointer rounded-lg transition-all ${activeTab === 'profile' ? "bg-primary text-accent shadow-sm" : "text-text-secondary hover:text-primary"}`}
             onClick={() => { setActiveTab('profile'); setErrorMsg(''); setSuccessMsg(''); }}>
             {i18next.t("profile.my_account", { defaultValue: "My Account" })}
           </div>
-          <div class={`tab ${activeTab === 'admin' ? 'active' : ''}`}
+          <div class={`px-6 py-2.5 text-sm font-bold cursor-pointer rounded-lg transition-all ${activeTab === 'admin' ? "bg-primary text-accent shadow-sm" : "text-text-secondary hover:text-primary"}`}
             onClick={() => { setActiveTab('admin'); setErrorMsg(''); setSuccessMsg(''); }}>
             {i18next.t("profile.manage_users", { defaultValue: "User Management" })}
           </div>
@@ -200,70 +200,108 @@ export function UserProfile({ onLogout }: UserProfileProps) {
       )}
 
       {user.role !== 'admin' && (
-        <div class="section-title">
+        <div class="text-xl font-bold text-primary mb-6 pb-2 border-b border-border">
           {i18next.t("profile.edit_settings", { defaultValue: "Account Settings" })}
         </div>
       )}
 
-      {errorMsg ? <div class="error-msg">⚠️ {errorMsg}</div> : null}
-      {successMsg ? <div class="success-msg">✅ {successMsg}</div> : null}
+      {errorMsg ? <div class="w-full p-4 bg-error/10 border border-error/20 text-error text-sm rounded-lg mb-6 flex items-center gap-2">⚠️ {errorMsg}</div> : null}
+      {successMsg ? <div class="w-full p-4 bg-success/10 border border-success/20 text-success text-sm rounded-lg mb-6 flex items-center gap-2">✅ {successMsg}</div> : null}
 
       {activeTab === 'profile' ? (
+        <>
         <form onSubmit={handleSubmit}>
-          <div class="form-grid">
-            <div class="field">
-              <label>{i18next.t("auth.display_name", { defaultValue: "Display Name" })}</label>
-              <input type="text" value={displayName} onInput={(e) => setDisplayName((e.target as HTMLInputElement).value)}
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-bold text-text-secondary uppercase tracking-wider">{i18next.t("auth.display_name", { defaultValue: "Display Name" })}</label>
+              <input class="w-full px-4 py-3 bg-secondary border border-border rounded-xl text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all" type="text" value={displayName} onInput={(e) => setDisplayName((e.target as HTMLInputElement).value)}
                 disabled={loading} />
             </div>
-            <div class="field">
-              <label>{i18next.t("auth.email", { defaultValue: "Email Address" })}</label>
-              <input type="email" value={email} onInput={(e) => setEmail((e.target as HTMLInputElement).value)}
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-bold text-text-secondary uppercase tracking-wider">{i18next.t("auth.email", { defaultValue: "Email Address" })}</label>
+              <input class="w-full px-4 py-3 bg-secondary border border-border rounded-xl text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all" type="email" value={email} onInput={(e) => setEmail((e.target as HTMLInputElement).value)}
                 disabled={loading} />
             </div>
-            <div class="field">
-              <label>{i18next.t("auth.new_password", { defaultValue: "New Password (Optional)" })}</label>
-              <input type="password" value={password} onInput={(e) => setPassword((e.target as HTMLInputElement).value)}
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-bold text-text-secondary uppercase tracking-wider">{i18next.t("auth.new_password", { defaultValue: "New Password (Optional)" })}</label>
+              <input class="w-full px-4 py-3 bg-secondary border border-border rounded-xl text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all" type="password" value={password} onInput={(e) => setPassword((e.target as HTMLInputElement).value)}
                 placeholder="••••••••" disabled={loading} />
             </div>
-            <div class="field">
-              <label>{i18next.t("auth.confirm_password", { defaultValue: "Confirm New Password" })}</label>
-              <input type="password" value={confirmPassword} onInput={(e) => setConfirmPassword((e.target as HTMLInputElement).value)}
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-bold text-text-secondary uppercase tracking-wider">{i18next.t("auth.confirm_password", { defaultValue: "Confirm New Password" })}</label>
+              <input class="w-full px-4 py-3 bg-secondary border border-border rounded-xl text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all" type="password" value={confirmPassword} onInput={(e) => setConfirmPassword((e.target as HTMLInputElement).value)}
                 placeholder="••••••••" disabled={loading} />
             </div>
           </div>
 
-          <div class="actions">
-            <button type="button" class="btn btn-secondary" onClick={resetForm} disabled={loading}>
+          <div class="flex justify-end gap-3 mt-8">
+            <button type="button" class="px-6 py-2.5 bg-secondary text-primary font-bold rounded-lg border border-border hover:bg-border transition-all disabled:opacity-50" onClick={resetForm} disabled={loading}>
               {i18next.t("common.cancel", { defaultValue: "Cancel" })}
             </button>
-            <button type="submit" class="btn btn-primary" disabled={loading}>
+            <button type="submit" class="px-6 py-2.5 bg-accent text-white font-bold rounded-lg hover:bg-accent-hover transition-all shadow-md disabled:opacity-50" disabled={loading}>
               {loading ? i18next.t("common.saving", { defaultValue: "Saving..." }) : i18next.t("common.save_changes", { defaultValue: "Save Changes" })}
             </button>
           </div>
         </form>
+
+        {user.role !== 'admin' && (
+          <div class="mt-10 border-t border-border pt-10">
+            <div class="text-xl font-bold text-primary mb-6 pb-2 border-b border-border">
+              {i18next.t("profile.upgrade_account", { defaultValue: "Upgrade Account" })}
+            </div>
+            <p class="text-sm text-text-secondary mb-6">
+              Request a verification code to upgrade your account role.
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div class="flex flex-col gap-2">
+                <label class="text-xs font-bold text-text-secondary uppercase tracking-wider">Target Role</label>
+                <select class="w-full px-4 py-3 bg-secondary border border-border rounded-xl text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all" value={targetRole} onChange={(e) => setTargetRole((e.target as HTMLSelectElement).value as any)} disabled={challengeLoading}>
+                  <option value="editor">Editor</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div class="flex flex-col gap-2 items-end justify-end">
+                <button type="button" class="w-full px-6 py-2.5 bg-secondary text-primary font-bold rounded-lg border border-border hover:bg-border transition-all disabled:opacity-50" onClick={handleRequestChallenge} disabled={challengeLoading}>
+                  {challengeLoading ? "Requesting..." : "Request Code"}
+                </button>
+              </div>
+              <div class="flex flex-col gap-2">
+                <label class="text-xs font-bold text-text-secondary uppercase tracking-wider">Verification Code</label>
+                <input class="w-full px-4 py-3 bg-secondary border border-border rounded-xl text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all" type="text" value={challengeCode} onInput={(e) => setChallengeCode((e.target as HTMLInputElement).value)} 
+                  placeholder="Enter 8-digit code" disabled={challengeLoading} />
+              </div>
+              <div class="flex flex-col gap-2 items-end justify-end">
+                <button type="button" class="w-full px-6 py-2.5 bg-accent text-white font-bold rounded-lg hover:bg-accent-hover transition-all shadow-md disabled:opacity-50" onClick={handleApplyChallenge} disabled={challengeLoading || !challengeCode}>
+                  {challengeLoading ? "Applying..." : "Apply Code"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        </>
       ) : (
-        <div class="user-list">
+        <div class="flex flex-col gap-3">
           {adminLoading && usersList.length === 0 ? (
-            <p style="text-align: center; padding: 20px;">Loading users...</p>
+            <p class="text-center py-10 text-text-secondary">Loading users...</p>
           ) : (
             usersList.map(u => (
-              <div key={u.id}>
-                <div class="user-item">
-                  <div class="user-item-info">
-                    <div class="user-item-name">
+              <div key={u.id} class="flex flex-col">
+                <div class="flex items-center justify-between p-4 bg-secondary/50 rounded-xl border border-border">
+                  <div class="flex flex-col gap-1">
+                    <div class="text-sm font-bold text-primary flex items-center gap-2">
                       {u.display_name} (@{u.username})
-                      <span class={`badge badge-${u.role}`}>{u.role}</span>
+                      <span class={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${u.role === 'admin' ? 'bg-error/10 text-error border border-error/20' : u.role === 'editor' ? 'bg-accent/10 text-accent border border-accent/20' : 'bg-text-secondary/10 text-text-secondary border border-text-secondary/20'}`}>{u.role}</span>
                     </div>
-                    <div class="user-item-email">{u.email}</div>
+                    <div class="text-xs text-text-secondary">{u.email}</div>
                   </div>
-                  <div class="user-item-actions">
-                    <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;"
+                  <div class="flex items-center gap-2">
+                    <button class="px-3 py-1 bg-secondary text-primary text-xs font-bold rounded border border-border hover:bg-border transition-all"
                       onClick={() => setEditingUser(u)}>
                       Edit
                     </button>
                     {u.id !== user?.id && (
-                      <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px; color: #e74c3c;"
+                      <button class="px-3 py-1 bg-secondary text-error text-xs font-bold rounded border border-border hover:bg-error hover:text-white transition-all"
                         onClick={() => handleAdminDelete(u.id)}>
                         Delete
                       </button>
@@ -272,34 +310,34 @@ export function UserProfile({ onLogout }: UserProfileProps) {
                 </div>
 
                 {editingUser?.id === u.id && (
-                  <div class="admin-edit-form">
+                  <div class="p-6 bg-secondary/30 rounded-xl border border-border mb-6 mt-2">
                     <form onSubmit={handleAdminUpdate}>
-                      <div class="form-grid">
-                        <div class="field">
-                          <label>Display Name</label>
-                          <input type="text" name="display_name" value={u.display_name} required />
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div class="flex flex-col gap-2">
+                          <label class="text-xs font-bold text-text-secondary uppercase tracking-wider">Display Name</label>
+                          <input class="w-full px-4 py-3 bg-secondary border border-border rounded-xl text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all" type="text" name="display_name" value={u.display_name} required />
                         </div>
-                        <div class="field">
-                          <label>Email</label>
-                          <input type="email" name="email" value={u.email} required />
+                        <div class="flex flex-col gap-2">
+                          <label class="text-xs font-bold text-text-secondary uppercase tracking-wider">Email</label>
+                          <input class="w-full px-4 py-3 bg-secondary border border-border rounded-xl text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all" type="email" name="email" value={u.email} required />
                         </div>
-                        <div class="field">
-                          <label>Role</label>
-                          <select name="role" defaultValue={u.role}>
+                        <div class="flex flex-col gap-2">
+                          <label class="text-xs font-bold text-text-secondary uppercase tracking-wider">Role</label>
+                          <select class="w-full px-4 py-3 bg-secondary border border-border rounded-xl text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all" name="role" defaultValue={u.role}>
                             <option value="user">User</option>
                             <option value="editor">Editor</option>
                             <option value="admin">Admin</option>
                           </select>
                         </div>
-                        <div class="field" style="display: flex; align-items: center; gap: 10px; padding-top: 30px;">
+                        <div class="flex items-center gap-3 pt-6">
                           <input type="checkbox" name="is_active" id={`active-${u.id}`}
-                            defaultChecked={true} style="width: auto;" />
-                          <label for={`active-${u.id}`} style="margin-bottom: 0;">Active Account</label>
+                            defaultChecked={true} class="w-5 h-5 accent-accent" />
+                          <label for={`active-${u.id}`} class="text-sm font-semibold text-primary">Active Account</label>
                         </div>
                       </div>
-                      <div class="actions">
-                        <button type="button" class="btn btn-secondary" onClick={() => setEditingUser(null)}>Cancel</button>
-                        <button type="submit" class="btn btn-primary" disabled={adminLoading}>Save User</button>
+                      <div class="flex justify-end gap-3">
+                        <button type="button" class="px-6 py-2.5 bg-secondary text-primary font-bold rounded-lg border border-border hover:bg-border transition-all" onClick={() => setEditingUser(null)}>Cancel</button>
+                        <button type="submit" class="px-6 py-2.5 bg-accent text-white font-bold rounded-lg hover:bg-accent-hover transition-all shadow-md" disabled={adminLoading}>Save User</button>
                       </div>
                     </form>
                   </div>

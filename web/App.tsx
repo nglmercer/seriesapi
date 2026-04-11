@@ -122,7 +122,7 @@ export function App() {
   const renderContent = () => {
     if (showProfile) {
       return (
-        <div class="container" style={{ padding: '40px 0' }}>
+        <div class="container mx-auto px-5 py-10">
           <UserProfile />
         </div>
       );
@@ -130,7 +130,7 @@ export function App() {
 
     if (selectedSeasonId) {
       return (
-        <div class="container" style={{ padding: '40px 0' }}>
+        <div class="container mx-auto px-5 py-10">
           <MediaEpisodes mediaId={selectedMediaId} seasonId={selectedSeasonId} />
         </div>
       );
@@ -139,14 +139,14 @@ export function App() {
     if (selectedMediaId) {
       if (mediaLoading) {
         return (
-          <div class="container loading">
-            <div class="loading-spinner"></div>
-            <span>{i18next.t("media.loading", "Loading...")}</span>
+          <div class="container mx-auto px-5 py-20 flex flex-col items-center justify-center">
+            <div class="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin mb-4"></div>
+            <span class="text-secondary">{i18next.t("media.loading", "Loading...")}</span>
           </div>
         );
       }
       return (
-        <div class="container" style={{ padding: '40px 0' }}>
+        <div class="container mx-auto px-5 py-10">
           <MediaDetail
             mediaId={selectedMediaId}
             media={currentMedia}
@@ -158,24 +158,24 @@ export function App() {
 
     return (
       <Fragment>
-        <section class="hero">
-          <div class="container hero-content">
-            <h1>{i18next.t("hero.title", "Track Your Series & Movies")}</h1>
-            <p>{i18next.t("hero.subtitle", "Your personal dashboard to keep up with everything you're watching.")}</p>
+        <section class="bg-secondary py-16 text-center">
+          <div class="container mx-auto px-5 max-w-4xl">
+            <h1 class="text-4xl font-bold mb-4">{i18next.t("hero.title", "Track Your Series & Movies")}</h1>
+            <p class="text-xl text-secondary mb-8">{i18next.t("hero.subtitle", "Your personal dashboard to keep up with everything you're watching.")}</p>
             <SearchBox />
           </div>
         </section>
 
-        <main class="container">
-          <div class="section-header">
+        <main class="container mx-auto px-5 py-10">
+          <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
             <div>
-              <h2>{i18next.t("media.latest", "Latest Media")}</h2>
-              <p class="section-subtitle">{i18next.t("media.latest_subtitle", "Discover something new to watch today.")}</p>
+              <h2 class="text-2xl font-bold">{i18next.t("media.latest", "Latest Media")}</h2>
+              <p class="text-secondary mt-1">{i18next.t("media.latest_subtitle", "Discover something new to watch today.")}</p>
             </div>
             <MediaFilters />
           </div>
 
-          <div class="media-grid">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             <MediaList mediaList={mediaList} />
           </div>
         </main>
@@ -184,13 +184,13 @@ export function App() {
   };
 
   return (
-    <div class="app-root">
+    <div class="min-h-screen bg-primary text-primary transition-colors duration-300">
       {authLoading ? (
-        <div class="container loading" key="loading" style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div class="loading-spinner"></div>
+        <div class="flex items-center justify-center h-screen" key="loading">
+          <div class="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : (
-        <div class="app-main" key="main">
+        <div class="flex flex-col min-h-screen" key="main">
           {showAuthModal && (
             <AuthModal onAuthClose={() => setShowAuthModal(false)} />
           )}
@@ -215,7 +215,7 @@ export function App() {
             onLogout={doLogout}
           />
 
-          <div class="app-content">
+          <div class="flex-1">
             {renderContent()}
           </div>
         </div>

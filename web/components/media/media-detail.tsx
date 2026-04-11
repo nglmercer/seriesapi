@@ -55,28 +55,28 @@ export function MediaDetail({ mediaId = 0, media: propMedia, allSeasons: propSea
   );
 
   return (
-    <div>
-      <div class="back-link" onClick={handleBack}>
+    <div class="max-w-[1200px] mx-auto">
+      <div class="flex items-center gap-2 mb-8 text-accent font-bold cursor-pointer hover:underline" onClick={handleBack}>
         {ICONS.back}
-        Back to Explorer
+        {i18next.t("common.back", "Back to Explorer")}
       </div>
 
-      <div class="container">
-        <div class="wiki-sidebar">
+      <div class="flex flex-col lg:flex-row gap-10">
+        <div class="w-full lg:w-80 shrink-0">
           <WikiInfobox media={media} />
         </div>
 
-        <div class="wiki-main">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-            <h1 class="page-title" style="margin-bottom: 0;">{media.title}</h1>
-            <div style="display: flex; align-items: center; gap: 16px;">
-              <button onClick={() => setShowReportModal(true)} style="background: transparent; border: none; cursor: pointer; color: var(--text-secondary);" title="Report Issue">
+        <div class="flex-1">
+          <div class="flex items-center justify-between mb-8">
+            <h1 class="text-4xl font-extrabold text-primary">{media.title}</h1>
+            <div class="flex items-center gap-4">
+              <button class="p-2 text-text-secondary hover:text-error transition-colors" onClick={() => setShowReportModal(true)} title="Report Issue">
                 {ICONS.report}
               </button>
             </div>
           </div>
 
-          <div style="margin-bottom: 30px;">
+          <div class="mb-10 p-6 bg-secondary/50 rounded-2xl border border-border shadow-sm">
             <RatingWidget
               entityType="media"
               entityId={media.id}
@@ -93,28 +93,28 @@ export function MediaDetail({ mediaId = 0, media: propMedia, allSeasons: propSea
           />
 
           {media.synopsis ? (
-            <div class="section">
-              <h2 class="section-title">Synopsis</h2>
-              <div class="synopsis">{media.synopsis}</div>
+            <div class="mb-12">
+              <h2 class="text-2xl font-bold text-primary mb-6 pb-2 border-b-2 border-accent w-fit">{i18next.t("media.synopsis", "Synopsis")}</h2>
+              <div class="text-lg text-text-secondary leading-relaxed">{media.synopsis}</div>
             </div>
           ) : null}
 
           {uniqueSeasons.length > 0 ? (
-            <div class="section">
-              <h2 class="section-title">Seasons</h2>
-              <div class="filter-bar">
-                <select onChange={handleSeasonChange}>
-                  <option value="">All Seasons</option>
+            <div class="mb-12">
+              <h2 class="text-2xl font-bold text-primary mb-6 pb-2 border-b-2 border-accent w-fit">{i18next.t("media.seasons", "Seasons")}</h2>
+              <div class="mb-6">
+                <select class="px-4 py-2 bg-secondary border border-border rounded-lg text-sm text-primary focus:outline-none focus:ring-2 focus:ring-accent transition-all" onChange={handleSeasonChange}>
+                  <option value="">{i18next.t("media.all_seasons", "All Seasons")}</option>
                   {uniqueSeasons.map(s => (
                     <option value={s.season_number}>{s.name || `Season ${s.season_number}`}</option>
                   ))}
                 </select>
               </div>
-              <div class="seasons-grid">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {uniqueSeasons.filter(s => selectedSeason === null || s.season_number === selectedSeason).map(s => (
-                  <div class="season-card" onClick={() => handleSeasonClick(s.id)}>
-                    <span class="season-name">{s.name || `Season ${s.season_number}`}</span>
-                    <span class="season-count">{s.episode_count} episodes</span>
+                  <div class="p-5 bg-secondary border border-border rounded-xl cursor-pointer transition-all hover:border-accent hover:shadow-md flex flex-col gap-1" onClick={() => handleSeasonClick(s.id)}>
+                    <span class="text-lg font-bold text-primary">{s.name || `Season ${s.season_number}`}</span>
+                    <span class="text-sm text-text-secondary">{s.episode_count} episodes</span>
                   </div>
                 ))}
               </div>

@@ -218,7 +218,7 @@ const server = Bun.serve({
 
     const url = new URL(req.url);
     const path = url.pathname;
-
+    console.log(`[anima] Request: ${path}`);
     // Route
     if (path.startsWith("/api/")) {
       return await route(req);

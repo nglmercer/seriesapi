@@ -1,5 +1,2 @@
-[run]
-preload = ["./cssLoader.ts"]
-
 [serve.static]
-plugins = ["./cssLoader.ts"]
+plugins = ["bun-plugin-tailwind"]

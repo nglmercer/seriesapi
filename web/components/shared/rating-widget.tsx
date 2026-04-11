@@ -3,7 +3,6 @@ import { useState, useEffect } from 'preact/hooks';
 import { api } from "../../services/api-service";
 import { authStore } from "../../services/auth-store";
 import i18next from "../../utils/i18n";
-import styles from './rating-widget.module.css';
 
 interface RatingWidgetProps {
   entityType?: string;
@@ -63,26 +62,34 @@ export function RatingWidget({ entityType = "", entityId = 0, average = 0, count
   }
 
   return (
-    <div class={styles.container}>
-      <div class={styles.info}>
-        <div class={styles.average}>{avg > 0 ? avg.toFixed(1) : '-'} <span>/ 10</span></div>
-        <div class={styles.count}>{cnt} {i18next.t("ratings.votes", { defaultValue: "votes" })}</div>
+    <div class="flex items-center gap-5 p-4 bg-secondary border border-border rounded-[10px]">
+      <div class="flex flex-col items-center gap-1">
+        <div class="text-2xl font-extrabold text-primary">
+          {avg > 0 ? avg.toFixed(1) : '-'} <span class="text-sm font-normal text-secondary">/ 10</span>
+        </div>
+        <div class="text-xs text-secondary">{cnt} {i18next.t("ratings.votes", { defaultValue: "votes" })}</div>
       </div>
 
-      <div style="width: 1px; height: 30px; background: var(--border-color);"></div>
+      <div class="w-[1px] h-[30px] bg-border"></div>
 
-      <div style="display: flex; flex-direction: column;">
-        <div class={styles.label}>{i18next.t("ratings.rate_this", { defaultValue: "Rate this!" })}</div>
-        <div class={styles.stars} style={{ opacity: loading ? 0.5 : 1 }}>
+      <div class="flex flex-col">
+        <div class="text-xs font-bold text-secondary uppercase tracking-[0.5px] mb-[6px]">
+          {i18next.t("ratings.rate_this", { defaultValue: "Rate this!" })}
+        </div>
+        <div class="flex gap-[2px] cursor-pointer" style={{ opacity: loading ? 0.5 : 1 }}>
           {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map(n => (
             <span
               key={n}
-              class={`${styles.star} ${userRating && n <= userRating ? styles.active : ''}`}
+              class={`text-xl transition-all duration-150 select-none hover:scale-125 ${userRating && n <= userRating ? 'text-[#f39c12]' : 'text-border'}`}
               onClick={() => handleRate(n)}
             >★</span>
           ))}
         </div>
-        {!authStore.isLoggedIn && <div class={styles.loginMsg}>{i18next.t("ratings.login_to_rate", { defaultValue: "Login to rate" })}</div>}
+        {!authStore.isLoggedIn && (
+          <div class="mt-[6px] text-[11px] text-secondary">
+            {i18next.t("ratings.login_to_rate", { defaultValue: "Login to rate" })}
+          </div>
+        )}
       </div>
     </div>
   );

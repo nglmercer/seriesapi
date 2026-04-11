@@ -155,16 +155,16 @@ export function AdminView({ onBack }: AdminViewProps) {
   }
 
   return (
-    <div class="container">
-      <div class="admin-header">
-        <div class="admin-nav">
-          <button class={`nav-btn ${currentTab === 'media' ? 'active' : ''}`} onClick={() => setCurrentTab("media")}>
+    <div class="container mx-auto px-5 py-8">
+      <div class="mb-8">
+        <div class="flex gap-2 p-1 bg-secondary rounded-xl w-fit">
+          <button class={`px-6 py-2.5 text-sm font-bold rounded-lg cursor-pointer transition-all ${currentTab === 'media' ? "bg-primary text-accent shadow-sm" : "text-text-secondary hover:text-primary"}`} onClick={() => setCurrentTab("media")}>
             {i18next.t("admin.media_mgmt")}
           </button>
-          <button class={`nav-btn ${currentTab === 'genres' ? 'active' : ''}`} onClick={() => setCurrentTab("genres")}>
+          <button class={`px-6 py-2.5 text-sm font-bold rounded-lg cursor-pointer transition-all ${currentTab === 'genres' ? "bg-primary text-accent shadow-sm" : "text-text-secondary hover:text-primary"}`} onClick={() => setCurrentTab("genres")}>
             {i18next.t("admin.genres_mgmt")}
           </button>
-          <button class={`nav-btn ${currentTab === 'reports' ? 'active' : ''}`} onClick={() => setCurrentTab("reports")}>
+          <button class={`px-6 py-2.5 text-sm font-bold rounded-lg cursor-pointer transition-all ${currentTab === 'reports' ? "bg-primary text-accent shadow-sm" : "text-text-secondary hover:text-primary"}`} onClick={() => setCurrentTab("reports")}>
             {i18next.t("admin.reports_mgmt")}
           </button>
         </div>
@@ -173,11 +173,12 @@ export function AdminView({ onBack }: AdminViewProps) {
       {currentTab === "genres" && <AdminGenresView />}
       {currentTab === "reports" && <AdminReportsView />}
       {currentTab === "media" && (
-        <div class="media-mgmt">
-          <div class="media-controls">
-            <div class="search-wrapper">
-              <div class="search-box">
+        <div class="bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
+          <div class="p-6 border-b border-border flex flex-col md:flex-row gap-4 items-center justify-between bg-secondary/30">
+            <div class="flex-1 w-full max-w-md">
+              <div class="relative">
                 <input
+                  class="w-full pl-4 pr-4 py-2.5 bg-primary border border-border rounded-xl text-sm text-primary focus:outline-none focus:ring-2 focus:ring-accent transition-all shadow-sm"
                   type="text"
                   placeholder="Search..."
                   value={searchQuery}
@@ -186,16 +187,18 @@ export function AdminView({ onBack }: AdminViewProps) {
                 />
               </div>
             </div>
-            <button class={`filter-btn ${showFilters ? 'active' : ''}`} onClick={() => setShowFilters(!showFilters)}>
-              {ICONS.filter} {i18next.t("admin.filters")}
-            </button>
-            <button class="primary-btn" onClick={handleAddMedia}>
-              {i18next.t("admin.add_new_media")}
-            </button>
+            <div class="flex items-center gap-3 w-full md:w-auto">
+              <button class={`flex items-center gap-2 px-4 py-2.5 border rounded-xl text-sm font-bold transition-all shadow-sm ${showFilters ? "bg-accent/10 border-accent text-accent" : "bg-primary border-border text-text-secondary hover:text-primary"}`} onClick={() => setShowFilters(!showFilters)}>
+                {ICONS.filter} {i18next.t("admin.filters")}
+              </button>
+              <button class="px-6 py-2.5 bg-accent text-white font-bold rounded-xl hover:bg-accent-hover transition-all shadow-md flex-1 md:flex-none" onClick={handleAddMedia}>
+                {i18next.t("admin.add_new_media")}
+              </button>
+            </div>
           </div>
 
           {showFilters && (
-            <div class="filters-drawer">
+            <div class="p-6 bg-secondary/10 border-b border-border">
               <MediaFilters
                 state={filters}
                 onFilterChange={(f) => { setFilters(f); setCurrentPage(1); }}
@@ -282,7 +285,7 @@ export function AdminMediaList({
 }) {
   if (media.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+      <div class="text-center py-10 text-text-secondary">
         No results found
       </div>
     );
@@ -292,36 +295,35 @@ export function AdminMediaList({
 
   return (
     <div>
-      <div class="media-admin-list">
+      <div class="flex flex-col">
         {media.map(item => (
-          <div class={`admin-card ${selectedIds.has(item.id) ? 'selected' : ''}`}>
-            <div class="checkbox-wrapper">
+          <div class={`flex items-center gap-4 p-4 border-b border-border hover:bg-secondary/20 transition-colors ${selectedIds.has(item.id) ? "bg-accent/5" : ""}`}>
+            <div class="shrink-0">
               <input
+                class="w-5 h-5 accent-accent"
                 type="checkbox"
                 checked={selectedIds.has(item.id)}
                 onChange={() => onToggleSelect(item.id)}
               />
             </div>
-            <div class="card-main">
-              <div class="card-info">
-                <div class="card-title-row">
-                  <div class="card-title">{item.title}</div>
-                  <div class="badge">{item.content_type}</div>
-                </div>
-                <div class="card-meta">
-                  <span>ID: {item.id}</span>
-                  <span>{item.status}</span>
-                </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <div class="text-sm font-bold text-primary truncate">{item.title}</div>
+                <div class="px-2 py-0.5 bg-secondary border border-border rounded text-[10px] font-bold uppercase tracking-wider text-text-secondary">{item.content_type}</div>
+              </div>
+              <div class="text-xs text-text-secondary flex gap-3">
+                <span>ID: {item.id}</span>
+                <span class="capitalize">{item.status}</span>
               </div>
             </div>
-            <div class="actions">
-              <button class="action-btn" onClick={() => onQuickEdit(item)}>
+            <div class="flex items-center gap-2">
+              <button class="px-3 py-1.5 bg-secondary text-primary text-xs font-bold rounded border border-border hover:bg-border transition-all" onClick={() => onQuickEdit(item)}>
                 Quick Edit
               </button>
-              <button class="action-btn" onClick={() => onEditMedia(item.id)}>
+              <button class="px-3 py-1.5 bg-secondary text-primary text-xs font-bold rounded border border-border hover:bg-border transition-all" onClick={() => onEditMedia(item.id)}>
                 Manage
               </button>
-              <button class="action-btn danger" onClick={() => onDeleteMedia(item.id)}>
+              <button class="px-3 py-1.5 bg-secondary text-error text-xs font-bold rounded border border-border hover:bg-error hover:text-white transition-all" onClick={() => onDeleteMedia(item.id)}>
                 Delete
               </button>
             </div>
@@ -329,20 +331,19 @@ export function AdminMediaList({
         ))}
       </div>
 
-      <div class="pagination-container">
-        <button
-          class="pagination-btn prev-btn"
+      <div class="flex items-center justify-between p-6 bg-secondary/10">
+        <button   
+          class="px-4 py-2 bg-primary border border-border rounded-lg text-sm font-bold text-text-secondary hover:text-primary disabled:opacity-40 transition-all shadow-sm"
           disabled={currentPage <= 1}
           onClick={() => onPageChange(currentPage - 1)}
         >
           ←
         </button>
-        <div class="info-text">
-          <span class="current-page">{currentPage}</span>
-          <span class="total-items">{totalItems} items</span>
+        <div class="text-sm font-bold text-text-secondary">
+          <span class="text-accent">{currentPage}</span> / <span class="text-primary">{totalItems} items</span>
         </div>
         <button
-          class="pagination-btn next-btn"
+          class="px-4 py-2 bg-primary border border-border rounded-lg text-sm font-bold text-text-secondary hover:text-primary disabled:opacity-40 transition-all shadow-sm"
           disabled={currentPage >= totalPages}
           onClick={() => onPageChange(currentPage + 1)}
         >
@@ -403,23 +404,22 @@ export function AdminGenresView() {
   }
 
   return (
-    <div>
-      <div class="header">
-        <h2>{i18next.t("admin.manage_genres")}</h2>
-        <button class="primary" onClick={handleAdd}>{i18next.t("admin.new_genre")}</button>
+    <div class="bg-card border border-border rounded-2xl shadow-xl overflow-hidden p-6">
+      <div class="flex items-center justify-between mb-8">
+        <h2 class="text-2xl font-bold text-primary">{i18next.t("admin.manage_genres")}</h2>
+        <button class="px-6 py-2.5 bg-accent text-white font-bold rounded-xl hover:bg-accent-hover transition-all shadow-md" onClick={handleAdd}>{i18next.t("admin.new_genre")}</button>
       </div>
-
-      <div class="genres-grid">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {genres.map(g => (
-          <div class="genre-card">
-            <div class="genre-info">
-              <span class="genre-name">{g.name}</span>
-              <span class="genre-meta">ID: {g.id}</span>
-              <span class="genre-meta">Slug: {g.slug}</span>
+          <div class="p-4 bg-secondary/50 border border-border rounded-xl flex flex-col justify-between gap-4">
+            <div class="flex flex-col gap-1">
+              <span class="text-lg font-bold text-primary">{g.name}</span>
+              <span class="text-xs text-text-secondary">ID: {g.id}</span>
+              <span class="text-xs text-text-secondary">Slug: {g.slug}</span>
             </div>
-            <div class="actions">
-              <button onClick={() => handleEdit(g.id, g.name)}>{i18next.t("admin.edit")}</button>
-              <button class="danger" onClick={() => handleDelete(g.id)}>{i18next.t("admin.delete")}</button>
+            <div class="flex items-center gap-2">
+              <button class="flex-1 px-3 py-1.5 bg-primary text-primary text-xs font-bold rounded border border-border hover:bg-border transition-all" onClick={() => handleEdit(g.id, g.name)}>{i18next.t("admin.edit")}</button>
+              <button class="flex-1 px-3 py-1.5 bg-primary text-error text-xs font-bold rounded border border-border hover:bg-error hover:text-white transition-all" onClick={() => handleDelete(g.id)}>{i18next.t("admin.delete")}</button>
             </div>
           </div>
         ))}
@@ -445,52 +445,56 @@ export function AdminReportsView() {
     setLoading(false);
   }
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return (
+    <div class="flex items-center justify-center p-20">
+      <div class="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
 
   if (!reports.length) {
     return (
-      <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+      <div class="bg-card border border-border rounded-2xl shadow-xl p-10 text-center text-text-secondary">
         No reports found.
       </div>
     );
   }
 
   return (
-    <div>
-      <h2>User Reports</h2>
-      <div style={{ overflowX: 'auto' }}>
-        <table>
+    <div class="bg-card border border-border rounded-2xl shadow-xl overflow-hidden p-6">
+      <h2 class="text-2xl font-bold text-primary mb-8">User Reports</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
           <thead>
-            <tr>
-              <th>ID</th>
-              <th>Type</th>
-              <th>Entity</th>
-              <th>Locale</th>
-              <th>Message</th>
-              <th>Status</th>
-              <th>Date</th>
+            <tr class="bg-secondary/50">
+              <th class="px-4 py-3 text-xs font-bold uppercase tracking-wider text-text-secondary border-b border-border">ID</th>
+              <th class="px-4 py-3 text-xs font-bold uppercase tracking-wider text-text-secondary border-b border-border">Type</th>
+              <th class="px-4 py-3 text-xs font-bold uppercase tracking-wider text-text-secondary border-b border-border">Entity</th>
+              <th class="px-4 py-3 text-xs font-bold uppercase tracking-wider text-text-secondary border-b border-border">Locale</th>
+              <th class="px-4 py-3 text-xs font-bold uppercase tracking-wider text-text-secondary border-b border-border">Message</th>
+              <th class="px-4 py-3 text-xs font-bold uppercase tracking-wider text-text-secondary border-b border-border">Status</th>
+              <th class="px-4 py-3 text-xs font-bold uppercase tracking-wider text-text-secondary border-b border-border">Date</th>
             </tr>
           </thead>
           <tbody>
             {reports.map(r => (
-              <tr>
-                <td>#{r.id}</td>
-                <td>
-                  <span class="type" style={{ background: r.report_type === 'missing_translation' ? '#ff9f43' : 'var(--accent)' }}>
+              <tr class="hover:bg-secondary/20 transition-colors border-b border-border last:border-0">
+                <td class="px-4 py-4 text-sm font-medium text-text-secondary">#{r.id}</td>
+                <td class="px-4 py-4">
+                  <span class={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider text-white ${r.report_type === 'missing_translation' ? 'bg-orange-500' : 'bg-accent'}`}>
                     {r.report_type.replace('_', ' ')}
                   </span>
                 </td>
-                <td>{r.entity_type} {r.entity_id}</td>
-                <td>{r.locale || '-'}</td>
-                <td style={{ maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <td class="px-4 py-4 text-sm font-semibold text-primary">{r.entity_type} {r.entity_id}</td>
+                <td class="px-4 py-4 text-sm text-text-secondary">{r.locale || '-'}</td>
+                <td class="px-4 py-4 text-sm text-text-secondary max-w-[300px] truncate" title={r.message}>
                   {r.message || '-'}
                 </td>
-                <td>
-                  <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '12px', background: r.status === 'resolved' ? '#1dd1a1' : 'var(--bg-secondary)' }}>
+                <td class="px-4 py-4">
+                  <span class={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${r.status === 'resolved' ? 'bg-success text-white' : 'bg-secondary text-text-secondary'}`}>
                     {r.status}
                   </span>
                 </td>
-                <td>{new Date(r.created_at).toLocaleDateString()}</td>
+                <td class="px-4 py-4 text-sm text-text-secondary whitespace-nowrap">{new Date(r.created_at).toLocaleDateString()}</td>
               </tr>
             ))}
           </tbody>

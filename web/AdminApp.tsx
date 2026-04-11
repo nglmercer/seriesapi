@@ -43,13 +43,13 @@ export function AdminApp() {
   };
 
   return (
-    <div class="admin-root">
+    <div class="min-h-screen bg-primary text-primary transition-colors duration-300">
       {authLoading ? (
-        <div class="admin-root loading" key="loading">
-          <div class="loading-spinner"></div>
+        <div class="flex items-center justify-center h-screen" key="loading">
+          <div class="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : !user || user.role !== "admin" ? (
-        <div class="admin-login-wrapper" key="login">
+        <div class="flex flex-col min-h-screen" key="login">
           <AdminHeader
             user={user}
             isMenuOpen={isMenuOpen}
@@ -64,64 +64,64 @@ export function AdminApp() {
             onLogout={doLogout}
           />
 
-          <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-            <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '20px', padding: '40px', width: '100%', maxWidth: '380px', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
-              <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'linear-gradient(135deg,var(--accent-color),#c0392b)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', margin: '0 auto 20px' }}>
+          <div class="min-h-[80vh] flex items-center justify-center p-6">
+            <div class="bg-secondary border border-border rounded-3xl p-10 w-full max-w-md shadow-2xl">
+              <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-red-600 flex items-center justify-center text-3xl mb-6 mx-auto shadow-lg">
                 🔒
               </div>
-              <h2 style={{ margin: '0 0 4px', textAlign: 'center', fontSize: '20px', fontWeight: '800' }}>Admin Access</h2>
-              <p style={{ margin: '0 0 28px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
-                Sign in with an administrator account
+              <h2 class="text-2xl font-extrabold text-center mb-1">{i18next.t("admin.access", "Admin Access")}</h2>
+              <p class="text-sm text-text-secondary text-center mb-8">
+                {i18next.t("admin.signin_prompt", "Sign in with an administrator account")}
               </p>
 
               {loginError && (
-                <div style={{ background: 'rgba(231,76,60,.1)', border: '1px solid rgba(231,76,60,.3)', color: '#e74c3c', borderRadius: '8px', padding: '10px 14px', fontSize: '13px', marginBottom: '16px' }}>
+                <div class="bg-error/10 border border-error/30 text-error rounded-xl p-4 text-sm mb-6 flex items-center gap-2">
                   ⚠ {loginError}
                 </div>
               )}
 
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', letterSpacing: '.05em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                  Username or Email
+              <div class="mb-5 flex flex-col gap-1.5">
+                <label class="text-[11px] font-bold uppercase tracking-wider text-text-secondary">
+                  {i18next.t("auth.username_or_email", "Username or Email")}
                 </label>
                 <input
+                  class="w-full px-4 py-3 bg-primary border border-border rounded-xl text-primary text-base focus:outline-none focus:ring-2 focus:ring-accent transition-all"
                   type="text"
                   value={loginUsername}
                   placeholder="admin"
                   autoComplete="username"
-                  style={{ width: '100%', boxSizing: 'border-box', padding: '11px 13px', background: 'var(--bg-primary)', border: '1.5px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '15px', fontFamily: 'inherit' }}
                   onInput={(e) => setLoginUsername((e.target as HTMLInputElement).value)}
                   onKeyDown={(e) => { if (e.key === "Enter") doLogin(); }}
                 />
               </div>
 
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', letterSpacing: '.05em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                  Password
+              <div class="mb-8 flex flex-col gap-1.5">
+                <label class="text-[11px] font-bold uppercase tracking-wider text-text-secondary">
+                  {i18next.t("auth.password", "Password")}
                 </label>
                 <input
+                  class="w-full px-4 py-3 bg-primary border border-border rounded-xl text-primary text-base focus:outline-none focus:ring-2 focus:ring-accent transition-all"
                   type="password"
                   value={loginPassword}
                   placeholder="••••••••"
                   autoComplete="current-password"
-                  style={{ width: '100%', boxSizing: 'border-box', padding: '11px 13px', background: 'var(--bg-primary)', border: '1.5px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '15px', fontFamily: 'inherit' }}
                   onInput={(e) => setLoginPassword((e.target as HTMLInputElement).value)}
                   onKeyDown={(e) => { if (e.key === "Enter") doLogin(); }}
                 />
               </div>
 
               <button
+                class="w-full py-4 bg-gradient-to-br from-accent to-red-600 text-white font-bold text-base rounded-xl hover:shadow-xl transition-all shadow-md disabled:opacity-60"
                 onClick={doLogin}
                 disabled={loginLoading}
-                style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg,var(--accent-color),#c0392b)', color: '#fff', fontWeight: '700', fontSize: '15px', border: 'none', borderRadius: '10px', cursor: 'pointer', opacity: loginLoading ? '.6' : '1' }}
               >
-                {loginLoading ? "Signing in…" : "Sign In"}
+                {loginLoading ? i18next.t("auth.signing_in", "Signing in…") : i18next.t("auth.sign_in", "Sign In")}
               </button>
             </div>
           </div>
         </div>
       ) : (
-        <div class="admin-main-wrapper" key="main">
+        <div class="flex flex-col min-h-screen" key="main">
           <AdminHeader
             user={user}
             isMenuOpen={isMenuOpen}
@@ -136,7 +136,7 @@ export function AdminApp() {
             onLogout={doLogout}
           />
 
-          <main style={{ paddingTop: '20px' }}>
+          <main class="flex-1 pt-5">
             <AdminView />
           </main>
         </div>

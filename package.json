@@ -15,14 +15,18 @@
     "@happy-dom/global-registrator": "^20.8.9",
     "@types/bun": "latest",
     "@types/jsdom": "^28.0.1",
+    "autoprefixer": "^10.4.27",
     "happy-dom": "^20.8.9",
-    "jsdom": "^29.0.2"
+    "jsdom": "^29.0.2",
+    "postcss": "^8.5.9",
+    "tailwindcss": "^4.2.2"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
     "bun-lightningcss": "^0.2.0",
+    "bun-plugin-tailwind": "^0.1.2",
     "i18next": "^26.0.3",
     "lit": "^3.3.2",
     "lit-i18n": "^4.1.0",

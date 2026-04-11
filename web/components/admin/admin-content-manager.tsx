@@ -5,6 +5,7 @@ import { ui } from "../../utils/ui";
 import { ICONS } from "../../utils/icons";
 import i18next from "../../utils/i18n";
 import type { MediaItem, SeasonItem, EpisodeItem, RelationItem } from "../../services/api-service";
+import styles from "./admin-content-manager.module.css";
 
 interface AdminContentManagerProps {
   mediaId?: number | null;
@@ -136,49 +137,49 @@ export function AdminContentManager({ mediaId, onBack }: AdminContentManagerProp
   }
 
   return (
-    <div class="container">
-      <button class="back-btn" onClick={onBack}>
+    <div class="max-w-[1200px] mx-auto px-5 pb-10">
+      <button class="inline-flex items-center gap-2 px-4 py-2.5 mb-5 bg-secondary border border-border rounded-lg text-sm font-semibold text-primary cursor-pointer transition-all hover:bg-accent hover:border-accent hover:text-white" onClick={onBack}>
         {ICONS.back} Back
       </button>
 
-      <div class="card">
-        <div class="admin-tabs">
+      <div class="bg-secondary border border-border rounded-xl p-6">
+        <div class="flex gap-1 mb-6 p-1 bg-primary rounded-lg w-fit">
           <button
-            class={`tab-btn ${currentTab === "episodes" ? "active" : ""} ${!media || ["movie", "short"].includes(media.content_type) ? "disabled" : ""}`}
+            class={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${currentTab === "episodes" ? "bg-secondary text-primary shadow-sm" : "text-text-secondary hover:text-primary"} ${(!media || ["movie", "short"].includes(media.content_type)) ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
             onClick={() => setCurrentTab("episodes")}
             disabled={!media || ["movie", "short"].includes(media.content_type)}
           >
             Episodes
           </button>
           <button
-            class={`tab-btn ${currentTab === "relations" ? "active" : ""}`}
+            class={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all cursor-pointer ${currentTab === "relations" ? "bg-secondary text-primary shadow-sm" : "text-text-secondary hover:text-primary"}`}
             onClick={() => setCurrentTab("relations")}
           >
             Relations
           </button>
         </div>
 
-        <div class="content-grid">
+        <div class="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
           <div>
-            <div class="seasons-grid">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>Seasons</h3>
-                <button class="primary" onClick={handleAddSeason}>+</button>
+            <div class="flex flex-col gap-2">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="m-0 text-lg font-extrabold">Seasons</h3>
+                <button class="px-5 py-2.5 bg-accent border-none rounded-lg text-sm font-semibold text-white cursor-pointer transition-all hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed" onClick={handleAddSeason}>+</button>
               </div>
               {seasons.map(s => (
                 <div
-                  class={`card ${selectedSeasonId === s.id ? 'active' : ''}`}
+                  class={`p-6 bg-secondary border rounded-xl cursor-pointer transition-all hover:border-accent ${selectedSeasonId === s.id ? 'border-accent bg-accent/10' : 'border-border'}`}
                   onClick={() => fetchEpisodes(s.id)}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <span style={{ fontWeight: 800, fontSize: '14px' }}>S{s.season_number}</span>
-                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  <div class="flex justify-between items-center">
+                    <div class="flex flex-col gap-0.5">
+                      <span class="font-extrabold text-sm text-primary">S{s.season_number}</span>
+                      <span class="text-xs text-text-secondary">
                         {s.name || "No title"}
                       </span>
                     </div>
                     <button
-                      class="edit-btn"
+                      class="p-1.5 bg-primary border border-border rounded-md text-xs text-primary cursor-pointer transition-all hover:bg-accent hover:border-accent hover:text-white"
                       onClick={(e) => { e.stopPropagation(); handleEditSeason(s); }}
                     >
                       {ICONS.edit}
@@ -191,34 +192,34 @@ export function AdminContentManager({ mediaId, onBack }: AdminContentManagerProp
 
           <div>
             {currentTab === "episodes" ? (
-              <div class="episodes-container">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>Episodes</h3>
-                  <button class="primary" onClick={handleAddEpisode} disabled={!selectedSeasonId}>+</button>
-                </div>
+              <div class="flex-1">
+                <div class="flex justify-between items-center mb-4">
+                  <h3 class="m-0 text-lg font-extrabold">Episodes</h3>
+                  <button class="px-5 py-2.5 bg-accent border-none rounded-lg text-sm font-semibold text-white cursor-pointer transition-all hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed" onClick={handleAddEpisode} disabled={!selectedSeasonId}>+</button>
+                </div>  
                 {!selectedSeasonId ? (
-                  <div class="empty-state">
-                    <div style={{ fontSize: '32px', marginBottom: '12px' }}>👈</div>
-                    <p style={{ fontWeight: 700 }}>Select a season</p>
+                  <div class="flex flex-col items-center justify-center py-15 text-center text-text-secondary">
+                    <div class="text-3xl mb-3">👈</div>
+                    <p class="font-bold text-primary">Select a season</p>
                   </div>
                 ) : (
-                  <div class="episodes-grid">
+                  <div class="flex flex-col gap-2">
                     {episodes.map(ep => (
-                      <div class="card">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
-                          <div class="episode-badge">E{ep.episode_number}</div>
-                          <span style={{ fontWeight: 600, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div class="flex items-center justify-between gap-3 p-3 px-4 bg-secondary border border-border rounded-xl">    
+                        <div class="flex items-center gap-3 min-w-0 flex-1">
+                          <div class="inline-flex items-center justify-center min-w-[36px] h-[36px] px-2.5 bg-accent text-white rounded-md text-sm font-bold">E{ep.episode_number}</div>
+                          <span class="font-semibold text-sm whitespace-nowrap overflow-hidden text-ellipsis">
                             {ep.title || "No title"}
                           </span>
                         </div>
-                        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                          <button class="edit-btn" onClick={() => handleEditEpisode(ep)}>Edit</button>
-                          <button class="danger" onClick={() => handleDeleteEpisode(ep.id)}>Delete</button>
+                        <div class="flex gap-2 shrink-0">
+                          <button class="p-1.5 px-2.5 bg-primary border border-border rounded-md text-xs text-primary cursor-pointer transition-all hover:bg-accent hover:border-accent hover:text-white" onClick={() => handleEditEpisode(ep)}>Edit</button>
+                          <button class="p-1.5 px-3 bg-primary border border-border rounded-md text-xs font-semibold text-error cursor-pointer transition-all hover:bg-error hover:border-error hover:text-white" onClick={() => handleDeleteEpisode(ep.id)}>Delete</button>
                         </div>
                       </div>
                     ))}
                     {episodes.length === 0 && (
-                      <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-secondary)', border: '1px dashed var(--border-color)', borderRadius: '10px' }}>
+                      <div class="text-center p-5 text-text-secondary border border-dashed border-border rounded-xl">
                         No episodes added yet
                       </div>
                     )}
@@ -226,24 +227,24 @@ export function AdminContentManager({ mediaId, onBack }: AdminContentManagerProp
                 )}
               </div>
             ) : (
-              <div class="relations-container">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>Relations and Trilogies</h3>
-                  <button class="primary" onClick={handleAddRelation}>+ Add Relation</button>
+              <div class="flex-1">
+                <div class="flex justify-between items-center mb-4">
+                  <h3 class="m-0 text-lg font-extrabold">Relations and Trilogies</h3>
+                  <button class="px-5 py-2.5 bg-accent border-none rounded-lg text-sm font-semibold text-white cursor-pointer transition-all hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed" onClick={handleAddRelation}>+ Add Relation</button>
                 </div>
-                <div class="relations-grid">
+                <div class="flex flex-col gap-2">
                   {relations.map(rel => (
-                    <div class="card">
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0, flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span class="badge">{rel.relation_type}</span>
-                          {rel.related_type && <span class="type-label">{rel.related_type}</span>}
+                    <div class="flex items-center justify-between gap-3 p-3 px-4 bg-secondary border border-border rounded-xl">
+                      <div class="flex flex-col gap-1 min-w-0 flex-1">
+                        <div class="flex items-center gap-2">
+                          <span class="text-[11px] font-bold tracking-wider uppercase text-text-secondary">{rel.relation_type}</span>
+                          {rel.related_type && <span class="text-[11px] px-2 py-0.5 bg-secondary border border-border rounded text-text-secondary">{rel.related_type}</span>}
                         </div>
-                        <strong style={{ fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <strong class="text-sm whitespace-nowrap overflow-hidden text-ellipsis">
                           {rel.related_title || `Media ID: ${rel.related_media_id}`}
                         </strong>
                       </div>
-                      <button class="danger" onClick={() => handleDeleteRelation(rel.id)}>
+                      <button class="p-1.5 bg-primary border border-border rounded-md text-error cursor-pointer transition-all hover:bg-error hover:border-error hover:text-white" onClick={() => handleDeleteRelation(rel.id)}>
                         {ICONS.trash}
                       </button>
                     </div>

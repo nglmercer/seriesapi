@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from 'preact/hooks';
 import { mediaService } from "../../services/media-service";
 import { eventBus } from "../../utils/events";
 import type { MediaItem } from "../../services/api-service";
-import styles from './media-list.module.css';
 
 interface MediaListProps {
   mediaList?: MediaItem[];
@@ -105,24 +104,41 @@ export function MediaList({ mediaList: externalList }: MediaListProps) {
     }
 
     return (
-      <div class={styles.pagination}>
-        <button disabled={page === 1} onClick={() => goToPage(page - 1)}>&lt;</button>
+      <div class="col-span-full flex justify-center items-center gap-2 py-5">
+        <button 
+          class="px-3.5 py-2 bg-secondary border border-border rounded-md text-[13px] text-primary cursor-pointer transition-all hover:bg-accent hover:border-accent hover:text-white disabled:opacity-40 disabled:cursor-not-allowed" 
+          disabled={page === 1} 
+          onClick={() => goToPage(page - 1)}
+        >
+          &lt;
+        </button>
         {pages.map(p => (
-          <button class={p === page ? styles.active : ''} onClick={() => goToPage(p)}>{p}</button>
+          <button 
+            class={`px-3.5 py-2 border rounded-md text-[13px] cursor-pointer transition-all hover:bg-accent hover:border-accent hover:text-white ${p === page ? "bg-accent border-accent text-white" : "bg-secondary border-border text-primary"}`} 
+            onClick={() => goToPage(p)}
+          >
+            {p}
+          </button>
         ))}
-        <button disabled={page === totalPages} onClick={() => goToPage(page + 1)}>&gt;</button>
+        <button 
+          class="px-3.5 py-2 bg-secondary border border-border rounded-md text-[13px] text-primary cursor-pointer transition-all hover:bg-accent hover:border-accent hover:text-white disabled:opacity-40 disabled:cursor-not-allowed" 
+          disabled={page === totalPages} 
+          onClick={() => goToPage(page + 1)}
+        >
+          &gt;
+        </button>
       </div>
     );
   }
 
   if (loading && items.length === 0) {
     return (
-      <div class={styles.mediaGrid}>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 py-5">
         {Array(pageSize).fill(0).map((_, i) => (
-          <div class={styles.card}>
-            <div class={`${styles.skeleton} ${styles.skeletonImg}`}></div>
-            <div class={`${styles.skeleton} ${styles.skeletonTitle}`}></div>
-            <div class={`${styles.skeleton} ${styles.skeletonMeta}`}></div>
+          <div class="bg-card border border-border rounded-lg overflow-hidden">
+            <div class="w-full aspect-[2/3] bg-gradient-to-r from-secondary via-primary to-secondary bg-[length:200%_100%] animate-[shimmer_1.5s_infinite]"></div>
+            <div class="h-5 m-3 bg-gradient-to-r from-secondary via-primary to-secondary bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded"></div>
+            <div class="h-3.5 mx-3 mb-3 w-[60%] bg-gradient-to-r from-secondary via-primary to-secondary bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded"></div>
           </div>
         ))}
       </div>
@@ -130,18 +146,18 @@ export function MediaList({ mediaList: externalList }: MediaListProps) {
   }
 
   if (items.length === 0) {
-    return <div class={styles.noItems}>No items found</div>;
+    return <div class="col-span-full text-center py-16 text-text-secondary">No items found</div>;
   }
 
   const visibleItems = items.slice(0, pageSize);
 
   return (
-    <div ref={containerRef} class={styles.mediaGrid} style={loading ? 'opacity: 0.7; pointer-events: none;' : ''}>
+    <div ref={containerRef} class={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 py-5 ${loading ? "opacity-70 pointer-events-none" : ""}`}>
       {visibleItems.map(item => (
-        <div class={styles.card} onClick={() => handleMediaClick(item.id)}>
-          <img src={item.poster_url || item.image_url} alt={item.title} loading="lazy" />
-          <div class={styles.title}>{item.title}</div>
-          <div class={styles.meta}>
+        <div class="bg-card border border-border rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-xl" onClick={() => handleMediaClick(item.id)}>
+          <img class="w-full aspect-[2/3] object-cover block" src={item.poster_url || item.image_url} alt={item.title} loading="lazy" />
+          <div class="p-3 text-sm font-semibold text-primary truncate">{item.title}</div>
+          <div class="px-3 pb-3 text-xs text-text-secondary">
             {item.content_type} | {item.status || ""}
           </div>
         </div>

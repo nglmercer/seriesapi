@@ -2,7 +2,6 @@ import { h } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 import { api } from "../../services/api-service";
 import i18next from "../../utils/i18n";
-import styles from './genres-list.module.css';
 
 interface GenreItem {
   id: number;
@@ -38,12 +37,15 @@ export function GenresList({ onGenreSelect }: GenresListProps) {
     }
   }
 
-  if (loading) return <div class={styles.loading}>{i18next.t("media.loading", "Loading...")}</div>;
+  if (loading) return <div class="p-5 text-center text-secondary">{i18next.t("media.loading", "Loading...")}</div>;
 
   return (
-    <div class={styles.list}>
+    <div class="flex flex-wrap gap-2">
       {items.map(item => (
-        <div class={styles.tag} onClick={() => handleClick(item.slug)}>
+        <div 
+          class="inline-flex items-center px-[14px] py-[6px] bg-secondary border border-border rounded-full text-[13px] text-primary cursor-pointer transition-all duration-200 hover:bg-accent hover:border-accent hover:text-white" 
+          onClick={() => handleClick(item.slug)}
+        >
           {item.name}
         </div>
       ))}
