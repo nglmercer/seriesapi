@@ -1,4 +1,3 @@
-/// <reference path="./cssLoader.ts" />
 import { render, h } from 'preact';
 import { App } from './App';
 import './components/index';

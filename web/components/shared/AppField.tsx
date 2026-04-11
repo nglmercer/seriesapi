@@ -1,9 +1,9 @@
-import { h, Fragment } from 'preact';
+import { h, Fragment, type ComponentChildren } from 'preact';
 
 interface AppFieldProps {
   label?: string;
   error?: string;
-  children?: any;
+  children?: ComponentChildren;
 }
 
 export function AppField({

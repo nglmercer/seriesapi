@@ -81,11 +81,11 @@ import "../../web/components/layout/public-app";
 import { PublicApp } from "../../web/components/layout/public-app";
 
 describe("PublicApp", () => {
-  let el: PublicApp;
+  let el: any;
 
   beforeEach(() => {
-    document.body.innerHTML = "<public-app></public-app>";
-    el = document.body.querySelector("public-app") as PublicApp;
+    document.body.innerHTML = "<div id='public-app'></div>";
+    el = document.body.querySelector("#public-app") as any;
   });
 
   test("should be defined", () => {
