@@ -62,31 +62,35 @@ export function RatingWidget({ entityType = "", entityId = 0, average = 0, count
   }
 
   return (
-    <div class="flex items-center gap-5 p-4 bg-secondary border border-border rounded-[10px]">
-      <div class="flex flex-col items-center gap-1">
-        <div class="text-2xl font-extrabold text-primary">
-          {avg > 0 ? avg.toFixed(1) : '-'} <span class="text-sm font-normal text-secondary">/ 10</span>
+    <div class="flex flex-col sm:flex-row items-center gap-8 p-6 bg-base-300/30 border border-base-content/5 rounded-2xl">
+      <div class="flex flex-col items-center gap-1 shrink-0">
+        <div class="text-4xl font-black text-primary flex items-baseline gap-1">
+          {avg > 0 ? avg.toFixed(1) : '-'} 
+          <span class="text-sm font-bold opacity-30">/ 10</span>
         </div>
-        <div class="text-xs text-secondary">{cnt} {i18next.t("ratings.votes", { defaultValue: "votes" })}</div>
+        <div class="text-[10px] font-black uppercase tracking-widest opacity-40">
+          {cnt} {i18next.t("ratings.votes", { defaultValue: "votes" })}
+        </div>
       </div>
 
-      <div class="w-[1px] h-[30px] bg-border"></div>
+      <div class="hidden sm:block w-px h-12 bg-base-content/10"></div>
 
-      <div class="flex flex-col">
-        <div class="text-xs font-bold text-secondary uppercase tracking-[0.5px] mb-[6px]">
+      <div class="flex flex-col items-center sm:items-start gap-3">
+        <div class="text-[10px] font-black text-base-content/40 uppercase tracking-widest">
           {i18next.t("ratings.rate_this", { defaultValue: "Rate this!" })}
         </div>
-        <div class="flex gap-[2px] cursor-pointer" style={{ opacity: loading ? 0.5 : 1 }}>
-          {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map(n => (
+        <div class="flex gap-1 cursor-pointer group" style={{ opacity: loading ? 0.5 : 1 }}>
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
             <span
               key={n}
-              class={`text-xl transition-all duration-150 select-none hover:scale-125 ${userRating && n <= userRating ? 'text-[#f39c12]' : 'text-border'}`}
+              class={`text-2xl transition-all duration-200 select-none hover:scale-125 active:scale-95 ${userRating && n <= userRating ? 'text-warning' : 'text-base-content/10 hover:text-warning/50'}`}
               onClick={() => handleRate(n)}
+              title={`${n}/10`}
             >★</span>
           ))}
         </div>
         {!authStore.isLoggedIn && (
-          <div class="mt-[6px] text-[11px] text-secondary">
+          <div class="text-[10px] font-bold text-base-content/30 italic">
             {i18next.t("ratings.login_to_rate", { defaultValue: "Login to rate" })}
           </div>
         )}

@@ -31,33 +31,39 @@ export function CommentCompose({ user, posting = false, onCommentSubmit, onNeedL
   }
 
   return (
-    <div class="flex gap-4 items-start mb-6">
+    <div class="flex gap-4 items-start mb-10">
       {user ? (
         <CommentAvatar name={user.display_name} size="md" />
       ) : (
-        <div class="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-lg shrink-0">👤</div>
+        <div class="w-12 h-12 rounded-2xl bg-base-200 border border-base-content/5 flex items-center justify-center text-xl shrink-0 shadow-sm">👤</div>
       )}
 
       {user ? (
-        <div class="flex-1 flex flex-col gap-3">
+        <div class="flex-1 flex flex-col gap-4">
           <textarea
-            class="w-full min-h-[80px] p-3 border border-border rounded-xl bg-primary text-primary text-sm font-sans resize-y focus:outline-none focus:border-accent"
-            placeholder={i18next.t("comments.body_placeholder", { defaultValue: "Share your thoughts…  (Ctrl+Enter to post)" })}
+            class="textarea textarea-bordered w-full min-h-[100px] p-4 bg-base-200 border-base-content/10 rounded-2xl text-base-content text-sm font-medium resize-y focus:outline-none focus:border-primary transition-all shadow-inner"
+            placeholder={i18next.t("comments.body_placeholder", { defaultValue: "Share your thoughts… (Ctrl+Enter to post)" })}
             value={text}
             onInput={(e) => setText((e.target as HTMLTextAreaElement).value)}
             onKeyDown={handleKeyDown}
           />
-          <div class="flex justify-between items-center">
-            <label class={`flex items-center gap-2 text-sm cursor-pointer select-none transition-colors ${spoilers ? "text-accent" : "text-text-secondary"}`}>
+          <div class="flex justify-between items-center px-1">
+            <label class="label cursor-pointer gap-3 group">
               <input
-                class="w-auto m-0"
                 type="checkbox"
+                class="checkbox checkbox-primary checkbox-xs rounded-md transition-all group-hover:scale-110"
                 checked={spoilers}
                 onChange={(e) => setSpoilers((e.target as HTMLInputElement).checked)}
               />
-              {i18next.t("comments.contains_spoilers", { defaultValue: "Contains Spoilers" })}
+              <span class={`label-text text-[10px] font-black uppercase tracking-widest transition-colors ${spoilers ? "text-primary" : "opacity-40"}`}>
+                {i18next.t("comments.contains_spoilers", { defaultValue: "Contains Spoilers" })}
+              </span>
             </label>
-            <button class="px-5 py-2.5 bg-accent text-white border-none rounded-lg font-semibold text-sm cursor-pointer transition-all hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed" disabled={!text.trim() || posting} onClick={submit}>
+            <button 
+              class="btn btn-primary btn-sm px-8 rounded-xl font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all" 
+              disabled={!text.trim() || posting} 
+              onClick={submit}
+            >
               {posting
                 ? i18next.t("comments.posting", { defaultValue: "Posting…" })
                 : i18next.t("comments.post_button", { defaultValue: "Post" })
@@ -66,12 +72,14 @@ export function CommentCompose({ user, posting = false, onCommentSubmit, onNeedL
           </div>
         </div>
       ) : (
-        <div class="flex-1 flex flex-col gap-3 p-4 bg-secondary rounded-xl">
-          <div class="flex flex-col gap-1 text-sm text-text-secondary">
-            <strong class="text-primary text-base">{i18next.t("comments.join_discussion", { defaultValue: "Join the conversation" })}</strong>
-            {i18next.t("comments.login_required", { defaultValue: "Sign in to comment and interact with the community." })}
+        <div class="flex-1 flex flex-col gap-4 p-6 bg-base-200 border border-base-content/5 rounded-2xl shadow-sm">
+          <div class="flex flex-col gap-1">
+            <strong class="text-base-content text-lg font-black tracking-tight">{i18next.t("comments.join_discussion", { defaultValue: "Join the conversation" })}</strong>
+            <p class="text-sm text-base-content/40 font-medium leading-relaxed">
+              {i18next.t("comments.login_required", { defaultValue: "Sign in to comment and interact with the community." })}
+            </p>
           </div>
-          <button class="self-start px-5 py-2.5 bg-accent text-white border-none rounded-lg font-semibold text-sm cursor-pointer hover:bg-accent-hover transition-all" onClick={onNeedLogin}>
+          <button class="btn btn-primary btn-sm px-8 rounded-xl font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all self-start" onClick={onNeedLogin}>
             {i18next.t("auth.sign_in", { defaultValue: "Sign In" })}
           </button>
         </div>
