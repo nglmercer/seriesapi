@@ -307,25 +307,57 @@ export class MediaController {
     const { page, limit: pageSize } = v.data;
     const offset = (page - 1) * pageSize;
 
+    // Support filtering by entity_type (media/season/episode) and optional entity_id override
+    const entityType = url.searchParams.get("entity_type") || "media";
+    const entityIdParam = url.searchParams.get("entity_id");
+    const entityId = entityIdParam ? parseInt(entityIdParam, 10) : mediaId;
+    const search = url.searchParams.get("q") || "";
+    const sortBy = url.searchParams.get("sort_by") === "recent" ? "recent" : "likes";
+    const spoilersOnly = url.searchParams.get("spoilers") === "1";
+
+    // Count top-level comments for this entity
+    let countWhere = `entity_type = ? AND entity_id = ? AND is_hidden = 0 AND parent_id IS NULL`;
+    const countParams: (string | number)[] = [entityType, entityId];
+    if (search) {
+      countWhere += ` AND body LIKE ?`;
+      countParams.push(`%${search}%`);
+    }
+    if (spoilersOnly) {
+      countWhere += ` AND contains_spoilers = 1`;
+    }
+
     const totalRes = drizzle.select(commentsTable)
       .selectRaw("COUNT(*) as c")
-      .where("entity_type = 'media' AND entity_id = ? AND is_hidden = 0 AND parent_id IS NULL", [mediaId])
+      .where(countWhere, countParams)
       .get() as { c: number } | undefined;
     const total = totalRes ? totalRes.c : 0;
 
     const repliesSubquery = `(SELECT JSON_GROUP_ARRAY(JSON_OBJECT('id', r.id, 'display_name', r.display_name, 'body', r.body, 'locale', r.locale, 'likes', r.likes, 'created_at', r.created_at)) FROM comments r WHERE r.parent_id = c.id AND r.is_hidden = 0)`;
 
-    const rows = drizzle.select(commentsTable).as("c")
-      .selectRaw(`c.id, c.parent_id, c.display_name, c.locale, c.body, c.contains_spoilers, c.likes, c.dislikes, c.created_at, ${repliesSubquery} AS replies`)
-      .where("c.entity_type = 'media' AND c.entity_id = ?", [mediaId])
-      .andWhere("c.is_hidden = 0 AND c.parent_id IS NULL")
-      .orderBy("c.likes", "desc")
-      .orderBy("c.created_at", "desc")
+    const rowsQuery = drizzle.select(commentsTable).as("c")
+      .selectRaw(`c.id, c.entity_type, c.entity_id, c.parent_id, c.display_name, c.locale, c.body, c.contains_spoilers, c.likes, c.dislikes, c.created_at, ${repliesSubquery} AS replies`)
+      .where("c.entity_type = ? AND c.entity_id = ?", [entityType, entityId])
+      .andWhere("c.is_hidden = 0 AND c.parent_id IS NULL");
+
+    if (search) {
+      rowsQuery.andWhere("c.body LIKE ?", [`%${search}%`]);
+    }
+    if (spoilersOnly) {
+      rowsQuery.andWhere("c.contains_spoilers = 1");
+    }
+
+    if (sortBy === "recent") {
+      rowsQuery.orderBy("c.created_at", "desc");
+    } else {
+      rowsQuery.orderBy("c.likes", "desc").orderBy("c.created_at", "desc");
+    }
+
+    const rows = rowsQuery
       .limit(pageSize)
       .offset(offset)
       .all();
 
-    return { rows, params: { locale, page, pageSize, total } };
+    return { rows, params: { locale, page, pageSize, total, entityType, entityId } };
   }
 
   static async bulkUpdate(req: Request) {
