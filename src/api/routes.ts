@@ -11,15 +11,7 @@ import {
   handleMediaComments,
   handleMediaBulkUpdate,
 } from "./routes/media";
-import {
-  handleSeasonDetail,
-  handleSeasonEpisodes,
-  handleSeasonImages,
-  handleSeasonComments,
-  handleSeasonCreate,
-  handleSeasonUpdate,
-  handleSeasonDelete,
-} from "./routes/seasons";
+import { handleSeasonRouter } from "./routes/seasons";
 import {
   handleEpisodeDetail,
   handleEpisodeCredits,
@@ -112,19 +104,7 @@ export function createRouteHandler(getDbFn: () => any) {
     }
 
     if (resource === "seasons") {
-      if (GET) {
-        const id = seg(parts, 3);
-        if (isNaN(id)) return notFound("Season", locale);
-        if (!p4) return handleSeasonDetail(req, db, id);
-        if (p4 === "episodes") return handleSeasonEpisodes(req, db, id);
-        if (p4 === "images")   return handleSeasonImages(req, db, id);
-        if (p4 === "comments") return handleSeasonComments(req, db, id);
-        return notFound("Resource", locale);
-      }
-      if (POST) return handleSeasonCreate(req);
-      if (req.method === "PUT") return handleSeasonUpdate(req);
-      if (req.method === "DELETE") return handleSeasonDelete(req);
-      return methodNotAllowed(locale);
+      return handleSeasonRouter(req, db, parts);
     }
 
     if (resource === "episodes") {

@@ -1,19 +1,59 @@
 /**
- * /api/v1/seasons/:id  –  Season-level routes
- *
- * GET  /api/v1/seasons/:id            – season detail
- * GET  /api/v1/seasons/:id/episodes   – episodes in season
- * GET  /api/v1/seasons/:id/images     – season images
- * GET  /api/v1/seasons/:id/comments   – season comments
+ * /api/v1/seasons  –  Season-level routes
  */
 
 import type { Database } from "sqlite-napi";
-import { ok, notFound, serverError } from "../response";
+import { ok, notFound, serverError, methodNotAllowed } from "../response";
 import { SeasonController } from "../controllers/season.controller";
 import { SeasonView } from "../views/season.view";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
 import { withAdmin } from "./auth";
-import { validateParams, seasonUpdateSchema } from "../validation";
+import { validateParams, seasonUpdateSchema, seasonCreateSchema } from "../validation";
+
+/**
+ * Main router for /api/v1/seasons
+ */
+export async function handleSeasonRouter(req: Request, db: Database, parts: string[]): Promise<Response> {
+  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+  const [, , resource, p3, p4] = parts;
+
+  if (resource !== "seasons") return notFound("Resource", locale);
+
+  const GET = req.method === "GET";
+  const POST = req.method === "POST";
+  const PUT = req.method === "PUT";
+  const DELETE = req.method === "DELETE";
+
+  // POST /api/v1/seasons
+  if (POST && !p3) {
+    return handleSeasonCreate(req);
+  }
+
+  // Routes with ID: /api/v1/seasons/:id
+  const id = parseInt(p3 ?? "", 10);
+  if (isNaN(id)) {
+    if (!p3 && GET) return handleSeasonList(req, db); // Optional: if you want a list of seasons
+    return notFound("Season", locale);
+  }
+
+  if (GET) {
+    if (!p4) return handleSeasonDetail(req, db, id);
+    if (p4 === "episodes") return handleSeasonEpisodes(req, db, id);
+    if (p4 === "images") return handleSeasonImages(req, db, id);
+    if (p4 === "comments") return handleSeasonComments(req, db, id);
+    return notFound("Resource", locale);
+  }
+
+  if (PUT) return handleSeasonUpdate(req, id);
+  if (DELETE) return handleSeasonDelete(req, id);
+
+  return methodNotAllowed(locale);
+}
+
+export function handleSeasonList(req: Request, _db: Database): Response {
+  // If we ever want a global seasons list
+  return notFound("Seasons list", getLocaleFromRequest(req, SUPPORTED_LOCALES));
+}
 
 export function handleSeasonComments(req: Request, _db: Database, seasonId: number): Response {
   try {
@@ -59,46 +99,45 @@ export function handleSeasonImages(req: Request, _db: Database, seasonId: number
 }
 
 export const handleSeasonCreate = withAdmin(async (req: Request) => {
-  try {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const body = await req.json();
-    const result = SeasonController.create(body, locale);
-    return ok(result, { locale });
-  } catch (err) {
-    return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
-  }
-});
-
-export const handleSeasonUpdate = withAdmin(async (req: Request, user) => {
   const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
   try {
-    const url = new URL(req.url);
-    const parts = url.pathname.replace(/\/$/, "").split("/").filter(Boolean);
-    const id = parseInt(parts[3] ?? "", 10);
-    if (isNaN(id)) return notFound("Season", locale);
-
     const body = await req.json();
-    const v = validateParams(seasonUpdateSchema, body, locale);
+    const v = validateParams(seasonCreateSchema, body, locale);
+    console.log(body, v)
     if (!v.success) return v.error;
 
-    const result = SeasonController.update(id, v.data, locale);
+    const result = SeasonController.create(v.data, locale);
     return ok(result, { locale });
   } catch (err) {
     return serverError(err, locale);
   }
 });
 
-export const handleSeasonDelete = withAdmin(async (req: Request, user) => {
-  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-  try {
-    const url = new URL(req.url);
-    const parts = url.pathname.replace(/\/$/, "").split("/").filter(Boolean);
-    const id = parseInt(parts[3] ?? "", 10);
-    if (isNaN(id)) return notFound("Season", locale);
+export const handleSeasonUpdate = async (req: Request, id: number): Promise<Response> => {
+  return withAdmin(async (req: Request) => {
+    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+    try {
+      const body = await req.json();
+      const v = validateParams(seasonUpdateSchema, body, locale);
+      console.log(body, v)
+      if (!v.success) return v.error;
 
-    const result = SeasonController.delete(id);
-    return ok(result, { locale });
-  } catch (err) {
-    return serverError(err, locale);
-  }
-});
+      const result = SeasonController.update(id, v.data, locale);
+      return ok(result, { locale });
+    } catch (err) {
+      return serverError(err, locale);
+    }
+  })(req);
+};
+
+export const handleSeasonDelete = async (req: Request, id: number): Promise<Response> => {
+  return withAdmin(async (req: Request) => {
+    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+    try {
+      const result = SeasonController.delete(id);
+      return ok(result, { locale });
+    } catch (err) {
+      return serverError(err, locale);
+    }
+  })(req);
+};

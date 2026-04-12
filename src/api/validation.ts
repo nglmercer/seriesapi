@@ -263,13 +263,20 @@ export const seasonCreateSchema = z.object({
   seasonNumber: z.coerce.number().int().nonnegative().optional(),
   season_number: z.coerce.number().int().nonnegative().optional(),
   title: z.string().trim().max(500).optional(),
+}).refine(data => (data.mediaId !== undefined || data.media_id !== undefined), {
+  message: "mediaId or media_id is required",
+  path: ["mediaId"]
+}).refine(data => (data.seasonNumber !== undefined || data.season_number !== undefined), {
+  message: "seasonNumber or season_number is required",
+  path: ["seasonNumber"]
 }).transform((data) => {
   return {
-    mediaId: data.media_id ?? data.mediaId ?? 0,
-    seasonNumber: data.season_number ?? data.seasonNumber ?? 0,
+    mediaId: (data.media_id ?? data.mediaId)!,
+    seasonNumber: (data.season_number ?? data.seasonNumber)!,
     title: data.title,
   };
 });
+
 
 
 function parseDurationToMinutes(duration: string): number | undefined {
