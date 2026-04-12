@@ -1,93 +1,38 @@
-# API Reference
+# API Documentation
 
 Base URL: `http://localhost:3000/api/v1`
 
-## Endpoints
+## Index
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Health check |
-| GET | `/media` | Paginated media list |
-| GET | `/media/:id` | Media detail |
-| GET | `/media/:id/seasons` | Media seasons |
-| GET | `/media/:id/episodes` | Media episodes (flat list for movies/OVAs) |
-| GET | `/media/:id/credits` | Media cast & crew |
-| GET | `/media/:id/images` | Media images |
-| GET | `/media/:id/videos` | Media videos (trailers, openings, endings) |
-| GET | `/media/:id/related` | Related media (sequels, spinoffs, adaptations) |
-| GET | `/media/:id/comments` | Media comments |
-| POST | `/media/bulk` | Bulk update media entries |
-| GET | `/seasons/:id` | Season detail |
-| GET | `/seasons/:id/episodes` | Season episodes |
-| GET | `/seasons/:id/images` | Season images |
-| GET | `/seasons/:id/comments` | Season comments |
-| POST | `/seasons` | Create season |
-| PUT | `/seasons` | Update season |
-| DELETE | `/seasons` | Delete season |
-| GET | `/episodes/:id` | Episode detail |
-| GET | `/episodes/:id/credits` | Episode credits (guest cast & crew) |
-| GET | `/episodes/:id/images` | Episode images (stills/thumbnails) |
-| GET | `/episodes/:id/comments` | Episode comments |
-| POST | `/episodes` | Create episode |
-| PUT | `/episodes` | Update episode |
-| DELETE | `/episodes` | Delete episode |
-| GET | `/people` | Paginated people list |
-| GET | `/people/:id` | Person detail |
-| GET | `/people/:id/credits` | Person credits (all media a person appears in) |
-| GET | `/genres` | Genre list |
-| GET | `/genres/:slug` | Genre detail with media |
-| GET | `/tags` | Tag list |
-| GET | `/collections` | Collections list |
-| GET | `/collections/:slug` | Collection detail |
-| GET | `/search` | Full-text search |
-| POST | `/comments` | Create comment (supports media, season, episode) |
-| GET | `/comments/:id` | Get comment |
-| GET | `/comments/user` | Get user comments |
-| POST | `/ratings` | Create rating (supports media, season, episode) |
-| GET | `/ratings` | Get ratings (supports media, season, episode) |
-| GET | `/ratings/user` | Get user ratings |
-| GET | `/ratings/top` | Get top ratings |
-| POST | `/reports` | Create report |
-| GET | `/reports` | List reports (admin) |
-| POST | `/auth/register` | Register new user |
-| POST | `/auth/login` | Login user |
-| POST | `/auth/logout` | Logout user |
-| GET | `/auth/me` | Get current user |
-| PATCH/PUT | `/auth/update` | Update current user |
-| GET | `/auth/users` | List users (admin) |
-| PATCH/PUT | `/auth/users/:id` | Update user (admin) |
-| DELETE | `/auth/users/:id` | Delete user (admin) |
-| GET | `/auth/roles` | List roles (admin) |
-| POST | `/auth/roles` | Create role (admin) |
-| PATCH/PUT | `/auth/roles/:id` | Update role (admin) |
-| DELETE | `/auth/roles/:id` | Delete role (admin) |
-| POST | `/auth/verify-code/generate` | Generate verification code |
-| POST | `/auth/verify-code/apply` | Apply verification code |
-| POST | `/auth/role-challenge` | Request role challenge |
+| Resource | File | Endpoints |
+|----------|------|-----------|
+| 🎬 Media | [media.md](./media.md) | List, detail, seasons, episodes, credits, images, videos, related, comments, bulk |
+| 📺 Seasons | [seasons.md](./seasons.md) | Detail, episodes, images, comments — CRUD |
+| 🎞️ Episodes | [episodes.md](./episodes.md) | Detail, credits, images, comments, neighbors, views — CRUD |
+| 💬 Comments | [comments.md](./comments.md) | Create, get thread, get by entity, user comments |
+| ⭐ Ratings | [ratings.md](./ratings.md) | Create/update, get by entity, user ratings, top ratings |
+| 🔍 Search | [search.md](./search.md) | Full-text search across media, people, collections |
+| 👤 People | [people.md](./people.md) | List, detail, credits |
+| 🏷️ Genres | [genres.md](./genres.md) | List, genre + media |
+| 🔖 Tags | [tags.md](./tags.md) | List |
+| 📦 Collections | [collections.md](./collections.md) | List, detail |
+| 🔐 Auth | [auth.md](./auth.md) | Register, login, logout, me, users, roles, verify |
+| 🚩 Reports | [reports.md](./reports.md) | Create report, list reports (admin) |
 
-## Query Parameters
+---
 
-### Pagination
-- `page` (default: 1)
-- `pageSize` (default: 20, max: 100)
+## Shared Conventions
 
-### Filtering (media)
-- `type` - `anime`, `manga`, `movie`, `ova`, `ona`, `special`
-- `status` - `current`, `finished`, `upcoming`, `tba`
-- `genre` - genre slug
+### Response Envelope
 
-### Search
-- `q` - search query (required)
-- `type` - `media`, `person`, `collection`
-- `locale` - filter by locale
-
-## Response Format
+Every response uses the same JSON structure:
 
 ```json
 {
   "ok": true,
   "data": {},
   "params": {
+    "locale": "en",
     "page": 1,
     "pageSize": 20,
     "total": 100
@@ -95,13 +40,55 @@ Base URL: `http://localhost:3000/api/v1`
 }
 ```
 
-## Localize
+Error response:
 
-Add `locale` query param to get localized content:
-- `locale=en` (default)
-- `locale=ja`
-- `locale=es`
+```json
+{
+  "ok": false,
+  "error": "Not found",
+  "status": 404
+}
+```
 
-## Rate Limit
+---
+
+### Pagination
+
+All list endpoints accept:
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `page` | `1` | Page number (1-indexed) |
+| `limit` | `20` | Items per page (max 100) |
+
+---
+
+### Localization
+
+Add `locale` to any request to receive translated content.
+
+| Value | Language |
+|-------|----------|
+| `en` | English (default) |
+| `ja` | Japanese |
+| `es` | Spanish |
+
+If a translation is missing, the original title/name is returned as fallback.
+
+---
+
+### Authentication
+
+Protected routes require a Bearer token in the `Authorization` header:
+
+```
+Authorization: Bearer <token>
+```
+
+Tokens are obtained via `POST /auth/login`. Admin-only routes require the `admin` role.
+
+---
+
+### Rate Limit
 
 - 60 requests per minute per IP
