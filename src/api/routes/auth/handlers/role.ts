@@ -19,7 +19,7 @@ export const handleRoleCreate = withAdmin(async (ctx: ApiContext, _user: AuthUse
     const { drizzle } = ctx;
     const result = await ctx.body();
     if (!result.success) return result.error;
-    const body = result.data as any;
+    const body = result.data as Record<string, unknown>;
 
     if (!body.name) return ctx.badRequest("Missing role name");
 
@@ -28,8 +28,8 @@ export const handleRoleCreate = withAdmin(async (ctx: ApiContext, _user: AuthUse
 
     const now = new Date().toISOString();
     drizzle.insert(rolesTable).values({
-      name: body.name,
-      description: body.description || "",
+      name: String(body.name),
+      description: String(body.description || ""),
       is_default: 0,
       created_at: now,
       updated_at: now

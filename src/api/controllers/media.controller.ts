@@ -25,6 +25,7 @@ export class MediaController {
       page, limit: pageSize, type, genre, tag, status, 
       sort_by: sortBy, order, q: search, 
       year_from: yearFrom, year_to: yearTo, score_from: scoreFrom,
+      stats: includeStats,
       offset: requestedOffset
     } = v.data;
 
@@ -34,10 +35,18 @@ export class MediaController {
     const { drizzle, locale } = ctx;
 
     const posterSubquery = `(SELECT url FROM images WHERE entity_type='media' AND entity_id=m.id AND image_type='poster' AND is_primary=1 LIMIT 1)`;
+    
+    let selectFields = `m.id, m.slug, ct.slug AS content_type, m.original_title, m.status, m.release_date, m.total_episodes, m.total_seasons, m.score, m.popularity, m.view_count, COALESCE(mt.title, m.original_title) AS title, mt.synopsis_short, ${posterSubquery} AS poster_url, mt.id AS translation_id`;
+    
+    if (includeStats) {
+      const seasonCount = `(SELECT COUNT(*) FROM seasons WHERE media_id = m.id)`;
+      const episodeCount = `(SELECT COUNT(*) FROM episodes WHERE media_id = m.id)`;
+      selectFields += `, ${seasonCount} AS live_seasons_count, ${episodeCount} AS live_episodes_count`;
+    }
 
     const itemsQuery = drizzle.select(mediaTable).as("m")
       .distinct()
-      .selectRaw(`m.id, m.slug, ct.slug AS content_type, m.original_title, m.status, m.release_date, m.score, m.popularity, m.view_count, COALESCE(mt.title, m.original_title) AS title, mt.synopsis_short, ${posterSubquery} AS poster_url, mt.id AS translation_id`)
+      .selectRaw(selectFields)
       .join("content_types ct", "ct.id = m.content_type_id")
       .leftJoin("media_translations mt", "mt.media_id = m.id AND mt.locale = ?", [locale]);
 
@@ -104,11 +113,20 @@ export class MediaController {
 
   static getDetail(ctx: ApiContext, id: number) {
     const { drizzle, locale } = ctx;
+    const includeStats = ctx.query("stats") === "true" || ctx.query("stats") === "1";
 
     const posterSubquery = `(SELECT url FROM images WHERE entity_type='media' AND entity_id=m.id AND image_type='poster' AND is_primary=1 LIMIT 1)`;
 
+    let selectFields = `m.id, m.slug, ct.slug AS content_type, m.original_title, m.original_language, m.status, m.release_date, m.end_date, m.runtime_minutes, m.total_episodes, m.total_seasons, m.score, m.score_count, m.popularity, m.view_count, m.age_rating, m.is_adult, m.external_ids, COALESCE(mt.title, m.original_title) AS title, mt.tagline, mt.synopsis, mt.synopsis_short, ${posterSubquery} AS poster_url, mt.id AS translation_id`;
+
+    if (includeStats) {
+      const seasonCount = `(SELECT COUNT(*) FROM seasons WHERE media_id = m.id)`;
+      const episodeCount = `(SELECT COUNT(*) FROM episodes WHERE media_id = m.id)`;
+      selectFields += `, ${seasonCount} AS live_seasons_count, ${episodeCount} AS live_episodes_count`;
+    }
+
     const row = drizzle.select(mediaTable).as("m")
-      .selectRaw(`m.id, m.slug, ct.slug AS content_type, m.original_title, m.original_language, m.status, m.release_date, m.end_date, m.runtime_minutes, m.total_episodes, m.total_seasons, m.score, m.score_count, m.popularity, m.view_count, m.age_rating, m.is_adult, m.external_ids, COALESCE(mt.title, m.original_title) AS title, mt.tagline, mt.synopsis, mt.synopsis_short, ${posterSubquery} AS poster_url, mt.id AS translation_id`)
+      .selectRaw(selectFields)
       .join("content_types ct", "ct.id = m.content_type_id")
       .leftJoin("media_translations mt", "mt.media_id = m.id AND mt.locale = ?", [locale])
       .where("m.id = ?", [id])
@@ -270,7 +288,7 @@ export class MediaController {
     const posterSubquery = `(SELECT url FROM images WHERE entity_type='media' AND entity_id=m.id AND image_type='poster' AND is_primary=1 LIMIT 1)`;
 
     const rows = drizzle.select(mediaRelationsTable).as("r")
-      .selectRaw(`r.relation_type, m.id, m.slug, ct.slug AS content_type, m.original_title, m.score, m.status, COALESCE(mt.title, m.original_title) AS title, ${posterSubquery} AS poster_url`)
+      .selectRaw(`r.relation_type, m.id, m.slug, ct.slug AS content_type, m.original_title, m.score, m.status, m.total_episodes, m.total_seasons, COALESCE(mt.title, m.original_title) AS title, ${posterSubquery} AS poster_url`)
       .join("media m", "m.id = r.related_media_id")
       .join("content_types ct", "ct.id = m.content_type_id")
       .leftJoin("media_translations mt", "mt.media_id = m.id AND mt.locale = ?", [locale])

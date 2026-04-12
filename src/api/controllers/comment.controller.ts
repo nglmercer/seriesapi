@@ -80,9 +80,9 @@ export class CommentController {
     const comment = drizzle.select(commentsTable)
       .where("id = ?", [id])
       .get();
-    
+
     if (!comment) return { error: ctx.notFound("Comment") };
-    
+
     // Authorization: only the author or an admin can update
     // We check against both display_name and username since createComment uses either
     if (comment.display_name !== user.display_name && comment.display_name !== user.username && user.role !== 'admin') {
@@ -90,10 +90,10 @@ export class CommentController {
     }
 
     const { body, contains_spoilers, is_hidden } = v.data;
-    const updateData: any = { updated_at: new Date().toISOString() };
+    const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (body !== undefined) updateData.body = body.trim();
     if (contains_spoilers !== undefined) updateData.contains_spoilers = contains_spoilers ? 1 : 0;
-    
+
     // is_hidden can only be toggled by admin
     if (is_hidden !== undefined && user.role === 'admin') {
       updateData.is_hidden = is_hidden ? 1 : 0;
@@ -107,7 +107,7 @@ export class CommentController {
     const updated = drizzle.select(commentsTable)
       .where("id = ?", [id])
       .get();
-      
+
     return { data: updated, locale };
   }
 }

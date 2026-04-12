@@ -71,18 +71,18 @@ export const handleUserUpdateAdmin = withAdmin(async (ctx: ApiContext, _user: Au
 
     const result = await ctx.body();
     if (!result.success) return result.error;
-    const body = result.data as any;
+    const body = result.data as Record<string, unknown>;
 
     const existing = drizzle.select(usersTable).where("id = ?", [targetUserId]).get();
     if (!existing) return ctx.notFound("User");
-
+    const bodyPassword = body.password as string;
     const updateData: Record<string, any> = {};
     if (body.display_name !== undefined) updateData.display_name = body.display_name;
     if (body.email !== undefined) updateData.email = body.email;
     if (body.role !== undefined) updateData.role = body.role;
     if (body.is_active !== undefined) updateData.is_active = body.is_active ? 1 : 0;
-    if (body.password !== undefined && body.password.length >= 6) {
-      updateData.password_hash = await hashPassword(body.password);
+    if (bodyPassword !== undefined && bodyPassword.length >= 6) {
+      updateData.password_hash = await hashPassword(bodyPassword);
     }
 
     if (Object.keys(updateData).length === 0) return ctx.ok({ message: "No changes" });

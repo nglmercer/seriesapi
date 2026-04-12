@@ -10,7 +10,7 @@ export const handleVerifyCodeGenerate = withAdmin(async (ctx: ApiContext, _user:
   try {
     const result = await ctx.body();
     if (!result.success) return result.error;
-    const { username, target_role } = result.data as any;
+    const { username, target_role } = result.data as Record<string, unknown>;
 
     if (!username || !target_role) {
       return ctx.badRequest("Missing username or target_role");
@@ -33,7 +33,7 @@ export const handleVerifyCodeGenerate = withAdmin(async (ctx: ApiContext, _user:
 
     drizzle.insert(verificationCodesTable).values({
       code,
-      target_role,
+      target_role: String(target_role),
       user_id: userId,
       expires_at: expiresAt,
       used: 0,
@@ -74,9 +74,9 @@ export const handleRoleChallengeRequest = withAuth(async (ctx: ApiContext, user:
     console.log(`[SECURITY] CHALLENGE CODE: ${code}`);
     console.log("================================================================================");
 
-    return ctx.ok({ 
+    return ctx.ok({
       message: "Challenge initiated. Please check server logs for verification code.",
-      expires_at: expiresAt 
+      expires_at: expiresAt
     });
   } catch (err) {
     return serverError(err, ctx.locale);
@@ -89,7 +89,7 @@ export async function handleVerifyCodeApply(ctx: ApiContext): Promise<Response> 
   try {
     const result = await ctx.body();
     if (!result.success) return result.error;
-    const { code } = result.data as any;
+    const { code } = result.data as Record<string, unknown>;
 
     if (!code) {
       return ctx.badRequest("Missing code");
@@ -118,7 +118,7 @@ export async function handleVerifyCodeApply(ctx: ApiContext): Promise<Response> 
       .set({ role: verifyCode.target_role, updated_at: new Date().toISOString() })
       .where("id = ?", [verifyCode.user_id as number])
       .run();
-    
+
     drizzle.update(verificationCodesTable)
       .set({ used: 1 })
       .where("id = ?", [verifyCode.id as number])

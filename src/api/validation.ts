@@ -77,6 +77,7 @@ export const mediaFilterSchema = z.object({
   year_from: z.coerce.number().int().optional(),
   year_to: z.coerce.number().int().optional(),
   score_from: z.coerce.number().optional(),
+  stats: z.coerce.boolean().optional(),
 });
 
 export const mediaListParamsSchema = mediaFilterSchema.extend({
