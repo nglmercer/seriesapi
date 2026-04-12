@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from "bun:test"
 import { getDb, enableInMemoryDatabase, initializeDatabase, closeDatabase } from "../../src/init";
 import { handleSeasonDetail, handleSeasonEpisodes, handleSeasonImages } from "../../src/api/routes/seasons";
 import { uniqueSlug, getContentTypeId } from "../setup";
+import { ApiContext } from "../../src/api/context";
 
 describe("Seasons Routes", () => {
   beforeAll(async () => {
@@ -29,7 +30,7 @@ describe("Seasons Routes", () => {
       const sResult = db.run("INSERT INTO seasons (media_id, season_number, episode_count, score, air_date, end_date) VALUES (?, 1, 12, 8.5, '2023-01-01', '2023-03-31')", [mResult.lastInsertRowid]);
 
       const req = new Request(`http://localhost/api/v1/seasons/${sResult.lastInsertRowid}`);
-      const res = handleSeasonDetail(req, db, Number(sResult.lastInsertRowid));
+      const res = handleSeasonDetail(ApiContext.from(req), Number(sResult.lastInsertRowid));
       const body = await res.json() as { data: { season_number: number; episode_count: number } };
       expect(body.data.season_number).toBe(1);
       expect(body.data.episode_count).toBe(12);
@@ -43,7 +44,7 @@ describe("Seasons Routes", () => {
       db.run("INSERT INTO season_translations (season_id, locale, name, synopsis) VALUES (?, 'en', 'Season One', 'First season')", [sResult.lastInsertRowid]);
 
       const req = new Request(`http://localhost/api/v1/seasons/${sResult.lastInsertRowid}`);
-      const res = handleSeasonDetail(req, db, Number(sResult.lastInsertRowid));
+      const res = handleSeasonDetail(ApiContext.from(req), Number(sResult.lastInsertRowid));
       const body = await res.json() as { data: { name: string } };
       expect(body.data.name).toBe("Season One");
     });
@@ -51,7 +52,7 @@ describe("Seasons Routes", () => {
     it("should return 404 for non-existent season", async () => {
       const db = getDb();
       const req = new Request("http://localhost/api/v1/seasons/999");
-      const res = handleSeasonDetail(req, db, 999);
+      const res = handleSeasonDetail(ApiContext.from(req), 999);
       expect(res.status).toBe(404);
     });
   });
@@ -66,7 +67,7 @@ describe("Seasons Routes", () => {
       db.run("INSERT INTO episodes (media_id, season_id, episode_number, absolute_number, runtime_minutes, score) VALUES (?, ?, 2, 2, 24, 8.5)", [mResult.lastInsertRowid, sResult.lastInsertRowid]);
 
       const req = new Request(`http://localhost/api/v1/seasons/${sResult.lastInsertRowid}/episodes`);
-      const res = handleSeasonEpisodes(req, db, Number(sResult.lastInsertRowid));
+      const res = handleSeasonEpisodes(ApiContext.from(req), Number(sResult.lastInsertRowid));
       const body = await res.json() as { data: unknown[] };
       expect(body.data.length).toBe(2);
     });
@@ -79,7 +80,7 @@ describe("Seasons Routes", () => {
       for (let i = 1; i <= 25; i++) db.run("INSERT INTO episodes (media_id, season_id, episode_number) VALUES (?, ?, ?)", [mResult.lastInsertRowid, sResult.lastInsertRowid, i]);
 
       const req = new Request(`http://localhost/api/v1/seasons/${sResult.lastInsertRowid}/episodes?page=1&limit=10`);
-      const res = handleSeasonEpisodes(req, db, Number(sResult.lastInsertRowid));
+      const res = handleSeasonEpisodes(ApiContext.from(req), Number(sResult.lastInsertRowid));
       const body = await res.json() as { data: unknown[]; meta: { total: number } };
       expect(body.data.length).toBe(10);
       expect(body.meta.total).toBe(25);
@@ -95,7 +96,7 @@ describe("Seasons Routes", () => {
       db.run("INSERT INTO images (entity_type, entity_id, image_type, url, is_primary) VALUES ('season', ?, 'poster', 'http://img.com/poster.jpg', 1)", [sResult.lastInsertRowid]);
 
       const req = new Request(`http://localhost/api/v1/seasons/${sResult.lastInsertRowid}/images`);
-      const res = handleSeasonImages(req, db, Number(sResult.lastInsertRowid));
+      const res = handleSeasonImages(ApiContext.from(req), Number(sResult.lastInsertRowid));
       const body = await res.json() as { data: { image_type: string }[] };
       expect(body.data[0]!.image_type).toBe("poster");
     });

@@ -33,34 +33,34 @@ export async function handleAuthRouter(ctx: ApiContext): Promise<Response> {
   const PUT = ctx.PUT;
   const DELETE = ctx.DELETE;
 
-  if (p3 === "register" && POST) return handleRegister(ctx.req);
-  if (p3 === "login" && POST) return handleLogin(ctx.req);
-  if (p3 === "logout" && POST) return handleLogout(ctx.req);
-  if (p3 === "me" && GET) return handleMe(ctx.req);
-  if (p3 === "update" && (PATCH || PUT)) return handleUserUpdate(ctx.req);
+  if (p3 === "register" && POST) return handleRegister(ctx);
+  if (p3 === "login" && POST) return handleLogin(ctx);
+  if (p3 === "logout" && POST) return handleLogout(ctx);
+  if (p3 === "me" && GET) return handleMe(ctx);
+  if (p3 === "update" && (PATCH || PUT)) return handleUserUpdate(ctx);
   
   if (p3 === "users") {
-    if (GET && !p4) return handleUserList(ctx.req);
-    if ((PATCH || PUT) && p4) return handleUserUpdateAdmin(ctx.req);
-    if (DELETE && p4) return handleUserDelete(ctx.req);
-    return notFound("User management route", locale);
+    if (GET && !p4) return handleUserList(ctx);
+    if ((PATCH || PUT) && p4) return handleUserUpdateAdmin(ctx);
+    if (DELETE && p4) return handleUserDelete(ctx);
+    return ctx.notFound("User management route");
   }
 
   if (p3 === "roles") {
-    if (GET && !p4) return handleRoleList(ctx.req);
-    if (POST && !p4) return handleRoleCreate(ctx.req);
-    if ((PATCH || PUT) && p4) return handleRoleUpdate(ctx.req);
-    if (DELETE && p4) return handleRoleDelete(ctx.req);
-    return notFound("Role management route", locale);
+    if (GET && !p4) return handleRoleList(ctx);
+    if (POST && !p4) return handleRoleCreate(ctx);
+    if ((PATCH || PUT) && p4) return handleRoleUpdate(ctx);
+    if (DELETE && p4) return handleRoleDelete(ctx);
+    return ctx.notFound("Role management route");
   }
 
   if (p3 === "verify-code") {
-    if (p4 === "generate" && POST) return handleVerifyCodeGenerate(ctx.req);
-    if (p4 === "apply" && POST) return handleVerifyCodeApply(ctx.req);
-    return notFound("Verification code route", locale);
+    if (p4 === "generate" && POST) return handleVerifyCodeGenerate(ctx);
+    if (p4 === "apply" && POST) return handleVerifyCodeApply(ctx);
+    return ctx.notFound("Verification code route");
   }
 
-  if (p3 === "role-challenge" && POST) return handleRoleChallengeRequest(ctx.req);
+  if (p3 === "role-challenge" && POST) return handleRoleChallengeRequest(ctx);
 
-  return notFound("Auth route", locale);
+  return ctx.notFound("Auth route");
 }

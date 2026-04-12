@@ -8,6 +8,7 @@ import { Database } from "sqlite-napi";
 
 import { sqliteNapi } from "../../src/core/driver";
 import { mock } from "bun:test";
+import { ApiContext } from "../../src/api/context";
 
 // A dummy db that throws on any query
 const failingDb = {
@@ -21,7 +22,8 @@ const failingDb = {
 
 mock.module("../../src/init", () => {
   return {
-    getDrizzle: () => sqliteNapi(failingDb)
+    getDrizzle: () => sqliteNapi(failingDb),
+    getDb: () => failingDb
   }
 });
 
@@ -29,38 +31,44 @@ describe("Error Handling in Routes", () => {
   const req = new Request("http://localhost/");
 
   it("should handle errors in episodes routes", () => {
-    expect(handleEpisodeDetail(req, failingDb, 1).status).toBe(500);
-    expect(handleEpisodeCredits(req, failingDb, 1).status).toBe(500);
-    expect(handleEpisodeImages(req, failingDb, 1).status).toBe(500);
-    expect(handleEpisodeComments(req, failingDb, 1).status).toBe(500);
+    const ctx = ApiContext.from(req);
+    expect(handleEpisodeDetail(ctx, 1).status).toBe(500);
+    expect(handleEpisodeCredits(ctx, 1).status).toBe(500);
+    expect(handleEpisodeImages(ctx, 1).status).toBe(500);
+    expect(handleEpisodeComments(ctx, 1).status).toBe(500);
   });
 
   it("should handle errors in media routes", () => {
-    expect(handleMediaList(req, failingDb).status).toBe(500);
-    expect(handleMediaDetail(req, failingDb, 1).status).toBe(500);
-    expect(handleMediaSeasons(req, failingDb, 1).status).toBe(500);
-    expect(handleMediaEpisodes(req, failingDb, 1).status).toBe(500);
-    expect(handleMediaCredits(req, failingDb, 1).status).toBe(500);
-    expect(handleMediaVideos(req, failingDb, 1).status).toBe(500);
-    expect(handleMediaRelated(req, failingDb, 1).status).toBe(500);
-    expect(handleMediaImages(req, failingDb, 1).status).toBe(500);
-    expect(handleMediaComments(req, failingDb, 1).status).toBe(500);
+    const ctx = ApiContext.from(req);
+    expect(handleMediaList(ctx).status).toBe(500);
+    expect(handleMediaDetail(ctx, 1).status).toBe(500);
+    expect(handleMediaSeasons(ctx, 1).status).toBe(500);
+    expect(handleMediaEpisodes(ctx, 1).status).toBe(500);
+    expect(handleMediaCredits(ctx, 1).status).toBe(500);
+    expect(handleMediaVideos(ctx, 1).status).toBe(500);
+    expect(handleMediaRelated(ctx, 1).status).toBe(500);
+    expect(handleMediaImages(ctx, 1).status).toBe(500);
+    expect(handleMediaComments(ctx, 1).status).toBe(500);
   });
 
   it("should handle errors in people routes", () => {
-    expect(handlePeopleList(req, failingDb).status).toBe(500);
-    expect(handlePersonDetail(req, failingDb, 1).status).toBe(500);
-    expect(handlePersonCredits(req, failingDb, 1).status).toBe(500);
+    const ctx = ApiContext.from(req);
+    expect(handlePeopleList(ctx).status).toBe(500);
+    expect(handlePersonDetail(ctx, 1).status).toBe(500);
+    expect(handlePersonCredits(ctx, 1).status).toBe(500);
   });
 
   it("should handle errors in search routes", () => {
     const searchReq = new Request("http://localhost/?q=test");
-    expect(handleSearch(searchReq, failingDb).status).toBe(500);
+    const ctx = ApiContext.from(searchReq);
+    expect(handleSearch(ctx).status).toBe(500);
   });
 
   it("should handle errors in seasons routes", () => {
-    expect(handleSeasonDetail(req, failingDb, 1).status).toBe(500);
-    expect(handleSeasonEpisodes(req, failingDb, 1).status).toBe(500);
-    expect(handleSeasonImages(req, failingDb, 1).status).toBe(500);
+    const ctx = ApiContext.from(req);
+    expect(handleSeasonDetail(ctx, 1).status).toBe(500);
+    expect(handleSeasonEpisodes(ctx, 1).status).toBe(500);
+    expect(handleSeasonImages(ctx, 1).status).toBe(500);
   });
 });
+

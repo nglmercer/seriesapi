@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from "bun:test"
 import { getDb, enableInMemoryDatabase, initializeDatabase, closeDatabase } from "../../src/init";
 import { handleSearch } from "../../src/api/routes/search";
 import { uniqueSlug, getContentTypeId } from "../setup";
+import { ApiContext } from "../../src/api/context";
 
 describe("Search Route", () => {
   beforeAll(async () => {
@@ -29,7 +30,7 @@ describe("Search Route", () => {
       db.run("INSERT INTO media (content_type_id, slug, original_title) VALUES (?, ?, 'The Matrix')", [ct, uniqueSlug("search")]);
 
       const req = new Request("http://localhost/api/v1/search?q=Matrix&type=media");
-      const res = handleSearch(req, db);
+      const res = handleSearch(ApiContext.from(req));
       const body = await res.json() as { data: { entity_type: string }[] };
       expect(body.data.length).toBeGreaterThan(0);
       expect(body.data[0]!.entity_type).toBe("media");
@@ -41,7 +42,7 @@ describe("Search Route", () => {
       db.run("INSERT INTO people (name) VALUES ('Tom Cruise')");
 
       const req = new Request("http://localhost/api/v1/search?q=Keanu&type=person");
-      const res = handleSearch(req, db);
+      const res = handleSearch(ApiContext.from(req));
       const body = await res.json() as { data: { entity_type: string }[] };
       expect(body.data[0]!.entity_type).toBe("person");
     });
@@ -53,21 +54,21 @@ describe("Search Route", () => {
       db.run("INSERT INTO people (name) VALUES ('Actor')");
 
       const req = new Request("http://localhost/api/v1/search?q=Movie");
-      const res = handleSearch(req, db);
+      const res = handleSearch(ApiContext.from(req));
       expect(res.status).toBe(200);
     });
 
     it("should reject short search queries", async () => {
       const db = getDb();
       const req = new Request("http://localhost/api/v1/search?q=a");
-      const res = handleSearch(req, db);
+      const res = handleSearch(ApiContext.from(req));
       expect(res.status).toBe(400);
     });
 
     it("should handle empty results", async () => {
       const db = getDb();
       const req = new Request("http://localhost/api/v1/search?q=nonexistent");
-      const res = handleSearch(req, db);
+      const res = handleSearch(ApiContext.from(req));
       const body = await res.json() as { data: unknown[]; meta: { total: number } };
       expect(body.data.length).toBe(0);
       expect(body.meta.total).toBe(0);
@@ -80,7 +81,7 @@ describe("Search Route", () => {
       db.run("INSERT INTO media_translations (media_id, locale, title) VALUES (?, 'en', 'Translated')", [mResult.lastInsertRowid]);
 
       const req = new Request("http://localhost/api/v1/search?q=Translated&type=media");
-      const res = handleSearch(req, db);
+      const res = handleSearch(ApiContext.from(req));
       const body = await res.json() as { data: { title: string }[] };
       expect(body.data[0]!.title).toBe("Translated");
     });
