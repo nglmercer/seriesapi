@@ -117,6 +117,12 @@ export const commentCreateSchema = z.object({
   parent_id: idSchema.optional().nullable(),
 });
 
+export const commentUpdateSchema = z.object({
+  body: z.string().trim().min(1).max(2000).optional(),
+  contains_spoilers: z.boolean().optional(),
+  is_hidden: z.boolean().optional(),
+});
+
 export const registerSchema = z.object({
   username: z.string().trim().min(3).max(32),
   email: z.email(),

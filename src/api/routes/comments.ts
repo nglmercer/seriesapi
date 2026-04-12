@@ -66,3 +66,16 @@ export const handleUserComments = withAuth(async (ctx: ApiContext, user) => {
     return serverError(err, ctx.locale);
   }
 });
+
+export function handleCommentUpdate(ctx: ApiContext, id: number) {
+  return withAuth(async (ctx, user) => {
+    try {
+      const result = await CommentController.updateComment(ctx, id, user);
+      if (result.error) return result.error;
+
+      return ctx.ok(CommentView.formatDetail(result.data), { locale: result.locale });
+    } catch (err) {
+      return serverError(err, ctx.locale);
+    }
+  })(ctx);
+}

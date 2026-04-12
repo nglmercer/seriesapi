@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
-import { badRequest } from "../response";
+import { badRequest, forbidden } from "../response";
 import { commentsTable } from "../../schema";
-import { commentCreateSchema } from "../validation";
+import { commentCreateSchema, commentUpdateSchema } from "../validation";
 import type { AuthUser } from "../routes/auth/middleware";
 import { ApiContext } from "../context";
 
@@ -70,5 +70,44 @@ export class CommentController {
       .get();
 
     return { comment, locale };
+  }
+
+  static async updateComment(ctx: ApiContext, id: number, user: AuthUser) {
+    const { drizzle, locale } = ctx;
+    const v = await ctx.body(commentUpdateSchema);
+    if (!v.success) return { error: v.error };
+
+    const comment = drizzle.select(commentsTable)
+      .where("id = ?", [id])
+      .get();
+    
+    if (!comment) return { error: ctx.notFound("Comment") };
+    
+    // Authorization: only the author or an admin can update
+    // We check against both display_name and username since createComment uses either
+    if (comment.display_name !== user.display_name && comment.display_name !== user.username && user.role !== 'admin') {
+      return { error: forbidden("You are not allowed to edit this comment", locale) };
+    }
+
+    const { body, contains_spoilers, is_hidden } = v.data;
+    const updateData: any = { updated_at: new Date().toISOString() };
+    if (body !== undefined) updateData.body = body.trim();
+    if (contains_spoilers !== undefined) updateData.contains_spoilers = contains_spoilers ? 1 : 0;
+    
+    // is_hidden can only be toggled by admin
+    if (is_hidden !== undefined && user.role === 'admin') {
+      updateData.is_hidden = is_hidden ? 1 : 0;
+    }
+
+    drizzle.update(commentsTable)
+      .set(updateData)
+      .where("id = ?", [id])
+      .run();
+
+    const updated = drizzle.select(commentsTable)
+      .where("id = ?", [id])
+      .get();
+      
+    return { data: updated, locale };
   }
 }

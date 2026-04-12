@@ -206,3 +206,28 @@ Get comments posted by the currently authenticated user. **Auth required.**
 ```
 
 > IP addresses are SHA-256 hashed before storage and never exposed in responses.
+---
+
+## PUT /api/v1/comments/:id
+
+Update an existing comment. **Auth required.** Only the author or an administrator can update the comment body or spoiler tag. Administrators can also toggle visibility.
+
+### Request Body (JSON)
+
+```json
+{
+  "body": "Updated comment text",
+  "contains_spoilers": true,
+  "is_hidden": false
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| "body" | string | New comment text |
+| "contains_spoilers" | boolean | Update spoiler tag |
+| "is_hidden" | boolean | **Admin only** — Hide/unhide the comment |
+
+### Response (200)
+
+Returns the updated comment object in the "data" field.

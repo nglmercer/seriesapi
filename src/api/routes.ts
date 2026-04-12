@@ -28,7 +28,8 @@ import { handleGenresList, handleGenreMedia } from "./routes/genres";
 import { handleTagsList } from "./routes/tags";
 import { handleCollectionsList, handleCollectionDetail } from "./routes/collections";
 import { handleSearch } from "./routes/search";
-import { handleCommentPost, handleCommentGet, handleUserComments } from "./routes/comments";
+import { handleCommentPost, handleCommentGet, handleUserComments, handleCommentUpdate } from "./routes/comments";
+import { handleStats } from "./routes/stats";
 import { handleAuthRouter } from "./routes/auth";
 import { handleReportCreate, handleReportList } from "./routes/reports";
 import { handleRatingPost, handleRatingGet, handleTopRatings, handleUserRatings } from "./routes/ratings";
@@ -131,11 +132,19 @@ export function createRouteHandler() {
     if (resource === "comments") {
       if (GET && p3 === "user") return handleUserComments(ctx);
       if (POST && !p3) return handleCommentPost(ctx);
-      if (GET && p3) {
+      if (p3) {
         const id = ctx.seg(3);
-        if (!isNaN(id)) return handleCommentGet(ctx, id);
+        if (!isNaN(id)) {
+          if (GET) return handleCommentGet(ctx, id);
+          if (ctx.PUT) return handleCommentUpdate(ctx, id);
+        }
       }
       return GET ? notFound("Comment", locale) : methodNotAllowed(locale);
+    }
+
+    if (resource === "stats") {
+      if (GET) return handleStats(ctx);
+      return methodNotAllowed(locale);
     }
 
     if (resource === "reports") {

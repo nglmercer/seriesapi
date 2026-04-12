@@ -16,3 +16,4 @@ This project was created using `bun init` in bun v1.3.11. [Bun](https://bun.com)
 
 ## notes
 - add edit delete comments routers db?
+- clone repo and asign media element

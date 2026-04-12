@@ -9,7 +9,8 @@ Base URL: `http://localhost:3000/api/v1`
 | 🎬 Media | [media.md](./media.md) | List, detail, seasons, episodes, credits, images, videos, related, comments, bulk |
 | 📺 Seasons | [seasons.md](./seasons.md) | Detail, episodes, images, comments — CRUD |
 | 🎞️ Episodes | [episodes.md](./episodes.md) | Detail, credits, images, comments, neighbors, views — CRUD |
-| 💬 Comments | [comments.md](./comments.md) | Create, get thread, get by entity, user comments |
+| 💬 Comments | [comments.md](./comments.md) | Create, get thread, update, user comments |
+| 📊 Stats | [stats.md](./stats.md) | Agnostic table counts and filtered counts |
 | ⭐ Ratings | [ratings.md](./ratings.md) | Create/update, get by entity, user ratings, top ratings |
 | 🔍 Search | [search.md](./search.md) | Full-text search across media, people, collections |
 | 👤 People | [people.md](./people.md) | List, detail, credits |
