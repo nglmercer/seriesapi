@@ -7,7 +7,6 @@ import { handleSeasonDetail, handleSeasonEpisodes, handleSeasonImages } from "..
 import { Database } from "sqlite-napi";
 
 import { sqliteNapi } from "../../src/core/driver";
-import { mock } from "bun:test";
 import { ApiContext } from "../../src/api/context";
 
 // A dummy db that throws on any query
@@ -20,18 +19,13 @@ const failingDb = {
   }
 } as unknown as Database;
 
-mock.module("../../src/init", () => {
-  return {
-    getDrizzle: () => sqliteNapi(failingDb),
-    getDb: () => failingDb
-  }
-});
+const failingDrizzle = sqliteNapi(failingDb);
 
 describe("Error Handling in Routes", () => {
   const req = new Request("http://localhost/");
 
   it("should handle errors in episodes routes", () => {
-    const ctx = ApiContext.from(req);
+    const ctx = new ApiContext(req, failingDrizzle, failingDb);
     expect(handleEpisodeDetail(ctx, 1).status).toBe(500);
     expect(handleEpisodeCredits(ctx, 1).status).toBe(500);
     expect(handleEpisodeImages(ctx, 1).status).toBe(500);
@@ -39,7 +33,7 @@ describe("Error Handling in Routes", () => {
   });
 
   it("should handle errors in media routes", () => {
-    const ctx = ApiContext.from(req);
+    const ctx = new ApiContext(req, failingDrizzle, failingDb);
     expect(handleMediaList(ctx).status).toBe(500);
     expect(handleMediaDetail(ctx, 1).status).toBe(500);
     expect(handleMediaSeasons(ctx, 1).status).toBe(500);
@@ -52,7 +46,7 @@ describe("Error Handling in Routes", () => {
   });
 
   it("should handle errors in people routes", () => {
-    const ctx = ApiContext.from(req);
+    const ctx = new ApiContext(req, failingDrizzle, failingDb);
     expect(handlePeopleList(ctx).status).toBe(500);
     expect(handlePersonDetail(ctx, 1).status).toBe(500);
     expect(handlePersonCredits(ctx, 1).status).toBe(500);
@@ -60,15 +54,16 @@ describe("Error Handling in Routes", () => {
 
   it("should handle errors in search routes", () => {
     const searchReq = new Request("http://localhost/?q=test");
-    const ctx = ApiContext.from(searchReq);
+    const ctx = new ApiContext(searchReq, failingDrizzle, failingDb);
     expect(handleSearch(ctx).status).toBe(500);
   });
 
   it("should handle errors in seasons routes", () => {
-    const ctx = ApiContext.from(req);
+    const ctx = new ApiContext(req, failingDrizzle, failingDb);
     expect(handleSeasonDetail(ctx, 1).status).toBe(500);
     expect(handleSeasonEpisodes(ctx, 1).status).toBe(500);
     expect(handleSeasonImages(ctx, 1).status).toBe(500);
   });
 });
+
 
