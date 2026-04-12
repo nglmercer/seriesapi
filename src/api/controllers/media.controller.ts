@@ -172,8 +172,10 @@ export class MediaController {
   static getSeasons(ctx: ApiContext, mediaId: number) {
     const { drizzle, locale } = ctx;
 
+    const posterSubquery = `(SELECT url FROM images WHERE entity_type='season' AND entity_id=s.id AND image_type='poster' AND is_primary=1 LIMIT 1)`;
+
     const rows = drizzle.select(seasonsTable).as("s")
-      .selectRaw(`s.id, s.season_number, s.episode_count, s.air_date, s.score, COALESCE(st.name, 'Season ' || s.season_number) AS name, st.synopsis`)
+      .selectRaw(`s.id, s.media_id, s.season_number, s.episode_count, s.air_date, s.score, COALESCE(st.name, 'Season ' || s.season_number) AS name, st.synopsis, ${posterSubquery} AS poster_url`)
       .leftJoin("season_translations st", "st.season_id = s.id AND st.locale = ?", [locale])
       .where("s.media_id = ?", [mediaId])
       .orderBy("s.season_number", "asc")

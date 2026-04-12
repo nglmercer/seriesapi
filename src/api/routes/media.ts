@@ -37,7 +37,6 @@ export function handleMediaDetail(ctx: ApiContext, id: number): Response {
 export function handleMediaSeasons(ctx: ApiContext, mediaId: number): Response {
   try {
     const { rows, locale, total } = MediaController.getSeasons(ctx, mediaId);
-    if (!rows.length) return ctx.notFound("Seasons");
     return ctx.ok(MediaView.formatSeasons(rows), { locale, total });
   } catch (err) { return serverError(err, ctx.locale); }
 }
