@@ -22,6 +22,7 @@ Paginated list of media entries.
 | `year_from` | number | — | Release year ≥ value |
 | `year_to` | number | — | Release year ≤ value |
 | `score_from` | number | — | Minimum score |
+| `stats` | boolean | `false` | Include live counts (`live_seasons_count`, `live_episodes_count`) |
 | `sort_by` | string | `popularity` | Sort field: `score`, `popularity`, `release_date`, `title`, `view_count` |
 | `order` | string | `desc` | Sort direction: `asc` or `desc` |
 | `locale` | string | `en` | Response locale |
@@ -40,6 +41,10 @@ Paginated list of media entries.
       "title": "My Anime",
       "status": "current",
       "release_date": "2024-04-01",
+      "total_episodes": 12,
+      "total_seasons": 1,
+      "live_seasons_count": 1,
+      "live_episodes_count": 12,
       "score": 8.5,
       "popularity": 1200,
       "view_count": 50000,
@@ -83,6 +88,8 @@ Single media detail including genres, tags, studios, networks, and rating info.
     "runtime_minutes": 24,
     "total_episodes": 12,
     "total_seasons": 1,
+    "live_seasons_count": 1,
+    "live_episodes_count": 12,
     "score": 8.5,
     "score_count": 340,
     "popularity": 1200,

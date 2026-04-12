@@ -64,6 +64,16 @@ All list endpoints accept:
 
 ---
 
+### Hydration & Statistics
+
+Some endpoints support extra "hydration" via query parameters to avoid extra requests:
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `stats` | boolean | Include live counts (e.g., `live_seasons_count`, `live_episodes_count` in media) |
+
+---
+
 ### Localization
 
 Add `locale` to any request to receive translated content.
