@@ -21,7 +21,7 @@ export const handleRoleCreate = withAdmin(async (req: Request, _user: AuthUser) 
   try {
     const body = await req.json();
     if (!body.name) return badRequest("Missing role name", locale);
-    
+
     const drizzle = getDrizzle();
     const existing = drizzle.select(rolesTable).where("name = ?", [body.name]).get();
     if (existing) return conflict("Role already exists", locale);
@@ -51,7 +51,7 @@ export const handleRoleUpdate = withAdmin(async (req: Request, _user: AuthUser) 
 
     const body = await req.json();
     const drizzle = getDrizzle();
-    const role = (drizzle.select(rolesTable).where("id = ?", [roleId]).get()) as any;
+    const role = drizzle.select(rolesTable).where("id = ?", [roleId]).get();
     if (!role) return notFound("Role", locale);
     if (role.is_default) return forbidden("Cannot edit default roles", locale);
 
@@ -75,7 +75,7 @@ export const handleRoleDelete = withAdmin(async (req: Request, _user: AuthUser) 
     if (isNaN(roleId)) return badRequest("Invalid role ID", locale);
 
     const drizzle = getDrizzle();
-    const role = (drizzle.select(rolesTable).where("id = ?", [roleId]).get()) as any;
+    const role = drizzle.select(rolesTable).where("id = ?", [roleId]).get();
     if (!role) return notFound("Role", locale);
     if (role.is_default) return forbidden("Cannot delete default roles", locale);
 

@@ -235,7 +235,7 @@ export const episodeUpdateSchema = z.object({
   if (data.duration) {
     const runtimeMinutes = parseDurationToMinutes(data.duration);
     if (runtimeMinutes !== undefined) {
-      (result as any).runtime_minutes = runtimeMinutes;
+      result.runtime_minutes = runtimeMinutes;
     }
   }
   return result;
@@ -252,10 +252,25 @@ export const seasonUpdateSchema = z.object({
 }).transform((data) => {
   const result = { ...data };
   if (data.season_number !== undefined) {
-    (result as any).number = data.season_number;
+    result.number = data.season_number;
   }
   return result;
 });
+
+export const seasonCreateSchema = z.object({
+  mediaId: idSchema.optional(),
+  media_id: idSchema.optional(),
+  seasonNumber: z.coerce.number().int().nonnegative().optional(),
+  season_number: z.coerce.number().int().nonnegative().optional(),
+  title: z.string().trim().max(500).optional(),
+}).transform((data) => {
+  return {
+    mediaId: data.media_id ?? data.mediaId ?? 0,
+    seasonNumber: data.season_number ?? data.seasonNumber ?? 0,
+    title: data.title,
+  };
+});
+
 
 function parseDurationToMinutes(duration: string): number | undefined {
   const parts = duration.split(":").map(Number);

@@ -119,7 +119,7 @@ export const handleEpisodeViews = async (req: Request, _db: Database, id: number
     if (isNaN(id)) return notFound("Episode", locale);
     const result = EpisodeController.incrementView(id);
     if ("error" in result) {
-      if ((result as any).error.status === 404) return notFound("Episode", locale);
+      if (result.error?.status === 404) return notFound("Episode", locale);
       return serverError("Internal server error", locale);
     }
     return ok(result, { locale });

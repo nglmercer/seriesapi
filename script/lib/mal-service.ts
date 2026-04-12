@@ -1,9 +1,9 @@
 import malScraper from "mal-scraper";
-import type { 
-  AnimeDataModel, 
-  SearchResultsDataModel, 
-  SeasonDataModel, 
-  SeasonalDataModel 
+import type {
+  AnimeDataModel,
+  SearchResultsDataModel,
+  SeasonDataModel,
+  SeasonalDataModel
 } from "mal-scraper";
 
 export class MalService {
@@ -101,7 +101,7 @@ export class MalService {
     try {
       const seasonData: SeasonDataModel = await malScraper.getSeason(year, season as any, type as any);
       const allAnime: SeasonalDataModel[] = [];
-      
+
       if (type) {
         allAnime.push(...(seasonData as unknown as SeasonalDataModel[]));
       } else {
