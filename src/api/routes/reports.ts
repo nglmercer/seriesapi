@@ -1,21 +1,17 @@
-import { getDrizzle } from "../../init";
 import { contentReportsTable } from "../../schema";
-import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
-import { validateParams, reportCreateSchema } from "../validation";
-import { ok, badRequest, serverError } from "../response";
+import { serverError } from "../response";
 import { withAdmin } from "./auth";
+import { reportCreateSchema } from "../validation";
+import { ApiContext } from "../context";
 
-export async function handleReportCreate(req: Request) {
-  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-  
+export async function handleReportCreate(ctx: ApiContext) {
   try {
-    const body = await req.json();
-    const v = validateParams(reportCreateSchema, body, locale);
+    const v = await ctx.body(reportCreateSchema);
     if (!v.success) return v.error;
 
     const { entity_type, entity_id, report_type, locale: reportLocale, message } = v.data;
 
-    const drizzle = getDrizzle();
+    const { drizzle } = ctx;
     const now = new Date().toISOString();
 
     drizzle.insert(contentReportsTable).values({
@@ -28,25 +24,24 @@ export async function handleReportCreate(req: Request) {
       created_at: now
     }).run();
 
-    return ok({ message: "Report submitted successfully" }, { locale });
+    return ctx.ok({ message: "Report submitted successfully" });
   } catch (err) {
-    return serverError(err, locale);
+    return serverError(err, ctx.locale);
   }
 }
 
-export const handleReportList = withAdmin(async (req: Request) => {
-  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-  
+export const handleReportList = withAdmin(async (ctx: ApiContext) => {
   try {
-    const drizzle = getDrizzle();
+    const { drizzle } = ctx;
     
     const reports = drizzle.select(contentReportsTable)
       .orderBy("created_at", "desc")
       .limit(50)
       .all();
 
-    return ok(reports, { locale });
+    return ctx.ok(reports);
   } catch (err) {
-    return serverError(err, locale);
+    return serverError(err, ctx.locale);
   }
 });
+

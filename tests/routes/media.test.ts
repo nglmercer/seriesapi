@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from "bun:test"
 import { getDb, enableInMemoryDatabase, initializeDatabase, closeDatabase } from "../../src/init";
 import { handleMediaList, handleMediaDetail, handleMediaSeasons, handleMediaEpisodes, handleMediaCredits, handleMediaVideos, handleMediaRelated, handleMediaImages, handleMediaComments } from "../../src/api/routes/media";
 import { uniqueSlug, getContentTypeId } from "../setup";
+import { ApiContext } from "../../src/api/context";
 
 describe("Media Routes", () => {
   beforeAll(async () => {
@@ -30,7 +31,7 @@ describe("Media Routes", () => {
       db.run("INSERT INTO media (content_type_id, slug, original_title) VALUES (?, ?, 'Test')", [ct, uniqueSlug("list")]);
 
       const req = new Request("http://localhost/api/v1/media");
-      const res = handleMediaList(req, db);
+      const res = handleMediaList(ApiContext.from(req));
       expect(res.status).toBe(200);
       const body = await res.json() as { ok: boolean; data: unknown[]; meta: { total: number } };
       expect(body.ok).toBe(true);
@@ -44,7 +45,7 @@ describe("Media Routes", () => {
       db.run("INSERT INTO media (content_type_id, slug, original_title, status) VALUES (?, ?, 'Series', 'completed')", [getContentTypeId(db, "series"), uniqueSlug("type2")]);
 
       const req = new Request("http://localhost/api/v1/media?type=movie");
-      const res = handleMediaList(req, db);
+      const res = handleMediaList(ApiContext.from(req));
       const body = await res.json() as { data: unknown[] };
       expect(body.data.length).toBe(1);
     });
@@ -56,7 +57,7 @@ describe("Media Routes", () => {
       db.run("INSERT INTO media (content_type_id, slug, original_title, status) VALUES (?, ?, 'Movie 2', 'ongoing')", [ct, uniqueSlug("status2")]);
 
       const req = new Request("http://localhost/api/v1/media?status=completed");
-      const res = handleMediaList(req, db);
+      const res = handleMediaList(ApiContext.from(req));
       const body = await res.json() as { data: unknown[] };
       expect(body.data.length).toBe(1);
     });
@@ -68,7 +69,7 @@ describe("Media Routes", () => {
       db.run("INSERT INTO media_translations (media_id, locale, title) VALUES (last_insert_rowid(), 'en', 'Matrix')");
 
       const req = new Request("http://localhost/api/v1/media?q=Matrix");
-      const res = handleMediaList(req, db);
+      const res = handleMediaList(ApiContext.from(req));
       expect(res.status).toBe(200);
     });
 
@@ -79,7 +80,7 @@ describe("Media Routes", () => {
       db.run("INSERT INTO media (content_type_id, slug, original_title, score, release_date) VALUES (?, ?, 'Movie B', 7.0, '2023-06-01')", [ct, uniqueSlug("sort2")]);
 
       const req = new Request("http://localhost/api/v1/media?sort_by=score&order=desc");
-      const res = handleMediaList(req, db);
+      const res = handleMediaList(ApiContext.from(req));
       const body = await res.json() as { data: { score: number }[] };
       expect(body.data[0]!.score).toBe(9);
     });
@@ -92,7 +93,7 @@ describe("Media Routes", () => {
       const result = db.run("INSERT INTO media (content_type_id, slug, original_title, score) VALUES (?, ?, 'Test Movie', 8.5)", [ct, uniqueSlug("detail")]);
 
       const req = new Request(`http://localhost/api/v1/media/${result.lastInsertRowid}`);
-      const res = handleMediaDetail(req, db, Number(result.lastInsertRowid));
+      const res = handleMediaDetail(ApiContext.from(req), Number(result.lastInsertRowid));
       expect(res.status).toBe(200);
       const body = await res.json() as { data: { original_title: string; score: number } };
       expect(body.data.original_title).toBe("Test Movie");
@@ -106,7 +107,7 @@ describe("Media Routes", () => {
       db.run("INSERT INTO media_translations (media_id, locale, title, tagline, synopsis) VALUES (?, 'en', 'English Title', 'Tagline', 'Synopsis')", [result.lastInsertRowid]);
 
       const req = new Request(`http://localhost/api/v1/media/${result.lastInsertRowid}`);
-      const res = handleMediaDetail(req, db, Number(result.lastInsertRowid));
+      const res = handleMediaDetail(ApiContext.from(req), Number(result.lastInsertRowid));
       const body = await res.json() as { data: { title: string; tagline: string } };
       expect(body.data.title).toBe("English Title");
     });
@@ -121,7 +122,7 @@ describe("Media Routes", () => {
       db.run("INSERT INTO media_genres (media_id, genre_id) VALUES (?, ?)", [result.lastInsertRowid, genre.id]);
 
       const req = new Request(`http://localhost/api/v1/media/${result.lastInsertRowid}`);
-      const res = handleMediaDetail(req, db, Number(result.lastInsertRowid));
+      const res = handleMediaDetail(ApiContext.from(req), Number(result.lastInsertRowid));
       const body = await res.json() as { data: { genres: unknown[] } };
       expect(body.data.genres.length).toBe(1);
     });
@@ -129,7 +130,7 @@ describe("Media Routes", () => {
     it("should return 404 for non-existent media", async () => {
       const db = getDb();
       const req = new Request("http://localhost/api/v1/media/99999");
-      const res = handleMediaDetail(req, db, 99999);
+      const res = handleMediaDetail(ApiContext.from(req), 99999);
       expect(res.status).toBe(404);
     });
   });
@@ -142,7 +143,7 @@ describe("Media Routes", () => {
       db.run("INSERT INTO seasons (media_id, season_number, episode_count, score) VALUES (?, 1, 12, 8.5)", [mResult.lastInsertRowid]);
 
       const req = new Request(`http://localhost/api/v1/media/${mResult.lastInsertRowid}/seasons`);
-      const res = handleMediaSeasons(req, db, Number(mResult.lastInsertRowid));
+      const res = handleMediaSeasons(ApiContext.from(req), Number(mResult.lastInsertRowid));
       expect(res.status).toBe(200);
     });
 
@@ -152,7 +153,7 @@ describe("Media Routes", () => {
       const mResult = db.run("INSERT INTO media (content_type_id, slug, original_title) VALUES (?, ?, 'Movie')", [ct, uniqueSlug("noseason")]);
 
       const req = new Request(`http://localhost/api/v1/media/${mResult.lastInsertRowid}/seasons`);
-      const res = handleMediaSeasons(req, db, Number(mResult.lastInsertRowid));
+      const res = handleMediaSeasons(ApiContext.from(req), Number(mResult.lastInsertRowid));
       expect(res.status).toBe(404);
     });
   });
@@ -166,7 +167,7 @@ describe("Media Routes", () => {
       db.run("INSERT INTO episodes (media_id, season_id, episode_number, runtime_minutes, score) VALUES (?, ?, 1, 24, 8.0)", [mResult.lastInsertRowid, sResult.lastInsertRowid]);
 
       const req = new Request(`http://localhost/api/v1/media/${mResult.lastInsertRowid}/episodes`);
-      const res = handleMediaEpisodes(req, db, Number(mResult.lastInsertRowid));
+      const res = handleMediaEpisodes(ApiContext.from(req), Number(mResult.lastInsertRowid));
       expect(res.status).toBe(200);
     });
 
@@ -180,7 +181,7 @@ describe("Media Routes", () => {
       db.run("INSERT INTO episodes (media_id, season_id, episode_number) VALUES (?, ?, 1)", [mResult.lastInsertRowid, s2.lastInsertRowid]);
 
       const req = new Request(`http://localhost/api/v1/media/${mResult.lastInsertRowid}/episodes?season=1`);
-      const res = handleMediaEpisodes(req, db, Number(mResult.lastInsertRowid));
+      const res = handleMediaEpisodes(ApiContext.from(req), Number(mResult.lastInsertRowid));
       const body = await res.json() as { data: { season_number: number }[] };
       expect(body.data.every(e => e.season_number === 1)).toBe(true);
     });
@@ -197,7 +198,7 @@ describe("Media Routes", () => {
       db.run("INSERT INTO credits (media_id, person_id, credit_type, role_name, department, job) VALUES (?, ?, 'crew', 'Director', 'Directing', 'Director')", [mResult.lastInsertRowid, p2.lastInsertRowid]);
 
       const req = new Request(`http://localhost/api/v1/media/${mResult.lastInsertRowid}/credits`);
-      const res = handleMediaCredits(req, db, Number(mResult.lastInsertRowid));
+      const res = handleMediaCredits(ApiContext.from(req), Number(mResult.lastInsertRowid));
       expect(res.status).toBe(200);
       const body = await res.json() as { data: { cast: unknown[]; crew: unknown[] } };
       expect(body.data.cast.length).toBe(1);
@@ -213,7 +214,7 @@ describe("Media Routes", () => {
       db.run("INSERT INTO videos (media_id, video_type, name, site, key, official) VALUES (?, 'trailer', 'Trailer', 'youtube', 'abc123', 1)", [mResult.lastInsertRowid]);
 
       const req = new Request(`http://localhost/api/v1/media/${mResult.lastInsertRowid}/videos`);
-      const res = handleMediaVideos(req, db, Number(mResult.lastInsertRowid));
+      const res = handleMediaVideos(ApiContext.from(req), Number(mResult.lastInsertRowid));
       const body = await res.json() as { data: { video_type: string }[] };
       expect(body.data[0]!.video_type).toBe("trailer");
     });
@@ -228,7 +229,7 @@ describe("Media Routes", () => {
       db.run("INSERT INTO media_relations (source_media_id, related_media_id, relation_type) VALUES (?, ?, 'sequel')", [m1.lastInsertRowid, m2.lastInsertRowid]);
 
       const req = new Request(`http://localhost/api/v1/media/${m1.lastInsertRowid}/related`);
-      const res = handleMediaRelated(req, db, Number(m1.lastInsertRowid));
+      const res = handleMediaRelated(ApiContext.from(req), Number(m1.lastInsertRowid));
       const body = await res.json() as { data: { relation_type: string }[] };
       expect(body.data[0]!.relation_type).toBe("sequel");
     });
@@ -243,7 +244,7 @@ describe("Media Routes", () => {
       db.run("INSERT INTO images (entity_type, entity_id, image_type, url, is_primary, vote_average) VALUES ('media', ?, 'backdrop', 'http://img.com/backdrop.jpg', 0, 7.5)", [mResult.lastInsertRowid]);
 
       const req = new Request(`http://localhost/api/v1/media/${mResult.lastInsertRowid}/images`);
-      const res = handleMediaImages(req, db, Number(mResult.lastInsertRowid));
+      const res = handleMediaImages(ApiContext.from(req), Number(mResult.lastInsertRowid));
       const body = await res.json() as { data: { image_type: string }[] };
       expect(body.data.length).toBe(2);
     });
@@ -256,7 +257,7 @@ describe("Media Routes", () => {
       db.run("INSERT INTO images (entity_type, entity_id, image_type, url) VALUES ('media', ?, 'backdrop', 'http://img.com/backdrop.jpg')", [mResult.lastInsertRowid]);
 
       const req = new Request(`http://localhost/api/v1/media/${mResult.lastInsertRowid}/images?type=poster`);
-      const res = handleMediaImages(req, db, Number(mResult.lastInsertRowid));
+      const res = handleMediaImages(ApiContext.from(req), Number(mResult.lastInsertRowid));
       const body = await res.json() as { data: { image_type: string }[] };
       expect(body.data.length).toBe(1);
       expect(body.data[0]!.image_type).toBe("poster");
@@ -271,7 +272,7 @@ describe("Media Routes", () => {
       db.run("INSERT INTO comments (entity_type, entity_id, display_name, ip_hash, body, likes, is_hidden, parent_id) VALUES ('media', ?, 'User', 'hash', 'Great!', 5, 0, NULL)", [mResult.lastInsertRowid]);
 
       const req = new Request(`http://localhost/api/v1/media/${mResult.lastInsertRowid}/comments`);
-      const res = handleMediaComments(req, db, Number(mResult.lastInsertRowid));
+      const res = handleMediaComments(ApiContext.from(req), Number(mResult.lastInsertRowid));
       const body = await res.json() as { data: { display_name: string }[] };
       expect(body.data[0]!.display_name).toBe("User");
     });

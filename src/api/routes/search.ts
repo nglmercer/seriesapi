@@ -11,8 +11,7 @@
  * Returns a unified result list with an entity_type discriminator.
  */
 
-import type { Database } from "sqlite-napi";
-import { ok, serverError } from "../response";
+import { serverError } from "../response";
 import { SearchController } from "../controllers/search.controller";
 import { SearchView } from "../views/search.view";
 import { ApiContext } from "../context";
@@ -23,9 +22,10 @@ export function handleSearch(ctx: ApiContext): Response {
     if (result.error) return result.error;
 
     const formattedData = SearchView.formatList(result.rows);
-    return ok(formattedData, result.params);
+    return ctx.ok(formattedData, result.params);
   } catch (err) {
     return serverError(err, ctx.locale);
   }
 }
+
 
