@@ -1,22 +1,17 @@
-import { getDrizzle } from "../../../../init";
 import { usersTable } from "../../../../schema";
-import { validateParams, userUpdateSchema } from "../../../validation";
-import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../../../i18n";
-import { ok, badRequest, unauthorized, notFound, conflict, serverError } from "../../../response";
+import { userUpdateSchema } from "../../../validation";
+import { conflict, serverError } from "../../../response";
 import { withAuth, withAdmin } from "../middleware";
 import type { AuthUser } from "../middleware";
 import { hashPassword } from "../utils";
+import { ApiContext } from "../../../context";
 
-export const handleUserUpdate = withAuth(async (req: Request, user: AuthUser) => {
-  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-  
+export const handleUserUpdate = withAuth(async (ctx: ApiContext, user: AuthUser) => {
   try {
-    const body = await req.json();
-    const v = validateParams(userUpdateSchema, body, locale);
+    const v = await ctx.body(userUpdateSchema);
     if (!v.success) return v.error;
 
     const { display_name, email, password } = v.data;
-    const drizzle = getDrizzle();
 
     const updateData: Record<string, any> = {};
 
@@ -24,13 +19,13 @@ export const handleUserUpdate = withAuth(async (req: Request, user: AuthUser) =>
       updateData.display_name = display_name;
     }
     if (email !== undefined) {
-      const existing = drizzle.select(usersTable)
+      const existing = ctx.drizzle.select(usersTable)
         .select("id")
         .where("email = ? AND id != ?", [email, user.id])
         .all();
 
       if (existing.length > 0) {
-        return conflict("Email already exists", locale);
+        return conflict("Email already exists", ctx.locale);
       }
       updateData.email = email;
     }
@@ -40,48 +35,46 @@ export const handleUserUpdate = withAuth(async (req: Request, user: AuthUser) =>
     }
 
     if (Object.keys(updateData).length === 0) {
-      return ok({ message: "No changes to update" }, { locale });
+      return ctx.ok({ message: "No changes to update" });
     }
 
     updateData.updated_at = new Date().toISOString();
 
-    drizzle.update(usersTable)
+    ctx.drizzle.update(usersTable)
       .set(updateData)
       .where("id = ?", [user.id])
       .run();
 
-    return ok({ message: "User updated successfully" }, { locale });
+    return ctx.ok({ message: "User updated successfully" });
   } catch (err) {
-    return serverError(err, locale);
+    return serverError(err, ctx.locale);
   }
 });
 
-export const handleUserList = withAdmin(async (req: Request, _user: AuthUser) => {
-  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+export const handleUserList = withAdmin(async (ctx: ApiContext, _user: AuthUser) => {
   try {
-    const drizzle = getDrizzle();
+    const { drizzle } = ctx;
     const users = drizzle.select(usersTable)
       .select("id", "username", "email", "display_name", "role", "is_active", "created_at", "updated_at")
       .all();
-    return ok(users, { locale });
+    return ctx.ok(users);
   } catch (err) {
-    return serverError(err, locale);
+    return serverError(err, ctx.locale);
   }
 });
 
-export const handleUserUpdateAdmin = withAdmin(async (req: Request, _user: AuthUser) => {
-  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+export const handleUserUpdateAdmin = withAdmin(async (ctx: ApiContext, _user: AuthUser) => {
   try {
-    const url = new URL(req.url);
-    const parts = url.pathname.replace(/\/$/, "").split("/").filter(Boolean);
-    const targetUserId = parseInt(parts[4] ?? "", 10);
-    if (isNaN(targetUserId)) return badRequest("Invalid user ID", locale);
+    const { drizzle } = ctx;
+    const targetUserId = ctx.seg(4);
+    if (isNaN(targetUserId)) return ctx.badRequest("Invalid user ID");
 
-    const body = await req.json();
-    const drizzle = getDrizzle();
+    const result = await ctx.body();
+    if (!result.success) return result.error;
+    const body = result.data as any;
 
     const existing = drizzle.select(usersTable).where("id = ?", [targetUserId]).get();
-    if (!existing) return notFound("User", locale);
+    if (!existing) return ctx.notFound("User");
 
     const updateData: Record<string, any> = {};
     if (body.display_name !== undefined) updateData.display_name = body.display_name;
@@ -92,30 +85,27 @@ export const handleUserUpdateAdmin = withAdmin(async (req: Request, _user: AuthU
       updateData.password_hash = await hashPassword(body.password);
     }
 
-    if (Object.keys(updateData).length === 0) return ok({ message: "No changes" }, { locale });
+    if (Object.keys(updateData).length === 0) return ctx.ok({ message: "No changes" });
 
     updateData.updated_at = new Date().toISOString();
     drizzle.update(usersTable).set(updateData).where("id = ?", [targetUserId]).run();
 
-    return ok({ message: "User updated successfully by admin" }, { locale });
+    return ctx.ok({ message: "User updated successfully by admin" });
   } catch (err) {
-    return serverError(err, locale);
+    return serverError(err, ctx.locale);
   }
 });
 
-export const handleUserDelete = withAdmin(async (req: Request, _user: AuthUser) => {
-  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+export const handleUserDelete = withAdmin(async (ctx: ApiContext, _user: AuthUser) => {
   try {
-    const url = new URL(req.url);
-    const parts = url.pathname.replace(/\/$/, "").split("/").filter(Boolean);
-    const targetUserId = parseInt(parts[4] ?? "", 10);
-    if (isNaN(targetUserId)) return badRequest("Invalid user ID", locale);
+    const { drizzle } = ctx;
+    const targetUserId = ctx.seg(4);
+    if (isNaN(targetUserId)) return ctx.badRequest("Invalid user ID");
 
-    const drizzle = getDrizzle();
     drizzle.delete(usersTable).where("id = ?", [targetUserId]).run();
 
-    return ok({ message: "User deleted successfully" }, { locale });
+    return ctx.ok({ message: "User deleted successfully" });
   } catch (err) {
-    return serverError(err, locale);
+    return serverError(err, ctx.locale);
   }
 });

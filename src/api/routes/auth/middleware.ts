@@ -1,6 +1,5 @@
-import { getDrizzle } from "../../../init";
+import { ApiContext } from "../../context";
 import { sessionsTable, usersTable } from "../../../schema";
-import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../../i18n";
 import { unauthorized, forbidden } from "../../response";
 
 export interface AuthUser {
@@ -10,12 +9,12 @@ export interface AuthUser {
   display_name: string;
 }
 
-export function getUserFromToken(req: Request): AuthUser | null {
-  const authHeader = req.headers.get("Authorization");
+export function getUserFromToken(ctx: ApiContext): AuthUser | null {
+  const authHeader = ctx.req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return null;
   const token = authHeader.slice(7);
   
-  const drizzle = getDrizzle();
+  const drizzle = ctx.drizzle;
   const res = (drizzle.select(sessionsTable).as("s")
   .selectRaw("s.user_id, u.role, u.username, u.display_name, s.expires_at, u.is_active")
     .join("users u", "s.user_id = u.id")
@@ -33,24 +32,22 @@ export function getUserFromToken(req: Request): AuthUser | null {
 }
 
 export function withAuth(
-  handler: (req: Request, user: AuthUser) => Promise<Response>
+  handler: (ctx: ApiContext, user: AuthUser) => Promise<Response>
 ) {
-  return async (req: Request) => {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const user = getUserFromToken(req);
-    if (!user) return unauthorized("Authentication required", locale);
-    return handler(req, user);
+  return async (ctx: ApiContext) => {
+    const user = getUserFromToken(ctx);
+    if (!user) return unauthorized("Authentication required", ctx.locale);
+    return handler(ctx, user);
   };
 }
 
 export function withAdmin(
-  handler: (req: Request, user: AuthUser) => Promise<Response>
+  handler: (ctx: ApiContext, user: AuthUser) => Promise<Response>
 ) {
-  return async (req: Request) => {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const user = getUserFromToken(req);
-    if (!user) return unauthorized("Authentication required", locale);
-    if (user.role !== "admin") return forbidden("Administrator privileges required", locale);
-    return handler(req, user);
+  return async (ctx: ApiContext) => {
+    const user = getUserFromToken(ctx);
+    if (!user) return unauthorized("Authentication required", ctx.locale);
+    if (user.role !== "admin") return forbidden("Administrator privileges required", ctx.locale);
+    return handler(ctx, user);
   };
 }

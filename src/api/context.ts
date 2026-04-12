@@ -1,6 +1,6 @@
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../i18n";
 import { validateParams } from "./validation";
-import { ok, notFound, badRequest } from "./response";
+import { ok, notFound, badRequest, forbidden } from "./response";
 import type { SqliteNapiAdapter } from "../core/driver";
 import { Database } from "sqlite-napi";
 import { getDrizzle, getDb } from "../init";
@@ -15,7 +15,7 @@ export class ApiContext {
   public readonly params: Record<string, string>;
 
   constructor(
-    public readonly req: Request, 
+    public readonly req: Request,
     public readonly drizzle: SqliteNapiAdapter,
     public readonly db: Database
   ) {
@@ -83,8 +83,8 @@ export class ApiContext {
   /**
    * Helper to return a success response
    */
-  ok<T>(data: T, meta: any = {}) {
-    return ok(data, { locale: this.locale, ...meta });
+  ok<T>(data: T, meta: any = {}, status: number = 200) {
+    return ok(data, { locale: this.locale, ...meta }, status);
   }
 
   /**
@@ -99,6 +99,13 @@ export class ApiContext {
    */
   badRequest(message: string) {
     return badRequest(message, this.locale);
+  }
+
+  /**
+   * Helper to return a forbidden response
+   */
+  forbidden(message: string) {
+    return forbidden(message, this.locale);
   }
 
   /**

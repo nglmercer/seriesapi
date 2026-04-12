@@ -5,32 +5,32 @@
  * GET  /api/v1/collections/:slug      – collection detail + ordered media
  */
 
-import type { Database } from "sqlite-napi";
-import { ok, notFound, serverError } from "../response";
+import { serverError } from "../response";
 import { CollectionController } from "../controllers/collection.controller";
 import { CollectionView } from "../views/collection.view";
+import { ApiContext } from "../context";
 
-export function handleCollectionsList(req: Request, _db: Database): Response {
+export function handleCollectionsList(ctx: ApiContext): Response {
   try {
-    const result = CollectionController.getList(req);
+    const result = CollectionController.getList(ctx);
     if ("error" in result) return result.error as Response;
 
     const { params, rows } = result;
     const formattedData = CollectionView.formatList(rows);
-    return ok(formattedData, params);
+    return ctx.ok(formattedData, params);
   } catch (err) {
-    return serverError(err, "en");
+    return serverError(err, ctx.locale);
   }
 }
 
-export function handleCollectionDetail(req: Request, _db: Database, slug: string): Response {
+export function handleCollectionDetail(ctx: ApiContext, slug: string): Response {
   try {
-    const result = CollectionController.getDetail(req, slug);
-    if (!result) return notFound("Collection", "en");
+    const result = CollectionController.getDetail(ctx, slug);
+    if (!result) return ctx.notFound("Collection");
 
     const formattedData = CollectionView.formatDetail(result.collection, result.items);
-    return ok(formattedData, { locale: result.locale, total: result.items.length });
+    return ctx.ok(formattedData, { locale: result.locale, total: result.items.length });
   } catch (err) {
-    return serverError(err, "en");
+    return serverError(err, ctx.locale);
   }
 }

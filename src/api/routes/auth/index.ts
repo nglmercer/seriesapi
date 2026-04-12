@@ -19,7 +19,7 @@ export * from "./handlers/user";
 export * from "./handlers/role";
 export * from "./handlers/verification";
 
-import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../../i18n";
+import { ApiContext } from "../../context";
 import { notFound } from "../../response";
 
 import { handleRegister, handleLogin, handleLogout, handleMe } from "./handlers/auth";
@@ -27,43 +27,40 @@ import { handleUserUpdate, handleUserList, handleUserUpdateAdmin, handleUserDele
 import { handleRoleList, handleRoleCreate, handleRoleUpdate, handleRoleDelete } from "./handlers/role";
 import { handleVerifyCodeGenerate, handleVerifyCodeApply, handleRoleChallengeRequest } from "./handlers/verification";
 
-export async function handleAuthRouter(req: Request, parts: string[]): Promise<Response> {
-  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-  const [, , , p3, p4] = parts;
-  const POST = req.method === "POST";
-  const GET = req.method === "GET";
-  const PATCH = req.method === "PATCH";
-  const PUT = req.method === "PUT";
-  const DELETE = req.method === "DELETE";
+export async function handleAuthRouter(ctx: ApiContext): Promise<Response> {
+  const { p3, p4, POST, GET, method, locale } = ctx;
+  const PATCH = method === "PATCH";
+  const PUT = ctx.PUT;
+  const DELETE = ctx.DELETE;
 
-  if (p3 === "register" && POST) return handleRegister(req);
-  if (p3 === "login" && POST) return handleLogin(req);
-  if (p3 === "logout" && POST) return handleLogout(req);
-  if (p3 === "me" && GET) return handleMe(req);
-  if (p3 === "update" && (PATCH || PUT)) return handleUserUpdate(req);
+  if (p3 === "register" && POST) return handleRegister(ctx.req);
+  if (p3 === "login" && POST) return handleLogin(ctx.req);
+  if (p3 === "logout" && POST) return handleLogout(ctx.req);
+  if (p3 === "me" && GET) return handleMe(ctx.req);
+  if (p3 === "update" && (PATCH || PUT)) return handleUserUpdate(ctx.req);
   
   if (p3 === "users") {
-    if (GET && !p4) return handleUserList(req);
-    if ((PATCH || PUT) && p4) return handleUserUpdateAdmin(req);
-    if (DELETE && p4) return handleUserDelete(req);
+    if (GET && !p4) return handleUserList(ctx.req);
+    if ((PATCH || PUT) && p4) return handleUserUpdateAdmin(ctx.req);
+    if (DELETE && p4) return handleUserDelete(ctx.req);
     return notFound("User management route", locale);
   }
 
   if (p3 === "roles") {
-    if (GET && !p4) return handleRoleList(req);
-    if (POST && !p4) return handleRoleCreate(req);
-    if ((PATCH || PUT) && p4) return handleRoleUpdate(req);
-    if (DELETE && p4) return handleRoleDelete(req);
+    if (GET && !p4) return handleRoleList(ctx.req);
+    if (POST && !p4) return handleRoleCreate(ctx.req);
+    if ((PATCH || PUT) && p4) return handleRoleUpdate(ctx.req);
+    if (DELETE && p4) return handleRoleDelete(ctx.req);
     return notFound("Role management route", locale);
   }
 
   if (p3 === "verify-code") {
-    if (p4 === "generate" && POST) return handleVerifyCodeGenerate(req);
-    if (p4 === "apply" && POST) return handleVerifyCodeApply(req);
+    if (p4 === "generate" && POST) return handleVerifyCodeGenerate(ctx.req);
+    if (p4 === "apply" && POST) return handleVerifyCodeApply(ctx.req);
     return notFound("Verification code route", locale);
   }
 
-  if (p3 === "role-challenge" && POST) return handleRoleChallengeRequest(req);
+  if (p3 === "role-challenge" && POST) return handleRoleChallengeRequest(ctx.req);
 
   return notFound("Auth route", locale);
 }

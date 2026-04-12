@@ -1,16 +1,12 @@
-import { collectionsTable, collectionTranslationsTable, imagesTable, collectionItemsTable, mediaTable, contentTypesTable, mediaTranslationsTable } from "../../schema";
-import { getDrizzle } from "../../init";
-import { validateParams, paginationSchema } from "../validation";
-import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
+import { collectionsTable, collectionItemsTable } from "../../schema";
+import { paginationSchema } from "../validation";
+import { ApiContext } from "../context";
 
 export class CollectionController {
-  static getList(req: Request) {
-    const drizzle = getDrizzle();
-    const url = new URL(req.url);
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+  static getList(ctx: ApiContext) {
+    const { drizzle, locale } = ctx;
     
-    const queryParams = Object.fromEntries(url.searchParams);
-    const v = validateParams(paginationSchema, queryParams, locale);
+    const v = ctx.validate(paginationSchema);
     if (!v.success) return { error: v.error };
 
     const { page, limit: pageSize } = v.data;
@@ -36,9 +32,8 @@ export class CollectionController {
     return { params: { locale, page, pageSize, total }, rows };
   }
 
-  static getDetail(req: Request, slug: string) {
-    const drizzle = getDrizzle();
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+  static getDetail(ctx: ApiContext, slug: string) {
+    const { drizzle, locale } = ctx;
 
     const backdropSubquery = `(SELECT url FROM images WHERE entity_type='collection' AND entity_id=c.id AND image_type='backdrop' AND is_primary=1 LIMIT 1)`;
     const posterSubquery = `(SELECT url FROM images WHERE entity_type='collection' AND entity_id=c.id AND image_type='poster' AND is_primary=1 LIMIT 1)`;

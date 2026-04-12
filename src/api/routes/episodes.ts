@@ -64,8 +64,7 @@ export function handleEpisodeNeighbors(ctx: ApiContext, episodeId: number): Resp
   }
 }
 
-export const handleEpisodeCreate = withAdmin(async (req: Request) => {
-  const ctx = ApiContext.from(req);
+export const handleEpisodeCreate = withAdmin(async (ctx) => {
   try {
     const v = await ctx.body(episodeCreateSchema);
     if (!v.success) return v.error;
@@ -76,8 +75,7 @@ export const handleEpisodeCreate = withAdmin(async (req: Request) => {
   }
 });
 
-export const handleEpisodeUpdate = withAdmin(async (req: Request) => {
-  const ctx = ApiContext.from(req);
+export const handleEpisodeUpdate = withAdmin(async (ctx) => {
   try {
     const id = ctx.seg(3);
     if (isNaN(id)) return ctx.notFound("Episode");
@@ -92,8 +90,7 @@ export const handleEpisodeUpdate = withAdmin(async (req: Request) => {
   }
 });
 
-export const handleEpisodeDelete = withAdmin(async (req: Request) => {
-  const ctx = ApiContext.from(req);
+export const handleEpisodeDelete = withAdmin(async (ctx) => {
   try {
     const id = ctx.seg(3);
     if (isNaN(id)) return ctx.notFound("Episode");

@@ -1,10 +1,9 @@
 import { createHash } from "crypto";
-import { getDrizzle } from "../../init";
-import { getLocaleFromRequest, SUPPORTED_LOCALES, DEFAULT_LOCALE } from "../../i18n";
 import { badRequest } from "../response";
 import { commentsTable } from "../../schema";
-import { validateParams, commentCreateSchema } from "../validation";
+import { commentCreateSchema } from "../validation";
 import type { AuthUser } from "../routes/auth/middleware";
+import { ApiContext } from "../context";
 
 export interface CommentBody {
   entity_type: string;
@@ -16,23 +15,16 @@ export interface CommentBody {
   parent_id?: number;
 }
 
-function hashIP(req: Request): string {
-  const forwarded = req.headers.get("x-forwarded-for");
+function hashIP(ctx: ApiContext): string {
+  const forwarded = ctx.req.headers.get("x-forwarded-for");
   const ip = forwarded ? forwarded.split(",")[0]!.trim() : "unknown";
   return createHash("sha256").update(ip).digest("hex");
 }
 
 export class CommentController {
-  static async createComment(req: Request, user?: AuthUser) {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    let rawBody: unknown;
-    try {
-      rawBody = await req.json();
-    } catch {
-      return { error: badRequest("Invalid JSON body.", locale) };
-    }
-
-    const v = validateParams(commentCreateSchema, rawBody, locale);
+  static async createComment(ctx: ApiContext, user?: AuthUser) {
+    const { drizzle, locale } = ctx;
+    const v = await ctx.body(commentCreateSchema);
     if (!v.success) return { error: v.error };
 
     const { entity_type, entity_id, body: text, locale: commentLocale, contains_spoilers, parent_id } = v.data;
@@ -40,8 +32,7 @@ export class CommentController {
     if (!display_name) {
       return { error: badRequest("display_name is required when not authenticated", locale) };
     }
-    const ip_hash = hashIP(req);
-    const drizzle = getDrizzle();
+    const ip_hash = hashIP(ctx);
 
     if (parent_id) {
       const parent = drizzle.select(commentsTable)
@@ -68,9 +59,8 @@ export class CommentController {
     return { data: created, locale };
   }
 
-  static getComment(req: Request, id: number) {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getComment(ctx: ApiContext, id: number) {
+    const { drizzle, locale } = ctx;
 
     const repliesSubquery = `(SELECT JSON_GROUP_ARRAY(JSON_OBJECT('id', r.id, 'display_name', r.display_name, 'body', r.body, 'locale', r.locale, 'likes', r.likes, 'contains_spoilers', r.contains_spoilers, 'created_at', r.created_at)) FROM comments r WHERE r.parent_id = c.id AND r.is_hidden = 0)`;
 

@@ -1,16 +1,12 @@
-import { seasonsTable, seasonTranslationsTable, episodesTable, episodeTranslationsTable, imagesTable, commentsTable } from "../../schema";
-import { getDrizzle } from "../../init";
-import { validateParams, paginationSchema } from "../validation";
-import { getLocaleFromRequest, SUPPORTED_LOCALES, DEFAULT_LOCALE } from "../../i18n";
-
+import { seasonsTable, episodesTable, imagesTable, commentsTable } from "../../schema";
+import { paginationSchema } from "../validation";
+import { ApiContext } from "../context";
+import { seasonTranslationsTable } from "../../schema";
 export class SeasonController {
-  static getComments(req: Request, seasonId: number) {
-    const url = new URL(req.url);
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getComments(ctx: ApiContext, seasonId: number) {
+    const { drizzle, locale } = ctx;
 
-    const queryParams = Object.fromEntries(url.searchParams);
-    const v = validateParams(paginationSchema, queryParams, locale);
+    const v = ctx.validate(paginationSchema);
     if (!v.success) return { error: v.error };
 
     const { page, limit: pageSize } = v.data;
@@ -37,9 +33,8 @@ export class SeasonController {
     return { rows, locale, page, pageSize, total };
   }
 
-  static getDetail(req: Request, id: number) {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getDetail(ctx: ApiContext, id: number) {
+    const { drizzle, locale } = ctx;
 
     const posterSubquery = `(SELECT url FROM images WHERE entity_type='season' AND entity_id=s.id AND image_type='poster' AND is_primary=1 LIMIT 1)`;
 
@@ -52,13 +47,10 @@ export class SeasonController {
     return { season: row, locale };
   }
 
-  static getEpisodes(req: Request, seasonId: number) {
-    const url = new URL(req.url);
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getEpisodes(ctx: ApiContext, seasonId: number) {
+    const { drizzle, locale } = ctx;
 
-    const queryParams = Object.fromEntries(url.searchParams);
-    const v = validateParams(paginationSchema, queryParams, locale);
+    const v = ctx.validate(paginationSchema);
     if (!v.success) return { error: v.error };
 
     const { page, limit: pageSize } = v.data;
@@ -85,9 +77,8 @@ export class SeasonController {
     return { rows, locale, page, pageSize, total };
   }
 
-  static getImages(req: Request, seasonId: number) {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getImages(ctx: ApiContext, seasonId: number) {
+    const { drizzle, locale } = ctx;
 
     const rows = drizzle.select(imagesTable)
       .where("entity_type = 'season'")
@@ -99,8 +90,8 @@ export class SeasonController {
     return { rows, locale, total: rows.length };
   }
 
-  static create(data: { mediaId: number; seasonNumber: number; title?: string }, locale = DEFAULT_LOCALE) {
-    const drizzle = getDrizzle();
+  static create(ctx: ApiContext, data: { mediaId: number; seasonNumber: number; title?: string }) {
+    const { drizzle, locale } = ctx;
     const now = new Date().toISOString();
 
     const res = drizzle.insert(seasonsTable).values({
@@ -122,8 +113,8 @@ export class SeasonController {
     return { id: seasonId };
   }
 
-  static update(id: number, data: { number?: number; season_number?: number; title?: string; air_date?: string | null; end_date?: string | null; external_ids?: string | null }, locale = DEFAULT_LOCALE) {
-    const drizzle = getDrizzle();
+  static update(ctx: ApiContext, id: number, data: { number?: number; season_number?: number; title?: string; air_date?: string | null; end_date?: string | null; external_ids?: string | null }) {
+    const { drizzle, locale } = ctx;
     const now = new Date().toISOString();
 
     const updateData: Record<string, any> = { updated_at: now };
@@ -145,7 +136,7 @@ export class SeasonController {
         .select("id")
         .where("season_id = ? AND locale = ?", [id, locale])
         .get();
-      
+
       if (existing) {
         drizzle.update(seasonTranslationsTable)
           .set({ name: data.title })
@@ -163,8 +154,8 @@ export class SeasonController {
     return { ok: true };
   }
 
-  static delete(id: number) {
-    const drizzle = getDrizzle();
+  static delete(ctx: ApiContext, id: number) {
+    const { drizzle } = ctx;
     drizzle.delete(seasonsTable).where("id = ?", [id]).run();
     drizzle.delete(seasonTranslationsTable).where("season_id = ?", [id]).run();
     return { ok: true };

@@ -68,8 +68,8 @@ export function createRouteHandler() {
 
     if (resource === "collections") {
       if (!GET) return methodNotAllowed(locale);
-      if (!p3) return handleCollectionsList(req, db);
-      return handleCollectionDetail(req, db, p3);
+      if (!p3) return handleCollectionsList(ctx);
+      return handleCollectionDetail(ctx, p3);
     }
 
     if (resource === "people") {
@@ -116,44 +116,44 @@ export function createRouteHandler() {
         return notFound("Resource", locale);
       }
       if (POST) {
-        if (!p3) return handleEpisodeCreate(req);
+        if (!p3) return handleEpisodeCreate(ctx);
 
         const id = ctx.seg(3);
         if (!isNaN(id) && p4 === "views") return handleEpisodeViews(ctx, id);
         return notFound("Resource", locale);
       }
-      if (ctx.PUT) return handleEpisodeUpdate(req);
-      if (ctx.DELETE) return handleEpisodeDelete(req);
+      if (ctx.PUT) return handleEpisodeUpdate(ctx);
+      if (ctx.DELETE) return handleEpisodeDelete(ctx);
       return methodNotAllowed(locale);
     }
 
 
     if (resource === "comments") {
-      if (GET && p3 === "user") return handleUserComments(req);
-      if (POST && !p3) return handleCommentPost(req);
+      if (GET && p3 === "user") return handleUserComments(ctx);
+      if (POST && !p3) return handleCommentPost(ctx);
       if (GET && p3) {
         const id = ctx.seg(3);
-        if (!isNaN(id)) return handleCommentGet(req, db, id);
+        if (!isNaN(id)) return handleCommentGet(ctx, id);
       }
       return GET ? notFound("Comment", locale) : methodNotAllowed(locale);
     }
 
     if (resource === "reports") {
-      if (POST) return handleReportCreate(req);
-      if (GET) return handleReportList(req);
+      if (POST) return handleReportCreate(ctx);
+      if (GET) return handleReportList(ctx);
       return notFound("Report", locale);
     }
 
     if (resource === "ratings") {
-      if (GET && p3 === "user") return handleUserRatings(req);
-      if (GET && p3 === "top") return handleTopRatings(req);
-      if (POST) return handleRatingPost(req);
-      if (GET) return handleRatingGet(req);
+      if (GET && p3 === "user") return handleUserRatings(ctx);
+      if (GET && p3 === "top") return handleTopRatings(ctx);
+      if (POST) return handleRatingPost(ctx);
+      if (GET) return handleRatingGet(ctx);
       return notFound("Rating", locale);
     }
 
     if (resource === "auth") {
-      return handleAuthRouter(req, ctx.parts);
+      return handleAuthRouter(ctx);
     }
 
     return notFound("API Route", locale);

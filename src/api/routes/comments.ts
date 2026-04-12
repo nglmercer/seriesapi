@@ -10,45 +10,38 @@
  * GET /api/v1/comments/:id  – single comment thread
  */
 
-import type { Database } from "sqlite-napi";
-import { ok, notFound, serverError } from "../response";
+import { serverError } from "../response";
 import { CommentController } from "../controllers/comment.controller";
 import { CommentView } from "../views/comment.view";
 import { withAuth } from "./auth";
-import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
-import { getDrizzle } from "../../init";
+import { ApiContext } from "../context";
 
-export const handleCommentPost = withAuth(async (req: Request, user) => {
+export const handleCommentPost = withAuth(async (ctx: ApiContext, user) => {
   try {
-    const result = await CommentController.createComment(req, user);
+    const result = await CommentController.createComment(ctx, user);
     if (result.error) return result.error;
 
-    return ok(CommentView.formatCreated(result.data), { locale: result.locale }, 201);
+    return ctx.ok(CommentView.formatCreated(result.data), { locale: result.locale }, 201);
   } catch (err) {
-    return serverError(err, "en");
+    return serverError(err, ctx.locale);
   }
 });
 
-export function handleCommentGet(req: Request, _db: Database, id: number): Response {
+export function handleCommentGet(ctx: ApiContext, id: number): Response {
   try {
-    const { comment, locale } = CommentController.getComment(req, id);
-    if (!comment) return notFound("Comment", locale);
-    
-    return ok(CommentView.formatDetail(comment), { locale });
+    const { comment, locale } = CommentController.getComment(ctx, id);
+    if (!comment) return ctx.notFound("Comment");
+
+    return ctx.ok(CommentView.formatDetail(comment), { locale });
   } catch (err) {
-    return serverError(err, "en");
+    return serverError(err, ctx.locale);
   }
 }
 
-export const handleUserComments = withAuth(async (req: Request, user) => {
+export const handleUserComments = withAuth(async (ctx: ApiContext, user) => {
   try {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const url = new URL(req.url);
-    const limit = parseInt(url.searchParams.get("limit") || "20", 10);
-    const page = parseInt(url.searchParams.get("page") || "1", 10);
-    const offset = (page - 1) * limit;
-
-    const drizzle = getDrizzle();
+    const { drizzle, locale, pagination } = ctx;
+    const { limit, offset, page } = pagination;
 
     const results = drizzle.query(`
       SELECT c.id, c.entity_type, c.entity_id, c.parent_id, c.body, c.contains_spoilers, c.created_at,
@@ -68,8 +61,8 @@ export const handleUserComments = withAuth(async (req: Request, user) => {
       "SELECT count(id) as count FROM comments WHERE display_name = ?"
     ).get([user.username])?.count || 0;
 
-    return ok(results, { locale, total, page, pageSize: limit });
+    return ctx.ok(results, { total, page, pageSize: limit });
   } catch (err) {
-    return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
+    return serverError(err, ctx.locale);
   }
 });

@@ -15,7 +15,7 @@ const limiter = createRateLimiter({
   max: RATE_LIMIT_MAX,
 });
 
-const route = createRouteHandler(getDb);
+const route = createRouteHandler();
 
 const server = Bun.serve({
   port: PORT,
