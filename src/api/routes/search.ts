@@ -15,15 +15,17 @@ import type { Database } from "sqlite-napi";
 import { ok, serverError } from "../response";
 import { SearchController } from "../controllers/search.controller";
 import { SearchView } from "../views/search.view";
+import { ApiContext } from "../context";
 
-export function handleSearch(req: Request, _db: Database): Response {
+export function handleSearch(ctx: ApiContext): Response {
   try {
-    const result = SearchController.getList(req);
+    const result = SearchController.getList(ctx);
     if (result.error) return result.error;
 
     const formattedData = SearchView.formatList(result.rows);
     return ok(formattedData, result.params);
   } catch (err) {
-    return serverError(err, "en");
+    return serverError(err, ctx.locale);
   }
 }
+

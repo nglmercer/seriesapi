@@ -1,12 +1,10 @@
-import { genresTable, genreTranslationsTable, mediaGenresTable, mediaTable, contentTypesTable, mediaTranslationsTable, imagesTable } from "../../schema";
-import { getDrizzle } from "../../init";
-import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
-import { validateParams, genreDetailParamsSchema } from "../validation";
+import { genresTable, mediaGenresTable } from "../../schema";
+import { genreDetailParamsSchema } from "../validation";
+import { ApiContext } from "../context";
 
 export class GenreController {
-  static getList(req: Request) {
-    const drizzle = getDrizzle();
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+  static getList(ctx: ApiContext) {
+    const { drizzle, locale } = ctx;
 
     const rows = drizzle.select(genresTable).as("g")
       .selectRaw("g.id, g.slug, g.image_url, COALESCE(gt.name, g.slug) AS name")
@@ -17,13 +15,10 @@ export class GenreController {
     return { params: { locale, total: rows.length }, rows };
   }
 
-  static getDetail(req: Request, slug: string) {
-    const drizzle = getDrizzle();
-    const url = new URL(req.url);
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+  static getDetail(ctx: ApiContext, slug: string) {
+    const { drizzle, locale } = ctx;
 
-    const params = Object.fromEntries(url.searchParams);
-    const v = validateParams(genreDetailParamsSchema, params, locale);
+    const v = ctx.validate(genreDetailParamsSchema);
     if (!v.success) return { error: v.error };
 
     const { page, limit: pageSize, type } = v.data;

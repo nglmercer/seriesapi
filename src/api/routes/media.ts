@@ -12,89 +12,88 @@
  * GET  /api/v1/media/:id/comments     – public comments
  */
 
-import type { Database } from "sqlite-napi";
 import { ok, notFound, badRequest, serverError } from "../response";
 import { MediaController } from "../controllers/media.controller";
 import { MediaView } from "../views/media.view";
-import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
+import { ApiContext } from "../context";
 
-export function handleMediaList(req: Request, _db: Database): Response {
+export function handleMediaList(ctx: ApiContext): Response {
   try {
-    const result = MediaController.getList(req);
+    const result = MediaController.getList(ctx);
     if ("error" in result) return result.error as Response;
     const { data, params } = result;
-    return ok(MediaView.formatList(data), params);
-  } catch (err) { return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES)); }
+    return ctx.ok(MediaView.formatList(data), params);
+  } catch (err) { return serverError(err, ctx.locale); }
 }
 
-export function handleMediaDetail(req: Request, _db: Database, id: number): Response {
+export function handleMediaDetail(ctx: ApiContext, id: number): Response {
   try {
-    const result = MediaController.getDetail(req, id);
-    if (!result) return notFound("Media", getLocaleFromRequest(req, SUPPORTED_LOCALES));
-    return ok(MediaView.formatDetail(result.detail), { locale: result.locale });
-  } catch (err) { return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES)); }
+    const result = MediaController.getDetail(ctx, id);
+    if (!result) return ctx.notFound("Media");
+    return ctx.ok(MediaView.formatDetail(result.detail), { locale: result.locale });
+  } catch (err) { return serverError(err, ctx.locale); }
 }
 
-export function handleMediaSeasons(req: Request, _db: Database, mediaId: number): Response {
+export function handleMediaSeasons(ctx: ApiContext, mediaId: number): Response {
   try {
-    const { rows, locale, total } = MediaController.getSeasons(req, mediaId);
-    if (!rows.length) return notFound("Seasons", locale);
-    return ok(MediaView.formatSeasons(rows), { locale, total });
-  } catch (err) { return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES)); }
+    const { rows, locale, total } = MediaController.getSeasons(ctx, mediaId);
+    if (!rows.length) return ctx.notFound("Seasons");
+    return ctx.ok(MediaView.formatSeasons(rows), { locale, total });
+  } catch (err) { return serverError(err, ctx.locale); }
 }
 
-export function handleMediaEpisodes(req: Request, _db: Database, mediaId: number): Response {
+export function handleMediaEpisodes(ctx: ApiContext, mediaId: number): Response {
   try {
-    const result = MediaController.getEpisodes(req, mediaId);
+    const result = MediaController.getEpisodes(ctx, mediaId);
     if ("error" in result) return result.error as Response;
     const { rows, params } = result;
-    return ok(MediaView.formatEpisodes(rows), params);
-  } catch (err) { return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES)); }
+    return ctx.ok(MediaView.formatEpisodes(rows), params);
+  } catch (err) { return serverError(err, ctx.locale); }
 }
 
-export function handleMediaCredits(req: Request, _db: Database, mediaId: number): Response {
+export function handleMediaCredits(ctx: ApiContext, mediaId: number): Response {
   try {
-    const { credits, locale } = MediaController.getCredits(req, mediaId);
-    return ok(MediaView.formatCredits(credits), { locale });
-  } catch (err) { return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES)); }
+    const { credits, locale } = MediaController.getCredits(ctx, mediaId);
+    return ctx.ok(MediaView.formatCredits(credits), { locale });
+  } catch (err) { return serverError(err, ctx.locale); }
 }
 
-export function handleMediaImages(req: Request, _db: Database, mediaId: number): Response {
+export function handleMediaImages(ctx: ApiContext, mediaId: number): Response {
   try {
-    const result = MediaController.getImages(req, mediaId);
+    const result = MediaController.getImages(ctx, mediaId);
     if ("error" in result) return result.error as Response;
     const { rows, locale, total } = result;
-    return ok(MediaView.formatImages(rows), { locale, total });
-  } catch (err) { return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES)); }
+    return ctx.ok(MediaView.formatImages(rows), { locale, total });
+  } catch (err) { return serverError(err, ctx.locale); }
 }
 
-export function handleMediaVideos(req: Request, _db: Database, mediaId: number): Response {
+export function handleMediaVideos(ctx: ApiContext, mediaId: number): Response {
   try {
-    const { rows, locale, total } = MediaController.getVideos(req, mediaId);
-    return ok(MediaView.formatVideos(rows), { locale, total });
-  } catch (err) { return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES)); }
+    const { rows, locale, total } = MediaController.getVideos(ctx, mediaId);
+    return ctx.ok(MediaView.formatVideos(rows), { locale, total });
+  } catch (err) { return serverError(err, ctx.locale); }
 }
 
-export function handleMediaRelated(req: Request, _db: Database, mediaId: number): Response {
+export function handleMediaRelated(ctx: ApiContext, mediaId: number): Response {
   try {
-    const { rows, locale, total } = MediaController.getRelated(req, mediaId);
-    return ok(MediaView.formatRelated(rows), { locale, total });
-  } catch (err) { return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES)); }
+    const { rows, locale, total } = MediaController.getRelated(ctx, mediaId);
+    return ctx.ok(MediaView.formatRelated(rows), { locale, total });
+  } catch (err) { return serverError(err, ctx.locale); }
 }
 
-export function handleMediaComments(req: Request, _db: Database, mediaId: number): Response {
+export function handleMediaComments(ctx: ApiContext, mediaId: number): Response {
   try {
-    const result = MediaController.getComments(req, mediaId);
+    const result = MediaController.getComments(ctx, mediaId);
     if ("error" in result) return result.error as Response;
     const { rows, params } = result;
-    return ok(MediaView.formatComments(rows), params);
-  } catch (err) { return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES)); }
+    return ctx.ok(MediaView.formatComments(rows), params);
+  } catch (err) { return serverError(err, ctx.locale); }
 }
 
-export async function handleMediaBulkUpdate(req: Request, _db: Database): Promise<Response> {
+export async function handleMediaBulkUpdate(ctx: ApiContext): Promise<Response> {
   try {
-    const result = await MediaController.bulkUpdate(req);
-    if ("error" in result) return badRequest(result.error as string, getLocaleFromRequest(req, SUPPORTED_LOCALES));
-    return ok({ success: true }, { locale: getLocaleFromRequest(req, SUPPORTED_LOCALES) });
-  } catch (err) { return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES)); }
+    const result = await MediaController.bulkUpdate(ctx);
+    if ("error" in result) return ctx.badRequest(result.error as string);
+    return ctx.ok({ success: true });
+  } catch (err) { return serverError(err, ctx.locale); }
 }

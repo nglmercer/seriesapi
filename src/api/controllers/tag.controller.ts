@@ -1,11 +1,9 @@
 import { tagsTable } from "../../schema";
-import { getDrizzle } from "../../init";
-import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
+import { ApiContext } from "../context";
 
 export class TagController {
-  static getList(req: Request) {
-    const drizzle = getDrizzle();
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+  static getList(ctx: ApiContext) {
+    const { drizzle, locale } = ctx;
 
     const rows = drizzle.select(tagsTable)
       .orderBy("label", "asc")

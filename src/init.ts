@@ -73,6 +73,11 @@ export const drizzle = new Proxy({} as SqliteNapiAdapter, {
 export async function initializeDatabase(
   tables: SQLiteTable<Record<string, unknown>>[] = [...ALL_TABLES],
 ): Promise<void> {
+  // Close existing connections if they exist to prevent leaks
+  if (_db) {
+    try { _db.close(); } catch { /* ignore */ }
+  }
+
   const { database, drizzleAdapter } = buildDatabase(tables);
   _db = database;
   _drizzle = drizzleAdapter;
@@ -81,18 +86,14 @@ export async function initializeDatabase(
 
 export async function resetDatabase(): Promise<void> {
   try {
-    if (_db) {
-      try { _db.close(); } catch { /* ignore */ }
-      _db = null;
-      _drizzle = null;
-    }
+    closeDatabase();
+    
     if (!useInMemoryDb) {
       const fs = await import("fs");
       if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath);
     }
-    const { database, drizzleAdapter } = buildDatabase();
-    _db = database;
-    _drizzle = drizzleAdapter;
+    
+    await initializeDatabase();
     console.log("[anima] Database reset");
   } catch (err) {
     console.error("[anima] resetDatabase error:", err);
@@ -107,6 +108,7 @@ export function closeDatabase(): void {
     _drizzle = null;
   }
 }
+
 
 // ─── Test helpers ────────────────────────────────────────────────────────────
 

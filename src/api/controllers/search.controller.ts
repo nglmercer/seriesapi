@@ -1,22 +1,19 @@
 import { mediaTable, contentTypesTable, mediaTranslationsTable, peopleTable, peopleTranslationsTable, collectionsTable, collectionTranslationsTable, imagesTable } from "../../schema";
-import { getDrizzle } from "../../init";
-import { validateParams, searchParamsSchema } from "../validation";
-import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
+import { searchParamsSchema } from "../validation";
+import { ApiContext } from "../context";
 
 type SearchEntityType = "media" | "person" | "collection";
 
 export class SearchController {
-  static getList(req: Request) {
-    const drizzle = getDrizzle();
-    const url = new URL(req.url);
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
+  static getList(ctx: ApiContext) {
+    const { drizzle, locale } = ctx;
     
-    const params = Object.fromEntries(url.searchParams);
-    const v = validateParams(searchParamsSchema, params, locale);
+    const v = ctx.validate(searchParamsSchema);
     if (!v.success) return { error: v.error };
     
     const { q, type, page, limit: pageSize } = v.data;
     const offset = (page - 1) * pageSize;
+
 
     const activeTypes: SearchEntityType[] = type ? [type] : ["media", "person", "collection"];
 

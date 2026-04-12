@@ -6,38 +6,38 @@
  * GET  /api/v1/people/:id/credits     – all media they appear in
  */
 
-import type { Database } from "sqlite-napi";
-import { ok, notFound, serverError } from "../response";
+import { serverError } from "../response";
 import { PersonController } from "../controllers/person.controller";
 import { PersonView } from "../views/person.view";
+import { ApiContext } from "../context";
 
-export function handlePeopleList(req: Request, _db: Database): Response {
+export function handlePeopleList(ctx: ApiContext): Response {
   try {
-    const result = PersonController.getList(req);
+    const result = PersonController.getList(ctx);
     if ("error" in result) return result.error as Response;
 
     const { rows, params } = result;
-    return ok(PersonView.formatList(rows), params);
+    return ctx.ok(PersonView.formatList(rows), params);
   } catch (err) {
-    return serverError(err, "en");
+    return serverError(err, ctx.locale);
   }
 }
 
-export function handlePersonDetail(req: Request, _db: Database, id: number): Response {
+export function handlePersonDetail(ctx: ApiContext, id: number): Response {
   try {
-    const { person, locale } = PersonController.getDetail(req, id);
-    if (!person) return notFound("Person", locale);
-    return ok(PersonView.formatDetail(person), { locale });
+    const { person, locale } = PersonController.getDetail(ctx, id);
+    if (!person) return ctx.notFound("Person");
+    return ctx.ok(PersonView.formatDetail(person), { locale });
   } catch (err) {
-    return serverError(err, "en");
+    return serverError(err, ctx.locale);
   }
 }
 
-export function handlePersonCredits(req: Request, _db: Database, personId: number): Response {
+export function handlePersonCredits(ctx: ApiContext, personId: number): Response {
   try {
-    const { rows, locale, total } = PersonController.getCredits(req, personId);
-    return ok(PersonView.formatCredits(rows), { locale, total });
+    const { rows, locale, total } = PersonController.getCredits(ctx, personId);
+    return ctx.ok(PersonView.formatCredits(rows), { locale, total });
   } catch (err) {
-    return serverError(err, "en");
+    return serverError(err, ctx.locale);
   }
 }

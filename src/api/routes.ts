@@ -33,42 +33,38 @@ import { handleAuthRouter } from "./routes/auth";
 import { handleReportCreate, handleReportList } from "./routes/reports";
 import { handleRatingPost, handleRatingGet, handleTopRatings, handleUserRatings } from "./routes/ratings";
 import { ok, methodNotAllowed, notFound } from "./response";
+import { ApiContext } from "./context";
+import type { SqliteNapiAdapter } from "../core/driver";
 
-function seg(parts: string[], index: number): number {
-  return parseInt(parts[index] ?? "", 10);
-}
-
-export function createRouteHandler(getDbFn: () => any) {
+export function createRouteHandler() {
   return function route(req: Request): Response | Promise<Response> {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const url = new URL(req.url);
-    const parts = url.pathname.replace(/\/$/, "").split("/").filter(Boolean);
-    
-    if (parts[0] !== "api" || parts[1] !== "v1") {
-      return notFound("API Route", locale);
+    const ctx = ApiContext.from(req);
+
+    if (ctx.parts[0] !== "api" || ctx.parts[1] !== "v1") {
+      return notFound("API Route", ctx.locale);
     }
 
-    const [, , resource, p3, p4] = parts;
-    const GET = req.method === "GET";
-    const POST = req.method === "POST";
-    const db = getDbFn();
+
+    const { resource, p3, p4, GET, POST, locale, db } = ctx;
 
     if (resource === "health" && GET) {
       return ok({ status: "online", ts: new Date().toISOString() }, { locale });
     }
 
-    if (resource === "search" && GET) return handleSearch(req, db);
+    if (resource === "search" && GET) return handleSearch(ctx);
 
     if (resource === "genres") {
       if (!GET) return methodNotAllowed(locale);
-      if (!p3) return handleGenresList(req, db);
-      return handleGenreMedia(req, db, p3);
+      if (!p3) return handleGenresList(ctx);
+      return handleGenreMedia(ctx, p3);
     }
+
 
     if (resource === "tags") {
       if (!GET) return methodNotAllowed(locale);
-      return handleTagsList(req, db);
+      return handleTagsList(ctx);
     }
+
 
     if (resource === "collections") {
       if (!GET) return methodNotAllowed(locale);
@@ -78,63 +74,65 @@ export function createRouteHandler(getDbFn: () => any) {
 
     if (resource === "people") {
       if (!GET) return methodNotAllowed(locale);
-      if (!p3) return handlePeopleList(req, db);
-      const id = seg(parts, 3);
+      if (!p3) return handlePeopleList(ctx);
+      const id = ctx.seg(3);
       if (isNaN(id)) return notFound("Person", locale);
-      if (!p4) return handlePersonDetail(req, db, id);
-      if (p4 === "credits") return handlePersonCredits(req, db, id);
+      if (!p4) return handlePersonDetail(ctx, id);
+      if (p4 === "credits") return handlePersonCredits(ctx, id);
       return notFound("Resource", locale);
     }
 
+
     if (resource === "media") {
-      if (POST && p3 === "bulk") return handleMediaBulkUpdate(req, db);
+      if (POST && p3 === "bulk") return handleMediaBulkUpdate(ctx);
       if (!GET) return methodNotAllowed(locale);
-      if (!p3) return handleMediaList(req, db);
-      const id = seg(parts, 3);
+      if (!p3) return handleMediaList(ctx);
+      const id = ctx.seg(3);
       if (isNaN(id)) return notFound("Media", locale);
-      if (!p4) return handleMediaDetail(req, db, id);
-      if (p4 === "seasons")  return handleMediaSeasons(req, db, id);
-      if (p4 === "episodes") return handleMediaEpisodes(req, db, id);
-      if (p4 === "credits")  return handleMediaCredits(req, db, id);
-      if (p4 === "images")   return handleMediaImages(req, db, id);
-      if (p4 === "videos")   return handleMediaVideos(req, db, id);
-      if (p4 === "related")  return handleMediaRelated(req, db, id);
-      if (p4 === "comments") return handleMediaComments(req, db, id);
+      if (!p4) return handleMediaDetail(ctx, id);
+      if (p4 === "seasons") return handleMediaSeasons(ctx, id);
+      if (p4 === "episodes") return handleMediaEpisodes(ctx, id);
+      if (p4 === "credits") return handleMediaCredits(ctx, id);
+      if (p4 === "images") return handleMediaImages(ctx, id);
+      if (p4 === "videos") return handleMediaVideos(ctx, id);
+      if (p4 === "related") return handleMediaRelated(ctx, id);
+      if (p4 === "comments") return handleMediaComments(ctx, id);
       return notFound("Resource", locale);
     }
 
     if (resource === "seasons") {
-      return handleSeasonRouter(req, db, parts);
+      return handleSeasonRouter(ctx);
     }
 
     if (resource === "episodes") {
       if (GET) {
-        const id = seg(parts, 3);
+        const id = ctx.seg(3);
         if (isNaN(id)) return notFound("Episode", locale);
-        if (!p4) return handleEpisodeDetail(req, db, id);
-        if (p4 === "credits")  return handleEpisodeCredits(req, db, id);
-        if (p4 === "images")   return handleEpisodeImages(req, db, id);
-        if (p4 === "comments") return handleEpisodeComments(req, db, id);
-        if (p4 === "neighbors") return handleEpisodeNeighbors(req, db, id);
+        if (!p4) return handleEpisodeDetail(ctx, id);
+        if (p4 === "credits") return handleEpisodeCredits(ctx, id);
+        if (p4 === "images") return handleEpisodeImages(ctx, id);
+        if (p4 === "comments") return handleEpisodeComments(ctx, id);
+        if (p4 === "neighbors") return handleEpisodeNeighbors(ctx, id);
         return notFound("Resource", locale);
       }
       if (POST) {
         if (!p3) return handleEpisodeCreate(req);
-        
-        const id = seg(parts, 3);
-        if (!isNaN(id) && p4 === "views") return handleEpisodeViews(req, db, id);
+
+        const id = ctx.seg(3);
+        if (!isNaN(id) && p4 === "views") return handleEpisodeViews(ctx, id);
         return notFound("Resource", locale);
       }
-      if (req.method === "PUT") return handleEpisodeUpdate(req);
-      if (req.method === "DELETE") return handleEpisodeDelete(req);
+      if (ctx.PUT) return handleEpisodeUpdate(req);
+      if (ctx.DELETE) return handleEpisodeDelete(req);
       return methodNotAllowed(locale);
     }
+
 
     if (resource === "comments") {
       if (GET && p3 === "user") return handleUserComments(req);
       if (POST && !p3) return handleCommentPost(req);
       if (GET && p3) {
-        const id = seg(parts, 3);
+        const id = ctx.seg(3);
         if (!isNaN(id)) return handleCommentGet(req, db, id);
       }
       return GET ? notFound("Comment", locale) : methodNotAllowed(locale);
@@ -155,7 +153,7 @@ export function createRouteHandler(getDbFn: () => any) {
     }
 
     if (resource === "auth") {
-      return handleAuthRouter(req, parts);
+      return handleAuthRouter(req, ctx.parts);
     }
 
     return notFound("API Route", locale);

@@ -1,8 +1,6 @@
 import { imagesTable, videosTable, contentTypesTable, mediaTable, mediaTranslationsTable, mediaGenresTable, genresTable, genreTranslationsTable, mediaTagsTable, tagsTable, mediaStudiosTable, studiosTable, mediaNetworksTable, networksTable, seasonsTable, seasonTranslationsTable, episodesTable, episodeTranslationsTable, peopleTable, peopleTranslationsTable, creditsTable, mediaRelationsTable, commentsTable } from "../../schema";
-import { getDrizzle } from "../../init";
-import { parsePagination } from "../response";
-import { validateParams, mediaListParamsSchema, episodeParamsSchema, imageParamsSchema, paginationSchema } from "../validation";
-import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
+import { mediaListParamsSchema, episodeParamsSchema, imageParamsSchema, paginationSchema } from "../validation";
+
 
 // function getPosterUrl(drizzle: any, mediaId: number): string | null {
 //   const row = drizzle.select(imagesTable)
@@ -16,13 +14,11 @@ import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
 //   return row?.url ?? null;
 // }
 
+import { ApiContext } from "../context";
+
 export class MediaController {
-  static getList(req: Request) {
-    const url = new URL(req.url);
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    
-    const params = Object.fromEntries(url.searchParams);
-    const v = validateParams(mediaListParamsSchema, params, locale);
+  static getList(ctx: ApiContext) {
+    const v = ctx.validate(mediaListParamsSchema);
     if (!v.success) return { error: v.error };
 
     const { 
@@ -35,7 +31,8 @@ export class MediaController {
     const offset = requestedOffset !== undefined ? requestedOffset : (page - 1) * pageSize;
     const safeSort = sortBy;
 
-    const drizzle = getDrizzle();
+    const { drizzle, locale } = ctx;
+
     const posterSubquery = `(SELECT url FROM images WHERE entity_type='media' AND entity_id=m.id AND image_type='poster' AND is_primary=1 LIMIT 1)`;
 
     const itemsQuery = drizzle.select(mediaTable).as("m")
@@ -105,9 +102,8 @@ export class MediaController {
     return { data, params: { locale, page, pageSize, total, offset, pages } };
   }
 
-  static getDetail(req: Request, id: number) {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getDetail(ctx: ApiContext, id: number) {
+    const { drizzle, locale } = ctx;
 
     const posterSubquery = `(SELECT url FROM images WHERE entity_type='media' AND entity_id=m.id AND image_type='poster' AND is_primary=1 LIMIT 1)`;
 
@@ -155,9 +151,8 @@ export class MediaController {
     return { detail: { ...row, genres, tags, studios, networks, rating_average: avg, rating_count: count }, locale };
   }
 
-  static getSeasons(req: Request, mediaId: number) {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getSeasons(ctx: ApiContext, mediaId: number) {
+    const { drizzle, locale } = ctx;
 
     const rows = drizzle.select(seasonsTable).as("s")
       .selectRaw(`s.id, s.season_number, s.episode_count, s.air_date, s.score, COALESCE(st.name, 'Season ' || s.season_number) AS name, st.synopsis`)
@@ -169,13 +164,10 @@ export class MediaController {
     return { rows, locale, total: rows.length };
   }
 
-  static getEpisodes(req: Request, mediaId: number) {
-    const url = new URL(req.url);
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getEpisodes(ctx: ApiContext, mediaId: number) {
+    const { drizzle, locale } = ctx;
 
-    const queryParams = Object.fromEntries(url.searchParams);
-    const v = validateParams(episodeParamsSchema, queryParams, locale);
+    const v = ctx.validate(episodeParamsSchema);
     if (!v.success) return { error: v.error };
 
     const { page, limit: pageSize, season } = v.data;
@@ -211,9 +203,8 @@ export class MediaController {
     return { rows, params: { locale, page, pageSize, total, pages } };
   }
 
-  static getCredits(req: Request, mediaId: number) {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getCredits(ctx: ApiContext, mediaId: number) {
+    const { drizzle, locale } = ctx;
 
     const profileSubquery = `(SELECT url FROM images WHERE entity_type='person' AND entity_id=p.id AND image_type='profile' AND is_primary=1 LIMIT 1)`;
 
@@ -237,13 +228,10 @@ export class MediaController {
     return { credits: { cast, crew }, locale };
   }
 
-  static getImages(req: Request, mediaId: number) {
-    const url = new URL(req.url);
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getImages(ctx: ApiContext, mediaId: number) {
+    const { drizzle, locale } = ctx;
 
-    const queryParams = Object.fromEntries(url.searchParams);
-    const v = validateParams(imageParamsSchema, queryParams, locale);
+    const v = ctx.validate(imageParamsSchema);
     if (!v.success) return { error: v.error };
 
     const { type } = v.data;
@@ -264,9 +252,8 @@ export class MediaController {
     return { rows, locale, total: rows.length };
   }
 
-  static getVideos(req: Request, mediaId: number) {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getVideos(ctx: ApiContext, mediaId: number) {
+    const { drizzle, locale } = ctx;
     
     const rows = drizzle.select(videosTable)
       .where("media_id = ?", [mediaId])
@@ -277,9 +264,8 @@ export class MediaController {
     return { rows, locale, total: rows.length };
   }
 
-  static getRelated(req: Request, mediaId: number) {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getRelated(ctx: ApiContext, mediaId: number) {
+    const { drizzle, locale } = ctx;
 
     const posterSubquery = `(SELECT url FROM images WHERE entity_type='media' AND entity_id=m.id AND image_type='poster' AND is_primary=1 LIMIT 1)`;
 
@@ -295,25 +281,22 @@ export class MediaController {
     return { rows, locale, total: rows.length };
   }
 
-  static getComments(req: Request, mediaId: number) {
-    const url = new URL(req.url);
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getComments(ctx: ApiContext, mediaId: number) {
+    const { drizzle, locale } = ctx;
 
-    const queryParams = Object.fromEntries(url.searchParams);
-    const v = validateParams(paginationSchema, queryParams, locale);
+    const v = ctx.validate(paginationSchema);
     if (!v.success) return { error: v.error };
 
     const { page, limit: pageSize } = v.data;
     const offset = (page - 1) * pageSize;
 
     // Support filtering by entity_type (media/season/episode) and optional entity_id override
-    const entityType = url.searchParams.get("entity_type") || "media";
-    const entityIdParam = url.searchParams.get("entity_id");
+    const entityType = ctx.query("entity_type") || "media";
+    const entityIdParam = ctx.query("entity_id");
     const entityId = entityIdParam ? parseInt(entityIdParam, 10) : mediaId;
-    const search = url.searchParams.get("q") || "";
-    const sortBy = url.searchParams.get("sort_by") === "recent" ? "recent" : "likes";
-    const spoilersOnly = url.searchParams.get("spoilers") === "1";
+    const search = ctx.query("q") || "";
+    const sortBy = ctx.query("sort_by") === "recent" ? "recent" : "likes";
+    const spoilersOnly = ctx.query("spoilers") === "1";
 
     // Count top-level comments for this entity
     let countWhere = `entity_type = ? AND entity_id = ? AND is_hidden = 0 AND parent_id IS NULL`;
@@ -360,14 +343,10 @@ export class MediaController {
     return { rows, params: { locale, page, pageSize, total, entityType, entityId } };
   }
 
-  static async bulkUpdate(req: Request) {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    let body;
-    try {
-      body = await req.json();
-    } catch (e) {
-      return { error: "Invalid JSON" };
-    }
+  static async bulkUpdate(ctx: ApiContext) {
+    const v = await ctx.body();
+    if (!v.success) return { error: "Invalid JSON" };
+    const body = v.data;
 
     const { ids, status, tags, tagAction = "add" } = body;
 
@@ -375,7 +354,7 @@ export class MediaController {
       return { error: "No IDs provided" };
     }
 
-    const drizzle = getDrizzle();
+    const { drizzle } = ctx;
 
     // 1. Update status if provided
     if (status) {

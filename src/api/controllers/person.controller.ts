@@ -1,16 +1,12 @@
-import { peopleTable, peopleTranslationsTable, imagesTable, creditsTable, mediaTable, contentTypesTable, mediaTranslationsTable } from "../../schema";
-import { getDrizzle } from "../../init";
-import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
-import { validateParams, personListParamsSchema } from "../validation";
+import { peopleTable, peopleTranslationsTable, creditsTable } from "../../schema";
+import { personListParamsSchema } from "../validation";
+import { ApiContext } from "../context";
 
 export class PersonController {
-  static getList(req: Request) {
-    const url = new URL(req.url);
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getList(ctx: ApiContext) {
+    const { drizzle, locale } = ctx;
 
-    const queryParams = Object.fromEntries(url.searchParams);
-    const v = validateParams(personListParamsSchema, queryParams, locale);
+    const v = ctx.validate(personListParamsSchema);
     if (!v.success) return { error: v.error };
 
     const { page, limit: pageSize, q: search } = v.data;
@@ -46,9 +42,8 @@ export class PersonController {
     return { rows, params: { locale, page, pageSize, total } };
   }
 
-  static getDetail(req: Request, id: number) {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getDetail(ctx: ApiContext, id: number) {
+    const { drizzle, locale } = ctx;
 
     const profileSubquery = `(SELECT url FROM images WHERE entity_type='person' AND entity_id=p.id AND image_type='profile' AND is_primary=1 LIMIT 1)`;
 
@@ -61,9 +56,8 @@ export class PersonController {
     return { person: row, locale };
   }
 
-  static getCredits(req: Request, personId: number) {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getCredits(ctx: ApiContext, personId: number) {
+    const { drizzle, locale } = ctx;
 
     const posterSubquery = `(SELECT url FROM images WHERE entity_type='media' AND entity_id=m.id AND image_type='poster' AND is_primary=1 LIMIT 1)`;
 

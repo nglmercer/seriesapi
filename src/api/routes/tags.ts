@@ -1,13 +1,12 @@
-import type { Database } from "sqlite-napi";
-import { ok, serverError } from "../response";
+import { serverError } from "../response";
 import { TagController } from "../controllers/tag.controller";
-import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
+import { ApiContext } from "../context";
 
-export function handleTagsList(req: Request, _db: Database): Response {
+export function handleTagsList(ctx: ApiContext): Response {
   try {
-    const { rows, params } = TagController.getList(req);
-    return ok(rows, params);
+    const { rows, params } = TagController.getList(ctx);
+    return ctx.ok(rows, params);
   } catch (err) {
-    return serverError(err, getLocaleFromRequest(req, SUPPORTED_LOCALES));
+    return serverError(err, ctx.locale);
   }
 }

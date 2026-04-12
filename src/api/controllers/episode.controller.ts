@@ -1,13 +1,12 @@
-import { episodesTable, episodeTranslationsTable, seasonsTable, imagesTable, commentsTable, peopleTable, episodeCreditsTable } from "../../schema";
-import { getDrizzle } from "../../init";
-import { validateParams, paginationSchema } from "../validation";
-import { getLocaleFromRequest, SUPPORTED_LOCALES, DEFAULT_LOCALE } from "../../i18n";
+import { episodesTable, episodeTranslationsTable, seasonsTable, imagesTable, commentsTable, episodeCreditsTable } from "../../schema";
+import { paginationSchema } from "../validation";
+import { DEFAULT_LOCALE } from "../../i18n";
 import { badRequest } from "../response";
+import { ApiContext } from "../context";
 
 export class EpisodeController {
-  static getDetail(req: Request, id: number) {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getDetail(ctx: ApiContext, id: number) {
+    const { drizzle, locale } = ctx;
 
     const stillSubquery = `(SELECT url FROM images WHERE entity_type='episode' AND entity_id=e.id AND image_type='still' AND is_primary=1 LIMIT 1)`;
 
@@ -33,9 +32,8 @@ export class EpisodeController {
     return { episode, locale };
   }
 
-  static getCredits(req: Request, episodeId: number) {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getCredits(ctx: ApiContext, episodeId: number) {
+    const { drizzle, locale } = ctx;
 
     const profileSubquery = `(SELECT url FROM images WHERE entity_type='person' AND entity_id=p.id AND image_type='profile' AND is_primary=1 LIMIT 1)`;
 
@@ -49,9 +47,8 @@ export class EpisodeController {
     return { rows, locale, total: rows.length };
   }
 
-  static getImages(req: Request, episodeId: number) {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getImages(ctx: ApiContext, episodeId: number) {
+    const { drizzle, locale } = ctx;
 
     const rows = drizzle.select(imagesTable)
       .where("entity_type = 'episode'")
@@ -63,13 +60,10 @@ export class EpisodeController {
     return { rows, locale, total: rows.length };
   }
 
-  static getComments(req: Request, episodeId: number) {
-    const url = new URL(req.url);
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getComments(ctx: ApiContext, episodeId: number) {
+    const { drizzle, locale } = ctx;
 
-    const queryParams = Object.fromEntries(url.searchParams);
-    const v = validateParams(paginationSchema, queryParams, locale);
+    const v = ctx.validate(paginationSchema);
     if (!v.success) return { error: v.error };
 
     const { page, limit: pageSize } = v.data;
@@ -96,8 +90,8 @@ export class EpisodeController {
     return { rows, locale, page, pageSize, total };
   }
 
-  static create(data: { mediaId: number; seasonId?: number; number: number; title?: string; synopsis?: string; runtimeMinutes?: number }, locale = DEFAULT_LOCALE) {
-    const drizzle = getDrizzle();
+  static create(ctx: ApiContext, data: { mediaId: number; seasonId?: number; number: number; title?: string; synopsis?: string; runtimeMinutes?: number }) {
+    const { drizzle, locale } = ctx;
     const now = new Date().toISOString();
 
     const insertData: Record<string, unknown> = {
@@ -124,8 +118,8 @@ export class EpisodeController {
     return { id: episodeId };
   }
 
-  static update(id: number, data: { number?: number; episode_number?: number; absolute_number?: number | null; episode_type?: string; air_date?: string | null; runtime_minutes?: number | null; title?: string; synopsis?: string; season_id?: number; thumbnail?: string }, locale = DEFAULT_LOCALE) {
-    const drizzle = getDrizzle();
+  static update(ctx: ApiContext, id: number, data: { number?: number; episode_number?: number; absolute_number?: number | null; episode_type?: string; air_date?: string | null; runtime_minutes?: number | null; title?: string; synopsis?: string; season_id?: number; thumbnail?: string }) {
+    const { drizzle, locale } = ctx;
     const now = new Date().toISOString();
 
     const updateData: Record<string, any> = { updated_at: now };
@@ -194,9 +188,8 @@ export class EpisodeController {
     return { ok: true };
   }
 
-  static getNeighbors(req: Request, episodeId: number) {
-    const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-    const drizzle = getDrizzle();
+  static getNeighbors(ctx: ApiContext, episodeId: number) {
+    const { drizzle, locale } = ctx;
 
     const current = drizzle.select(episodesTable)
       .selectRaw("e.id, e.media_id, e.season_id, e.episode_number")
@@ -224,15 +217,15 @@ export class EpisodeController {
     return { prev, next };
   }
 
-  static delete(id: number) {
-    const drizzle = getDrizzle();
+  static delete(ctx: ApiContext, id: number) {
+    const { drizzle } = ctx;
     drizzle.delete(episodesTable).where("id = ?", [id]).run();
     drizzle.delete(episodeTranslationsTable).where("episode_id = ?", [id]).run();
     return { ok: true };
   }
 
-  static incrementView(id: number) {
-    const drizzle = getDrizzle();
+  static incrementView(ctx: ApiContext, id: number) {
+    const { drizzle } = ctx;
     
     // Get related IDs first
     const ep = drizzle.select(episodesTable)

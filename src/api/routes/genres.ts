@@ -5,35 +5,35 @@
  * GET  /api/v1/genres/:slug    – genre detail + paginated media
  */
 
-import type { Database } from "sqlite-napi";
-import { ok, notFound, serverError } from "../response";
+import { serverError } from "../response";
 import { GenreController } from "../controllers/genre.controller";
 import { GenreView } from "../views/genre.view";
+import { ApiContext } from "../context";
 
-export function handleGenresList(req: Request, _db: Database): Response {
+export function handleGenresList(ctx: ApiContext): Response {
   try {
-    const { params, rows } = GenreController.getList(req);
+    const { params, rows } = GenreController.getList(ctx);
     const formattedData = GenreView.formatList(rows);
-    return ok(formattedData, params);
+    return ctx.ok(formattedData, params);
   } catch (err) {
-    return serverError(err, "en");
+    return serverError(err, ctx.locale);
   }
 }
 
-export function handleGenreMedia(req: Request, _db: Database, slug: string): Response {
+export function handleGenreMedia(ctx: ApiContext, slug: string): Response {
   try {
-    const result = GenreController.getDetail(req, slug);
-    if (!result) return notFound("Genre", "en");
+    const result = GenreController.getDetail(ctx, slug);
+    if (!result) return ctx.notFound("Genre");
     if ("error" in result) return result.error as Response;
 
     const formattedData = GenreView.formatDetail(result.genre, result.items);
-    return ok(formattedData, { 
+    return ctx.ok(formattedData, { 
       locale: result.locale, 
       page: result.page, 
       pageSize: result.pageSize, 
       total: result.total 
     });
   } catch (err) {
-    return serverError(err, "en");
+    return serverError(err, ctx.locale);
   }
 }

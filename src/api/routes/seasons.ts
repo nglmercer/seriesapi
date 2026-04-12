@@ -7,48 +7,45 @@ import { ok, notFound, serverError, methodNotAllowed } from "../response";
 import { SeasonController } from "../controllers/season.controller";
 import { SeasonView } from "../views/season.view";
 import { getLocaleFromRequest, SUPPORTED_LOCALES } from "../../i18n";
+import { ApiContext } from "../context";
 import { withAdmin } from "./auth";
 import { validateParams, seasonUpdateSchema, seasonCreateSchema } from "../validation";
+
 
 /**
  * Main router for /api/v1/seasons
  */
-export async function handleSeasonRouter(req: Request, db: Database, parts: string[]): Promise<Response> {
-  const locale = getLocaleFromRequest(req, SUPPORTED_LOCALES);
-  const [, , resource, p3, p4] = parts;
+export async function handleSeasonRouter(ctx: ApiContext): Promise<Response> {
+  const { locale, resource, p3, p4, GET, POST, PUT, DELETE, db } = ctx;
 
   if (resource !== "seasons") return notFound("Resource", locale);
 
-  const GET = req.method === "GET";
-  const POST = req.method === "POST";
-  const PUT = req.method === "PUT";
-  const DELETE = req.method === "DELETE";
-
   // POST /api/v1/seasons
   if (POST && !p3) {
-    return handleSeasonCreate(req);
+    return handleSeasonCreate(ctx.req);
   }
 
   // Routes with ID: /api/v1/seasons/:id
-  const id = parseInt(p3 ?? "", 10);
+  const id = ctx.seg(3);
   if (isNaN(id)) {
-    if (!p3 && GET) return handleSeasonList(req, db); // Optional: if you want a list of seasons
+    if (!p3 && GET) return handleSeasonList(ctx.req, db); // Optional: if you want a list of seasons
     return notFound("Season", locale);
   }
 
   if (GET) {
-    if (!p4) return handleSeasonDetail(req, db, id);
-    if (p4 === "episodes") return handleSeasonEpisodes(req, db, id);
-    if (p4 === "images") return handleSeasonImages(req, db, id);
-    if (p4 === "comments") return handleSeasonComments(req, db, id);
+    if (!p4) return handleSeasonDetail(ctx.req, db, id);
+    if (p4 === "episodes") return handleSeasonEpisodes(ctx.req, db, id);
+    if (p4 === "images") return handleSeasonImages(ctx.req, db, id);
+    if (p4 === "comments") return handleSeasonComments(ctx.req, db, id);
     return notFound("Resource", locale);
   }
 
-  if (PUT) return handleSeasonUpdate(req, id);
-  if (DELETE) return handleSeasonDelete(req, id);
+  if (PUT) return handleSeasonUpdate(ctx.req, id);
+  if (DELETE) return handleSeasonDelete(ctx.req, id);
 
   return methodNotAllowed(locale);
 }
+
 
 export function handleSeasonList(req: Request, _db: Database): Response {
   // If we ever want a global seasons list
